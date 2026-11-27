@@ -2,6 +2,8 @@
 
 These flows must keep working as Visualizer grows. A pull request that adds or changes a user-facing flow updates this file, the tests behind `pnpm test:critical-flows`, and the verification skills named in `AGENTS.md`.
 
+Tool choices for these flows, the unit suite, the formal check, and the model-based paths are logged in `docs/TECH-CHOICES.md`. The commands are listed in `docs/TEST-SUITE.md`. A change that adds a flow or a test command appends a provenance entry there in the same change: tools, why they fit, training-data recall or a cited lookup, and whether wider trends were checked before the choice. Write "no" when they were not.
+
 Each flow below names the test that executes it. The suite fails the `verify` job when any of them break.
 
 ## CF-01 Cockpit edit is the code-mode workspace
