@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { BrainRouter } from "./brain/router.js";
 import { applyBuildTick, runSelfBootstrap } from "./bootstrap/run.js";
 import { checkLockstep } from "./formal/lockstep.js";
+import { appendEnsemblyRecord, promoteEnsemblyRecord, recordWorkflowLesson } from "./memory/commit.js";
 import { canvasCardId, createSampleWorkspace } from "./state/sample.js";
 import { readPersistedWorkspace, serializeWorkspace } from "./state/persist.js";
 import { appendSketchStroke } from "./state/strokes.js";
@@ -193,6 +194,74 @@ describe("critical flows", () => {
     if (!later.ok) return;
     expect(later.state).toBe(state);
     expect(later.state.strokes[0]?.points).toEqual(points);
+  });
+
+  it("CF-07 promotes a confirmed Ensembly record and keeps a workflow lesson across code mode", () => {
+    let state = createSampleWorkspace();
+    const legacy = { ...state } as Record<string, unknown>;
+    delete legacy.ensemblyLedger;
+    delete legacy.pulseMemory;
+    delete legacy.workflowLessons;
+    const hydrated = readPersistedWorkspace(JSON.stringify(legacy));
+    expect(hydrated?.pulseMemory).toEqual([]);
+    expect(hydrated?.problemCards).toHaveLength(state.problemCards.length);
+    state = hydrated ?? state;
+    state = assertCommit(
+      appendEnsemblyRecord(state, state.stateVersion, {
+        id: "ens-cf07-rule",
+        timestamp: "2026-11-27T18:00:00Z",
+        kind: "rule",
+        summary: "Promote only after the outcome is confirmed.",
+        rationale: "An open decision is still a ledger line.",
+        provenance: "docs/CRITICAL-FLOWS.md",
+        confirmedOutcome: null,
+      }),
+    );
+    expect(state.pulseMemory).toEqual([]);
+    const unconfirmed = promoteEnsemblyRecord(state, state.stateVersion, "ens-cf07-rule");
+    expect(unconfirmed.ok).toBe(true);
+    if (!unconfirmed.ok) return;
+    expect(unconfirmed.state.stateVersion).toBe(state.stateVersion);
+    state = assertCommit(
+      appendEnsemblyRecord(state, state.stateVersion, {
+        id: "ens-cf07-mistake",
+        timestamp: "2026-11-27T18:00:01Z",
+        kind: "costly_mistake",
+        summary: "A confirmed mistake belongs in Pulse Memory.",
+        rationale: "The next run should avoid the same rework.",
+        provenance: "docs/CRITICAL-FLOWS.md",
+        confirmedOutcome: "The cockpit and Code Mode both list the mistake.",
+      }),
+    );
+    state = assertCommit(
+      recordWorkflowLesson(state, state.stateVersion, {
+        id: "lesson-cf07",
+        recordedAt: "2026-11-27T18:00:02Z",
+        phase: state.autopilot.phase,
+        cardId: "card-log",
+        signal: "adjustment",
+        lesson: "Record the lesson on the card that caused the rework.",
+        adjustment: "Keep the lesson when the view changes.",
+      }),
+    );
+    const stale = appendEnsemblyRecord(state, 0, {
+      id: "ens-cf07-stale",
+      timestamp: "2026-11-27T18:00:03Z",
+      kind: "decision",
+      summary: "A stale write must not append.",
+      rationale: "stateVersion is the lock.",
+      provenance: "docs/CRITICAL-FLOWS.md",
+      confirmedOutcome: "Rejected.",
+    });
+    expect(stale.ok).toBe(false);
+    const code = assertCommit(commitView(state, state.stateVersion, "code"));
+    expect(code.mode).toBe("code");
+    expect(code.autopilot.phase).toBe("idle");
+    expect(code.pulseMemory.map((pulse) => pulse.id)).toEqual(["ens-cf07-mistake"]);
+    expect(code.workflowLessons.find((lesson) => lesson.id === "lesson-cf07")?.cardId).toBe("card-log");
+    const stored = readPersistedWorkspace(serializeWorkspace(code));
+    expect(stored?.pulseMemory[0]?.summary).toBe("A confirmed mistake belongs in Pulse Memory.");
+    expect(stored?.ensemblyLedger.map((record) => record.id)).toEqual(["ens-cf07-rule", "ens-cf07-mistake"]);
   });
 
   it("holds the lockstep properties on the real transition functions", async () => {

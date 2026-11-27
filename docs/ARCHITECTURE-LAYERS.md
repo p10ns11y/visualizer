@@ -7,10 +7,14 @@ The diagram is the dependency direction: the UI talks to a thin bridge, the brid
 ```mermaid
 flowchart TB
   ui["UI and state: Visual Cockpit, Code Mode, XState 6"]
+  memory["Memory: Ensembly ledger, Pulse Memory, workflow lessons"]
+  graph["Optional Neo4j projection of that same memory"]
   bridge["Thin bridge: C ABI, native bindings, WASM to JS, or local JSON-RPC"]
   core["Thin core: CLI or native module, WASM when needed"]
   accel["adaptate-accel, packages/native, packages/wasm"]
   streams["@adaptate/core typed streams"]
+  ui --> memory
+  memory --> graph
   ui --> bridge
   bridge --> core
   core --> accel
@@ -55,6 +59,8 @@ The bridge transports typed calls and results. It does not host UI state, and it
 Visual Cockpit and Code Mode stay a JavaScript WebView. XState 6 owns the pilot railway. `stateVersion`, human pause, and the tool-call contracts stay in that state layer and drive the core through the bridge. A view change still does not pause a run. A human edit during a working phase still does.
 
 Freehand strokes are fields on that same workspace: a `cardId` plus normalized pointer samples. The canvas plate paints them. Code Mode lists and clears them. They are not a bridge payload and not a board log. A stroke during a working phase uses the same human-edit pause as a statement edit.
+
+Pulse Memory and workflow lessons are fields on that same workspace. The Ensembly ledger is the append-only record. Pulse Memory holds a record only after a confirmed outcome. A workflow lesson points at a railway phase and, when present, a problem card. Neo4j is an optional projection of those fields through `MemoryGraphStore`. The cockpit does not require a running database. Setup and the Cypher constraints are in `docs/MEMORY-NEO4J.md`. A memory write during a working phase uses the same human-edit pause as a statement edit.
 
 ## What this step does not do
 

@@ -53,6 +53,8 @@ Step 1 opens with problem cards for Step 2 of Visualizer itself: freehand canvas
 
 The canvas plate takes freehand ink. Each stroke is pinned to the freehand problem card, stored on the shared workspace, and kept in `localStorage` across a reload. Code Mode lists those strokes and can clear them. A stroke during a working phase pauses the run and keeps the ink. The bridge and the board log are still later steps.
 
+The Memory panel, in both modes, lists Pulse Memory and workflow lessons. Ensembly is the append-only ledger. A record promotes into Pulse Memory only after a confirmed outcome. A lesson names a railway phase and a problem card. Older workspaces that lack those fields still load. Neo4j is an optional projection; the commands and Cypher are in `docs/MEMORY-NEO4J.md`. CI uses the in-memory graph port.
+
 ### Local decision model
 
 Tier 2 calls an OpenAI-compatible server. `VISUALIZER_LOCAL_MODEL_URL` defaults to `http://127.0.0.1:11434/v1`. `VISUALIZER_LOCAL_MODEL_NAME` defaults to `decision`. On the machine aliased `laptop-1`, point those variables at the local server and run:
@@ -73,3 +75,5 @@ Critical flows are listed in `docs/CRITICAL-FLOWS.md`. Test commands are listed 
 - [Chopin](https://githubnext.com/projects/chopin/) — GitHub Next's multiplayer MDX planning prototype
 - [Lopsi](https://github.com/frankievalentine/lopsi-bot-eve) — folder-per-agent layout inspiration
 - [Vercel Board](https://github.com/vercel/board) — optional local task and event log
+- [ensembly](https://github.com/thecuriousts/ensembly) — append-only pulse pack (`ensembly-pulse-pack-v1`) that feeds the memory graph
+- [Neo4j JavaScript driver](https://neo4j.com/docs/javascript-manual/current/) — optional Bolt projection of Pulse Memory and workflow lessons

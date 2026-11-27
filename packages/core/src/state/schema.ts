@@ -108,12 +108,47 @@ export type AutopilotState = z.infer<typeof AutopilotSchema>;
 export const LogEntrySchema = z.object({
   id: z.string().min(1),
   stateVersion: z.number().int().nonnegative(),
-  kind: z.enum(["transition", "human", "judgement", "brief", "view", "seed"]),
+  kind: z.enum(["transition", "human", "judgement", "brief", "view", "seed", "memory"]),
   message: z.string().min(1),
   from: z.string().optional(),
   to: z.string().optional(),
 });
 export type LogEntry = z.infer<typeof LogEntrySchema>;
+
+export const ensemblyKinds = ["rule", "costly_mistake", "decision"] as const;
+export const EnsemblyKindSchema = z.enum(ensemblyKinds);
+export type EnsemblyKind = z.infer<typeof EnsemblyKindSchema>;
+
+export const EnsemblyRecordSchema = z.object({
+  id: z.string().min(1),
+  timestamp: z.string().datetime(),
+  kind: EnsemblyKindSchema,
+  summary: z.string().min(1),
+  rationale: z.string().min(1),
+  provenance: z.string().min(1),
+  confirmedOutcome: z.string().min(1).nullable(),
+});
+export type EnsemblyRecord = z.infer<typeof EnsemblyRecordSchema>;
+
+export const PulseMemorySchema = EnsemblyRecordSchema.extend({
+  confirmedOutcome: z.string().min(1),
+});
+export type PulseMemory = z.infer<typeof PulseMemorySchema>;
+
+export const lessonSignals = ["friction", "rework", "adjustment"] as const;
+export const LessonSignalSchema = z.enum(lessonSignals);
+export type LessonSignal = z.infer<typeof LessonSignalSchema>;
+
+export const WorkflowLessonSchema = z.object({
+  id: z.string().min(1),
+  recordedAt: z.string().datetime(),
+  phase: PilotPhaseSchema,
+  cardId: z.string().min(1).nullable(),
+  signal: LessonSignalSchema,
+  lesson: z.string().min(1),
+  adjustment: z.string().min(1),
+});
+export type WorkflowLesson = z.infer<typeof WorkflowLessonSchema>;
 
 export const BuildBriefSchema = z.object({
   title: z.string().min(1),
@@ -139,6 +174,9 @@ export const WorkspaceStateSchema = z.object({
   mode: z.enum(["cockpit", "code"]),
   problemCards: z.array(ProblemCardSchema),
   strokes: z.array(SketchStrokeSchema).default(() => []),
+  ensemblyLedger: z.array(EnsemblyRecordSchema).default(() => []),
+  pulseMemory: z.array(PulseMemorySchema).default(() => []),
+  workflowLessons: z.array(WorkflowLessonSchema).default(() => []),
   mockups: z.array(MockupNodeSchema),
   connections: z.array(ConnectionSchema),
   tokens: DesignTokensSchema,

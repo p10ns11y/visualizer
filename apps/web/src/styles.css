@@ -446,12 +446,47 @@ textarea {
 .spec-panel { grid-area: spec; }
 .tool-panel { grid-area: tools; }
 
-.rail-panel, .spec-panel, .tool-panel, .log-panel {
+.rail-panel, .spec-panel, .tool-panel, .log-panel, .memory-panel {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 22px;
   background: var(--panel);
 }
+
+.memory-panel { margin-top: 14px; }
+.memory-counts {
+  margin: 8px 0 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent);
+}
+.memory-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 16px;
+  margin-top: 12px;
+}
+.memory-grid h3 { margin: 14px 0 8px; font-size: 16px; }
+.memory-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.memory-list li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.memory-list strong { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.memory-list em { font-style: normal; color: var(--muted); font-size: 13px; }
+.memory-form { display: grid; gap: 8px; align-content: start; }
+.memory-form label span { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.memory-form input, .memory-form select, .memory-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: transparent;
+  padding: 8px 10px;
+}
+.memory-form button { justify-self: start; }
 
 .spec-panel details { margin-top: 12px; }
 .spec-panel summary {
@@ -544,7 +579,7 @@ textarea {
   .top { align-items: stretch; flex-direction: column; }
   .top-actions { justify-content: flex-start; }
   h1 { font-size: 30px; }
-  .split, .code-layout { grid-template-columns: 1fr; }
+  .split, .code-layout, .memory-grid { grid-template-columns: 1fr; }
   .code-layout { grid-template-areas: "rail" "spec" "tools" "log"; }
   .stage { min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 12px; overflow: visible; }
   .plate { position: relative; left: auto !important; top: auto !important; width: auto; }

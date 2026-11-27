@@ -107,3 +107,28 @@ export {
   runSelfBootstrap,
 } from "./bootstrap/run.js";
 export type { BuildTick } from "./bootstrap/run.js";
+
+export {
+  EnsemblyKindSchema,
+  EnsemblyRecordSchema,
+  LessonSignalSchema,
+  PulseMemorySchema,
+  WorkflowLessonSchema,
+  ensemblyKinds,
+  lessonSignals,
+} from "./state/schema.js";
+export type {
+  EnsemblyKind,
+  EnsemblyRecord,
+  LessonSignal,
+  PulseMemory,
+  WorkflowLesson,
+} from "./state/schema.js";
+export {
+  appendEnsemblyRecord,
+  promoteEnsemblyRecord,
+  recordWorkflowLesson,
+} from "./memory/commit.js";
+export { InMemoryGraphMemoryStore } from "./memory/in-memory-store.js";
+export { projectWorkspace } from "./memory/port.js";
+export type { LessonFilter, MemoryGraphStore } from "./memory/port.js";
