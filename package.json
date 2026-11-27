@@ -9,14 +9,19 @@
     "test:critical-flows": "pnpm --filter @visualizer/core test:critical-flows && pnpm --filter @visualizer/web test:critical-flows",
     "test:mbt": "tsx scripts/test-mbt.ts",
     "verify:formal": "tsx scripts/verify-formal.ts",
+    "docs:mermaid": "tsx scripts/verify-mermaid.ts",
     "build": "pnpm --filter @visualizer/web build",
     "dev": "pnpm --filter @visualizer/web dev",
     "test:local-model": "tsx scripts/local-model-smoke.ts"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "devDependencies": {
+    "jsdom": "31.0.1",
+    "mermaid": "12.4.0",
     "puppeteer-core": "^24.15.0",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"

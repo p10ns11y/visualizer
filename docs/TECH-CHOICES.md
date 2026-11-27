@@ -207,3 +207,19 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - **Why:** A tick that landed from an older snapshot was dropping ledger appends, promotions, and pack imports. A lock held across the awaited tick blocked the other writer, and a 30 second age check could drop a live owner's lock. The workspace file is local state and should not be world-readable.
 - **Basis:** The review on pull request 6. No new package. `/proc/<pid>/stat` field 22 is the process start time on Linux, which is the CI host. This was not a fresh library lookup.
 - **Latest trends checked before choosing:** No new library was compared. The earlier entry already checked `proper-lockfile` and left the lock on `node:fs`. That choice stays.
+
+## Mermaid diagram check
+
+### Head Plan
+
+- [x] Rename the reserved flowchart id `graph` to `neo4jGraph` and point the memory edge at that id.
+- [x] Parse every Mermaid fence in `README.md` and `docs/**` with `mermaid.parse`, and fail CI `verify` when a diagram does not parse.
+
+### Tail Plan
+
+- [x] Add `pnpm docs:mermaid`, record it in `docs/TEST-SUITE.md` and this file, and run the local suite before pushing.
+
+- **Chosen:** `mermaid@12.4.0` via `mermaid.parse`, with `jsdom@31.0.1` so DOMPurify has a window in Node. The script is `scripts/verify-mermaid.ts`, exposed as `pnpm docs:mermaid`. `@mermaid-js/mermaid-cli@12.2.0` was not added.
+- **Why:** GitHub rejected the architecture diagram because a node id was the reserved word `graph`. `mermaid.parse` is the library's parser entry and reports that same error. In Node, DOMPurify's default export has no `addHook` until a document exists, so the script creates a jsdom window before importing mermaid. A browser render would also parse the diagram, and it would download Chromium on every CI run.
+- **Basis:** Live research on 2026-11-27, before the packages were added. `npm view mermaid version` returned `12.4.0` (published 2026-11-27). `npm view @mermaid-js/mermaid-cli version` returned `12.2.0`. `npm view jsdom version` returned `31.0.1`. A local `mermaid.parse` call on the old diagram threw `Parse error on line 3` with `got 'GRAPH'`. The renamed diagram, and the other two fences in `docs/ARCHITECTURE-LAYERS.md`, parse.
+- **Latest trends checked before choosing:** Yes, on 2026-11-27, before the install. Compared `mermaid` `12.4.0` (`mermaid.parse`) with `@mermaid-js/mermaid-cli` `12.2.0` (Puppeteer render). The library line is newer than the CLI line. The check uses the library parser.

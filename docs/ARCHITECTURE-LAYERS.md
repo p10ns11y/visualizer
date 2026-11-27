@@ -10,7 +10,7 @@ flowchart TB
   mcp["Headless MCP: Streamable HTTP on 127.0.0.1"]
   file["Workspace JSON file"]
   memory["Memory: Ensembly ledger, Pulse Memory, workflow lessons"]
-  graph["Optional Neo4j projection of that same memory"]
+  neo4jGraph["Optional Neo4j projection of that same memory"]
   bridge["Thin bridge: C ABI, native bindings, WASM to JS, or local JSON-RPC"]
   core["Thin core: CLI or native module, WASM when needed"]
   accel["adaptate-accel, packages/native, packages/wasm"]
@@ -18,7 +18,7 @@ flowchart TB
   ui --> memory
   mcp --> memory
   mcp --> file
-  memory --> graph
+  memory --> neo4jGraph
   ui --> bridge
   bridge --> core
   core --> accel
