@@ -54,9 +54,17 @@ Exactly one thin surface exposes the core to JavaScript:
 
 The bridge transports typed calls and results. It does not host UI state, and it does not re-check payloads that `adaptate-accel` already checks.
 
+## Browser tool surface
+
+Visual Cockpit and Code Mode register a WebMCP tool list from `@visualizer/core` (`packages/core/src/webmcp/`). The page reads `document.modelContext` first and `navigator.modelContext` only when the document getter is missing. Registration uses `registerTool` and an `AbortSignal`. Cleanup aborts that signal and, when the host still exposes it, calls `unregisterTool`. `provideContext` is not used.
+
+When neither getter exists, the same calls run on an in-memory bridge and the strip says `Local bridge`. Read tools list cards, the railway phase, Pulse Memory, and workflow lessons. Write tools pause a build, record a lesson, or append an Ensembly record. Those writes stay read only until the page grants local approval, then they use the same `stateVersion` check as a cockpit edit.
+
+This surface is the page's tool producer. It is not the native core bridge in section 3. Payload checks stay in `adaptate`. Input schemas are Zod objects converted with `zodToOpenAPISchema` from `@adaptate/utils`.
+
 ## 4. JS / WebView UI and state
 
-Visual Cockpit and Code Mode stay a JavaScript WebView. XState 6 owns the pilot railway. `stateVersion`, human pause, and the tool-call contracts stay in that state layer and drive the core through the bridge. A view change still does not pause a run. A human edit during a working phase still does.
+Visual Cockpit and Code Mode stay a JavaScript WebView. XState 6 owns the pilot railway. `stateVersion`, human pause, and the tool-call contracts stay in that state layer and drive the core through the bridge. A view change still does not pause a run. A human edit during a working phase still does. The WebMCP strip in both modes shows whether the browser getter was found and which tools are registered. The workspace is stored in `localStorage` under `visualizer.workspace`. A payload left under `visualizer.workspace.v1` is read only when the current key is empty. Missing strokes, ledger, Pulse Memory, and lesson arrays hydrate as empty lists, and a stored card statement is left as written.
 
 Freehand strokes are fields on that same workspace: a `cardId` plus normalized pointer samples. The canvas plate paints them. Code Mode lists and clears them. They are not a bridge payload and not a board log. A stroke during a working phase uses the same human-edit pause as a statement edit.
 

@@ -48,6 +48,12 @@ A pre-memory workspace still loads: the ledger, Pulse Memory, and workflow lesso
 
 Test: `CF-07` in `packages/core/src/critical-flows.test.ts`, plus the promote, code-mode, reload, and pre-memory hydration renders in `apps/web/src/critical-flow.dom.test.tsx`.
 
+## CF-08 WebMCP bridge registers, rejects a stale write, and unregisters
+
+The page registers read tools and `stateVersion`-guarded write tools on `document.modelContext` when that getter exists, otherwise on an in-app bridge. A write with local approval and a stale `stateVersion` returns `STATE_CONFLICT` and does not append. Releasing the bridge removes the tools.
+
+Test: `CF-08` in `packages/core/src/critical-flows.test.ts`, plus the bridge strip in `apps/web/src/critical-flow.dom.test.tsx`.
+
 ## Lockstep properties
 
 `pnpm verify:formal` checks the promise those flows rely on: monotonic `stateVersion`, stale-write rejection, no agent commit while paused or after a terminal phase, and a rest path from every railway phase. The bounds and the command live in `.cursor/skills/formal-verify-visualizer/SKILL.md`.

@@ -13,7 +13,9 @@ import {
   pauseRun,
   pilotPhases,
   promoteEnsemblyRecord,
-  readPersistedWorkspace,
+  mountWorkspaceBridge,
+  readModelContextGlobals,
+  readWorkspaceStorage,
   recordWorkflowLesson,
   remainingTicks,
   resumeRun,
@@ -25,6 +27,8 @@ import {
   type MockupNode,
   type SketchPoint,
   type ThemeId,
+  type WebMcpApproval,
+  type WorkspaceBridge,
   type WorkspaceState,
 } from "@visualizer/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -32,6 +36,7 @@ import { MemoryPanel, type EnsemblyDraft, type LessonDraft } from "./memory-pane
 import { SketchPad } from "./sketch-pad.js";
 import { pendingTickStillApplies } from "./tick-guard.js";
 import { Button, Toggle } from "./ui/controls.js";
+import { WebMcpStrip, type WebMcpStripState } from "./ui/webmcp-strip.js";
 
 const defaultRouter = new BrainRouter({ prefer: 1 });
 const connectors = connectorCatalog();
@@ -39,7 +44,7 @@ const connectors = connectorCatalog();
 function readInitialState(): WorkspaceState {
   const seeded = createSampleWorkspace();
   if (typeof window === "undefined") return seeded;
-  const stored = readPersistedWorkspace(window.localStorage.getItem(workspaceStorageKey));
+  const stored = readWorkspaceStorage((key) => window.localStorage.getItem(key));
   let state = stored ?? seeded;
   if (window.location.hash === "#code") state = { ...state, mode: "code" };
   if (window.location.hash === "#cockpit") state = { ...state, mode: "cockpit" };
@@ -49,8 +54,12 @@ function readInitialState(): WorkspaceState {
 export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
   const [state, setState] = useState<WorkspaceState>(readInitialState);
   const [notice, setNotice] = useState<string | null>(null);
+  const [approval, setApproval] = useState<WebMcpApproval>("read-only");
+  const [bridgeView, setBridgeView] = useState<WebMcpStripState>({ source: "pending", tools: [] });
   const stateRef = useRef(state);
+  const approvalRef = useRef(approval);
   const token = useRef(0);
+  approvalRef.current = approval;
 
   const apply = useCallback((result: CommitResult) => {
     if (!result.ok) {
@@ -104,6 +113,30 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
   useEffect(() => {
     window.localStorage.setItem(workspaceStorageKey, serializeWorkspace(state));
   }, [state]);
+
+  useEffect(() => {
+    let alive = true;
+    let bridge: WorkspaceBridge | null = null;
+    void mountWorkspaceBridge({
+      globals: readModelContextGlobals(),
+      getState: () => stateRef.current,
+      getApproval: () => approvalRef.current,
+      onCommit: (result) => {
+        apply(result);
+      },
+    }).then((mounted) => {
+      if (!alive) {
+        void mounted.release();
+        return;
+      }
+      bridge = mounted;
+      setBridgeView({ source: mounted.source, tools: mounted.tools });
+    });
+    return () => {
+      alive = false;
+      void bridge?.release();
+    };
+  }, [apply]);
 
   useEffect(() => {
     return () => {
@@ -304,6 +337,8 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
           {notice}
         </p>
       ) : null}
+
+      <WebMcpStrip view={bridgeView} approval={approval} onApproval={setApproval} />
 
       {state.mode === "cockpit" ? (
         <Cockpit state={state} onStatement={editStatement} onStroke={addStroke} />

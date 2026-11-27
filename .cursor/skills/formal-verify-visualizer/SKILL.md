@@ -41,6 +41,8 @@ XState's bundled CLI checks the railway graph. `pilot.safe.checks.json` supplies
 
 This check is not a TLA+ model. If a later change adds a TLA+ model of the same promise, read that result with `/statechart`.
 
+WebMCP write tools in `packages/core/src/webmcp/bridge.ts` call `pauseRun` and `commitHuman`. They do not change those functions, so the sync commit above stays. A stale `stateVersion` still returns `STATE_CONFLICT` before a write. External writes stay read only until the page grants local approval. That approval flag is outside this search.
+
 `pnpm test:mbt` is a separate check. It calls `getSimplePaths` from `xstate/graph` and executes those paths on the workspace. A green model-based run does not replace this lockstep check, and a green lockstep run does not replace the path walk.
 
 ## Reading a failure
