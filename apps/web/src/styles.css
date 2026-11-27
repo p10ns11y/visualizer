@@ -286,7 +286,7 @@ textarea {
 .stage {
   position: relative;
   margin-top: 16px;
-  min-height: 448px;
+  min-height: 560px;
   border-radius: 28px;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--panel) 70%, transparent), var(--panel)),
@@ -330,13 +330,58 @@ textarea {
   color: var(--accent);
 }
 
-.scribble { width: 100%; height: 36px; margin-top: 8px; }
-.scribble path {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2;
-  stroke-linecap: round;
+.sketch { margin-top: 8px; }
+.pin {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
 }
+.sketch-pad {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 100 / 64;
+  margin-top: 8px;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--soft) 80%, transparent), var(--soft));
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+}
+.sketch-pad path { fill: var(--accent); }
+.sketch-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.sketch-list h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.sketch-list article {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--soft);
+}
+.sketch-list ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.sketch-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.sketch-list button { justify-self: start; }
 
 .kv, .log-rows {
   display: flex;

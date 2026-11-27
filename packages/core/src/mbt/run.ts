@@ -2,7 +2,7 @@ import { getSimplePaths } from "xstate/graph";
 import { BrainRouter } from "../brain/router.js";
 import { applyBuildTick } from "../bootstrap/run.js";
 import { pilotMachine } from "../railway/pilot.js";
-import { createSampleWorkspace } from "../state/sample.js";
+import { canvasCardId, createSampleWorkspace } from "../state/sample.js";
 import {
   BuildBriefSchema,
   WorkspaceStateSchema,
@@ -11,6 +11,7 @@ import {
   type PilotPhase,
   type WorkspaceState,
 } from "../state/schema.js";
+import { appendSketchStroke } from "../state/strokes.js";
 import { applyPilotEvent, commitView } from "../state/store.js";
 import { createInProcessRunner, connectorIds } from "../tools/delegation.js";
 import {
@@ -126,6 +127,22 @@ async function assertInvariants(state: WorkspaceState): Promise<string | null> {
   }
   if (viewed.state.autopilot.phase !== state.autopilot.phase) return "view switch changed the railway";
   if (viewed.state.stateVersion !== state.stateVersion + 1) return "view switch did not raise stateVersion";
+  if (viewed.state.strokes.length !== state.strokes.length) return "view switch dropped a stroke";
+  if (state.autopilot.phase === "planning" && state.strokes.length === 0) {
+    const drawn = appendSketchStroke(state, state.stateVersion, {
+      cardId: canvasCardId,
+      points: [
+        { x: 0.12, y: 0.28 },
+        { x: 0.48, y: 0.62 },
+      ],
+    });
+    if (!drawn.ok) return "stroke was rejected during planning";
+    if (drawn.state.autopilot.phase !== "paused_by_human") return "stroke did not pause planning";
+    if (drawn.state.strokes.length !== 1 || drawn.state.strokes[0]?.cardId !== canvasCardId) {
+      return "stroke was not pinned during planning";
+    }
+    if (state.strokes.length !== 0) return "stroke mutated the caller";
+  }
   const returned = commitView(viewed.state, viewed.state.stateVersion, state.mode);
   if (!returned.ok || returned.state.autopilot.phase !== state.autopilot.phase) {
     return "return view lost the railway phase";

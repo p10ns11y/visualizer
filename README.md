@@ -51,6 +51,8 @@ pnpm typecheck && pnpm test && pnpm test:critical-flows && pnpm test:mbt && pnpm
 
 Step 1 opens with problem cards for Step 2 of Visualizer itself: freehand canvas sketching, a live WebMCP `document.modelContext` bridge, and a local `@vercel/board` SQLite log. Build runs the Tier 1 railway. Stop pauses it. A verified Step 2 brief then shows in both modes.
 
+The canvas plate takes freehand ink. Each stroke is pinned to the freehand problem card, stored on the shared workspace, and kept in `localStorage` across a reload. Code Mode lists those strokes and can clear them. A stroke during a working phase pauses the run and keeps the ink. The bridge and the board log are still later steps.
+
 ### Local decision model
 
 Tier 2 calls an OpenAI-compatible server. `VISUALIZER_LOCAL_MODEL_URL` defaults to `http://127.0.0.1:11434/v1`. `VISUALIZER_LOCAL_MODEL_NAME` defaults to `decision`. On the machine aliased `laptop-1`, point those variables at the local server and run:

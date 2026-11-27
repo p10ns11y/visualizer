@@ -59,6 +59,66 @@ try {
     path: `${outDir}/brief-mobile.png`,
     clip: { x: 0, y: 0, width: 390, height: 844 },
   });
+
+  await page.evaluate(() => localStorage.clear());
+  await page.reload({ waitUntil: "networkidle0" });
+  await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
+  await page.goto(`${base}/?sketch=1#cockpit`, { waitUntil: "networkidle0" });
+  const pad = await page.$('svg[data-sketch="card-canvas"]');
+  if (!pad) throw new Error("Missing sketch surface");
+  const box = await pad.boundingBox();
+  if (!box) throw new Error("Sketch surface has no box");
+  const marks = [
+    [0.1, 0.58],
+    [0.22, 0.34],
+    [0.36, 0.26],
+    [0.5, 0.4],
+    [0.62, 0.62],
+    [0.74, 0.36],
+    [0.88, 0.3],
+  ];
+  const start = marks[0];
+  if (!start) throw new Error("Missing stroke sample");
+  await page.mouse.move(box.x + box.width * start[0], box.y + box.height * start[1]);
+  await page.mouse.down();
+  for (const mark of marks.slice(1)) {
+    await page.mouse.move(box.x + box.width * mark[0], box.y + box.height * mark[1], { steps: 10 });
+  }
+  await page.mouse.up();
+  await page.waitForFunction(
+    () => document.querySelector(".shell")?.getAttribute("data-stroke-count") === "1",
+  );
+  await page.screenshot({
+    path: `${outDir}/sketch-cockpit-desktop.png`,
+    clip: { x: 0, y: 0, width: 1280, height: 800 },
+  });
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+  await page.$eval('svg[data-sketch="card-canvas"]', (node) => {
+    node.scrollIntoView({ block: "center", inline: "nearest" });
+  });
+  await page.screenshot({
+    path: `${outDir}/sketch-cockpit-mobile.png`,
+    captureBeyondViewport: false,
+  });
+  await page.click('button[aria-label="Code Mode"]');
+  await page.waitForFunction(
+    () => document.querySelector(".shell")?.getAttribute("data-mode") === "code",
+  );
+  await page.$eval(".sketch-list", (node) => {
+    node.scrollIntoView({ block: "start", inline: "nearest" });
+  });
+  await page.screenshot({
+    path: `${outDir}/sketch-code-mobile.png`,
+    captureBeyondViewport: false,
+  });
+  await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
+  await page.$eval(".sketch-list", (node) => {
+    node.scrollIntoView({ block: "start", inline: "nearest" });
+  });
+  await page.screenshot({
+    path: `${outDir}/sketch-code-desktop.png`,
+    captureBeyondViewport: false,
+  });
 } finally {
   await browser.close();
 }

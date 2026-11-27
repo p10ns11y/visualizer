@@ -30,6 +30,12 @@ Test: `CF-03` in `packages/core/src/critical-flows.test.ts`.
 
 Test: `CF-04` in `packages/core/src/critical-flows.test.ts`. CI runs this smoke. It does not require a model to be listening.
 
+## CF-06 A stroke stays pinned to its card
+
+A stroke drawn on the canvas plate is stored on the freehand problem card. The same stroke is still there after the workspace is serialized and read back, and Code Mode shows that card id. Drawing while the railway is in a working phase pauses the run. A later agent tick does not drop the stroke or leave `paused_by_human`.
+
+Test: `CF-06` in `packages/core/src/critical-flows.test.ts`, plus the sketch render, reload, and slow-judgement pause in `apps/web/src/critical-flow.dom.test.tsx`.
+
 ## CF-05 Stop holds the railway
 
 Stop during a working phase commits `HUMAN_PAUSE`. A later judge tick is a no-op: same object, same statement, same phase.

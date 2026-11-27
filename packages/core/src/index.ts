@@ -11,6 +11,8 @@ export {
   PilotEventSchema,
   PilotPhaseSchema,
   ProblemCardSchema,
+  SketchPointSchema,
+  SketchStrokeSchema,
   ThemeIdSchema,
   WorkspaceStateSchema,
   bannerFor,
@@ -32,11 +34,19 @@ export type {
   PilotEvent,
   PilotPhase,
   ProblemCard,
+  SketchPoint,
+  SketchStroke,
   ThemeId,
   WorkspaceState,
 } from "./state/schema.js";
 
-export { createSampleWorkspace } from "./state/sample.js";
+export { createSampleWorkspace, canvasCardId } from "./state/sample.js";
+export {
+  readPersistedWorkspace,
+  serializeWorkspace,
+  workspaceStorageKey,
+} from "./state/persist.js";
+export { appendSketchStroke, clearSketchStrokes, normalizeSketchPoints } from "./state/strokes.js";
 export {
   StateConflictError,
   applyPilotEvent,

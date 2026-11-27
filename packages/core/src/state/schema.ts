@@ -43,6 +43,20 @@ export const ProblemCardSchema = z.object({
 });
 export type ProblemCard = z.infer<typeof ProblemCardSchema>;
 
+export const SketchPointSchema = z.object({
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  pressure: z.number().min(0).max(1).optional(),
+});
+export type SketchPoint = z.infer<typeof SketchPointSchema>;
+
+export const SketchStrokeSchema = z.object({
+  id: z.string().min(1),
+  cardId: z.string().min(1),
+  points: z.array(SketchPointSchema).min(1),
+});
+export type SketchStroke = z.infer<typeof SketchStrokeSchema>;
+
 export const MockupNodeSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -124,6 +138,7 @@ export const WorkspaceStateSchema = z.object({
   stateVersion: z.number().int().nonnegative(),
   mode: z.enum(["cockpit", "code"]),
   problemCards: z.array(ProblemCardSchema),
+  strokes: z.array(SketchStrokeSchema),
   mockups: z.array(MockupNodeSchema),
   connections: z.array(ConnectionSchema),
   tokens: DesignTokensSchema,
