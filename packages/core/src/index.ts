@@ -111,19 +111,30 @@ export {
 export type { BuildTick } from "./bootstrap/run.js";
 
 export {
+  CoherenceMilliSchema,
   EnsemblyKindSchema,
   EnsemblyRecordSchema,
   LessonSignalSchema,
+  PulseLockSchema,
   PulseMemorySchema,
+  PulseStatusSchema,
+  PulseTraceKindSchema,
   WorkflowLessonSchema,
   ensemblyKinds,
   lessonSignals,
+  pulseLocks,
+  pulsePackSchema,
+  pulseStatuses,
+  pulseTraceKinds,
 } from "./state/schema.js";
 export type {
   EnsemblyKind,
   EnsemblyRecord,
   LessonSignal,
+  PulseLock,
   PulseMemory,
+  PulseStatus,
+  PulseTraceKind,
   WorkflowLesson,
 } from "./state/schema.js";
 export {
@@ -131,6 +142,14 @@ export {
   promoteEnsemblyRecord,
   recordWorkflowLesson,
 } from "./memory/commit.js";
+export { admittedKind, admittedStatus, canPromote, verifyHashFor } from "./memory/promote.js";
+export {
+  buildPulseInject,
+  estimateTokens,
+  pulseInjectTokenBudget,
+  pulseInjectTraceLimit,
+} from "./memory/pulse-inject.js";
+export type { PulseInject, PulseInjectTrace } from "./memory/pulse-inject.js";
 export { InMemoryGraphMemoryStore } from "./memory/in-memory-store.js";
 export { projectWorkspace } from "./memory/port.js";
 export type { LessonFilter, MemoryGraphStore } from "./memory/port.js";

@@ -266,6 +266,29 @@ describe("critical flows", () => {
     expect(stored?.ensemblyLedger.map((record) => record.id)).toEqual(["ens-cf07-rule", "ens-cf07-mistake"]);
   });
 
+  it("CF-07 records a workflow lesson during a working phase without pausing", () => {
+    let state = assertCommit(applyPilotEvent(createSampleWorkspace(), 0, { type: "START" }));
+    state = assertCommit(applyPilotEvent(state, state.stateVersion, { type: "PLAN_READY" }));
+    const version = state.stateVersion;
+    state = assertCommit(
+      recordWorkflowLesson(state, state.stateVersion, {
+        id: "lesson-cf07-running",
+        recordedAt: "2026-11-27T18:05:00Z",
+        phase: "running",
+        cardId: "card-canvas",
+        signal: "friction",
+        lesson: "Record the lesson while the railway is running.",
+        adjustment: "Keep the working phase.",
+      }),
+    );
+    expect(state.autopilot.phase).toBe("running");
+    expect(state.stateVersion).toBe(version);
+    expect(state.workflowLessons.some((lesson) => lesson.id === "lesson-cf07-running")).toBe(true);
+    const stored = readPersistedWorkspace(serializeWorkspace(state));
+    expect(stored?.autopilot.phase).toBe("running");
+    expect(stored?.workflowLessons.some((lesson) => lesson.id === "lesson-cf07-running")).toBe(true);
+  });
+
   it("CF-08 registers WebMCP tools, rejects a stale Ensembly write, and clears them on release", async () => {
     const absent = await mountWorkspaceBridge({
       globals: {},

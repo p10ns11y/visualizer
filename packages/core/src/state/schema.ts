@@ -119,6 +119,22 @@ export const ensemblyKinds = ["rule", "costly_mistake", "decision"] as const;
 export const EnsemblyKindSchema = z.enum(ensemblyKinds);
 export type EnsemblyKind = z.infer<typeof EnsemblyKindSchema>;
 
+export const pulseTraceKinds = ["data", "context", "fact", "memory"] as const;
+export const PulseTraceKindSchema = z.enum(pulseTraceKinds);
+export type PulseTraceKind = z.infer<typeof PulseTraceKindSchema>;
+
+export const pulseStatuses = ["user-stated", "tool-verified", "inferred", "unknown"] as const;
+export const PulseStatusSchema = z.enum(pulseStatuses);
+export type PulseStatus = z.infer<typeof PulseStatusSchema>;
+
+export const pulseLocks = ["open", "locked"] as const;
+export const PulseLockSchema = z.enum(pulseLocks);
+export type PulseLock = z.infer<typeof PulseLockSchema>;
+
+export const CoherenceMilliSchema = z.number().int().min(0).max(1000);
+
+export const pulsePackSchema = "pulse-pack-v1" as const;
+
 export const EnsemblyRecordSchema = z.object({
   id: z.string().min(1),
   timestamp: z.string().datetime(),
@@ -127,12 +143,17 @@ export const EnsemblyRecordSchema = z.object({
   rationale: z.string().min(1),
   provenance: z.string().min(1),
   confirmedOutcome: z.string().min(1).nullable(),
+  traceKind: PulseTraceKindSchema.optional(),
+  status: PulseStatusSchema.optional(),
+  lock: PulseLockSchema.optional(),
+  verifyHash: z.string().min(1).nullable().optional(),
+  prefetchKey: z.string().min(1).nullable().optional(),
+  supersededBy: z.string().min(1).nullable().optional(),
+  coherenceMilli: CoherenceMilliSchema.optional(),
 });
 export type EnsemblyRecord = z.infer<typeof EnsemblyRecordSchema>;
 
-export const PulseMemorySchema = EnsemblyRecordSchema.extend({
-  confirmedOutcome: z.string().min(1),
-});
+export const PulseMemorySchema = EnsemblyRecordSchema;
 export type PulseMemory = z.infer<typeof PulseMemorySchema>;
 
 export const lessonSignals = ["friction", "rework", "adjustment"] as const;

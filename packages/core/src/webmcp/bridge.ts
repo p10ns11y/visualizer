@@ -1,6 +1,7 @@
 import { zodToOpenAPISchema } from "@adaptate/utils";
 import { z } from "zod";
 import { appendEnsemblyRecord, recordWorkflowLesson } from "../memory/commit.js";
+import { buildPulseInject } from "../memory/pulse-inject.js";
 import { pauseRun, type CommitResult } from "../state/store.js";
 import {
   EnsemblyRecordSchema,
@@ -20,6 +21,7 @@ export const webMcpToolNames = [
   "list_cards",
   "read_workspace",
   "read_pulse_memory",
+  "read_pulse_inject",
   "read_workflow_lessons",
   "pause_build",
   "record_workflow_lesson",
@@ -37,6 +39,9 @@ export type WebMcpToolSummary = {
 };
 
 const EmptyInput = z.object({});
+const PulseReadInput = z.object({
+  inject: z.boolean().optional(),
+});
 const VersionInput = z.object({
   stateVersion: z.number().int().nonnegative(),
 });
@@ -208,13 +213,26 @@ function workspaceTools(deps: BridgeDeps): WebMcpTool[] {
     },
     {
       name: "read_pulse_memory",
-      description: "Reads Pulse Memory notes kept on this workspace.",
+      description: "Reads Pulse Memory notes kept on this workspace. Set inject to include the sparse pulse.",
+      inputSchema: jsonSchema(PulseReadInput),
+      annotations: { readOnlyHint: true },
+      execute(input) {
+        const parsed = PulseReadInput.safeParse(input ?? {});
+        if (!parsed.success) return invalid(parsed.error);
+        const entries = copyRows(deps.getState().pulseMemory);
+        if (parsed.data.inject) return { ok: true, entries, inject: buildPulseInject(entries) };
+        return { ok: true, entries };
+      },
+    },
+    {
+      name: "read_pulse_inject",
+      description: "Reads the sparse pulse-pack-v1 inject, at most 8 traces inside the token budget.",
       inputSchema: jsonSchema(EmptyInput),
       annotations: { readOnlyHint: true },
       execute(input) {
         const parsed = EmptyInput.safeParse(input ?? {});
         if (!parsed.success) return invalid(parsed.error);
-        return { ok: true, entries: copyRows(deps.getState().pulseMemory) };
+        return { ok: true, inject: buildPulseInject(deps.getState().pulseMemory) };
       },
     },
     {

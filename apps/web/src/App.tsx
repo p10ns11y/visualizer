@@ -212,7 +212,12 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
       appendEnsemblyRecord(current, current.stateVersion, {
         id: `ens-${current.logSeq + 1}`,
         timestamp: new Date().toISOString(),
-        ...draft,
+        kind: draft.kind,
+        summary: draft.summary,
+        rationale: draft.rationale,
+        provenance: draft.provenance,
+        confirmedOutcome: draft.confirmedOutcome,
+        ...(draft.status ? { status: draft.status } : {}),
       }),
     );
   }

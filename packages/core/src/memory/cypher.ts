@@ -34,7 +34,14 @@ ON CREATE SET
   record.summary = $summary,
   record.rationale = $rationale,
   record.provenance = $provenance,
-  record.confirmedOutcome = $confirmedOutcome`,
+  record.confirmedOutcome = $confirmedOutcome,
+  record.status = $status,
+  record.traceKind = $traceKind,
+  record.lock = $lock,
+  record.verifyHash = $verifyHash,
+  record.prefetchKey = $prefetchKey,
+  record.supersededBy = $supersededBy,
+  record.coherenceMilli = $coherenceMilli`,
     params: {
       id: record.id,
       timestamp: record.timestamp,
@@ -43,6 +50,13 @@ ON CREATE SET
       rationale: record.rationale,
       provenance: record.provenance,
       confirmedOutcome: record.confirmedOutcome,
+      status: record.status ?? null,
+      traceKind: record.traceKind ?? null,
+      lock: record.lock ?? null,
+      verifyHash: record.verifyHash ?? null,
+      prefetchKey: record.prefetchKey ?? null,
+      supersededBy: record.supersededBy ?? null,
+      coherenceMilli: record.coherenceMilli === undefined ? null : String(record.coherenceMilli),
     },
   };
 }
@@ -50,7 +64,12 @@ ON CREATE SET
 export function promotePulse(id: string): BoundQuery {
   return {
     text: `MATCH (record:VisualizerEnsemblyRecord {id: $id})
-WHERE record.confirmedOutcome IS NOT NULL AND record.confirmedOutcome <> ""
+WHERE (record.supersededBy IS NULL OR record.supersededBy = "")
+  AND (
+    (record.confirmedOutcome IS NOT NULL AND record.confirmedOutcome <> "" AND (record.status IS NULL OR record.status <> "tool-verified"))
+    OR record.status = "user-stated"
+    OR (record.status = "tool-verified" AND record.verifyHash IS NOT NULL AND record.verifyHash <> "")
+  )
 MERGE (pulse:VisualizerPulseMemory {id: record.id})
 ON CREATE SET
   pulse.timestamp = record.timestamp,
@@ -58,11 +77,21 @@ ON CREATE SET
   pulse.summary = record.summary,
   pulse.rationale = record.rationale,
   pulse.provenance = record.provenance,
-  pulse.confirmedOutcome = record.confirmedOutcome
+  pulse.confirmedOutcome = record.confirmedOutcome,
+  pulse.status = record.status,
+  pulse.traceKind = record.traceKind,
+  pulse.lock = record.lock,
+  pulse.verifyHash = record.verifyHash,
+  pulse.prefetchKey = record.prefetchKey,
+  pulse.supersededBy = record.supersededBy,
+  pulse.coherenceMilli = record.coherenceMilli
 MERGE (pulse)-[:PROMOTED_FROM]->(record)
 RETURN pulse.id AS id, pulse.timestamp AS timestamp, pulse.kind AS kind,
   pulse.summary AS summary, pulse.rationale AS rationale,
-  pulse.provenance AS provenance, pulse.confirmedOutcome AS confirmedOutcome`,
+  pulse.provenance AS provenance, pulse.confirmedOutcome AS confirmedOutcome,
+  pulse.status AS status, pulse.traceKind AS traceKind, pulse.lock AS lock,
+  pulse.verifyHash AS verifyHash, pulse.prefetchKey AS prefetchKey,
+  pulse.supersededBy AS supersededBy, pulse.coherenceMilli AS coherenceMilli`,
     params: { id },
   };
 }
@@ -101,10 +130,14 @@ MERGE (lesson)-[:ABOUT]->(card)`,
 export function listPulseQuery(kind: EnsemblyKind | null): BoundQuery {
   return {
     text: `MATCH (pulse:VisualizerPulseMemory)
-WHERE $kind IS NULL OR pulse.kind = $kind
+WHERE ($kind IS NULL OR pulse.kind = $kind)
+  AND (pulse.supersededBy IS NULL OR pulse.supersededBy = "")
 RETURN pulse.id AS id, pulse.timestamp AS timestamp, pulse.kind AS kind,
   pulse.summary AS summary, pulse.rationale AS rationale,
-  pulse.provenance AS provenance, pulse.confirmedOutcome AS confirmedOutcome
+  pulse.provenance AS provenance, pulse.confirmedOutcome AS confirmedOutcome,
+  pulse.status AS status, pulse.traceKind AS traceKind, pulse.lock AS lock,
+  pulse.verifyHash AS verifyHash, pulse.prefetchKey AS prefetchKey,
+  pulse.supersededBy AS supersededBy, pulse.coherenceMilli AS coherenceMilli
 ORDER BY pulse.timestamp, pulse.id`,
     params: { kind },
   };

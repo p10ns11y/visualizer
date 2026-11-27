@@ -10,14 +10,19 @@ import { appendEnsemblyRecord, promoteEnsemblyRecord, recordWorkflowLesson } fro
 import {
   canonicalPackMaterial,
   exportPulsePack,
+  legacyEnsemblyPulsePackFormat,
   legacyPulsePackFormat,
+  legacyPulsePackFromRecords,
   mergeLedger,
   packHash,
+  pulsePackSchema,
   readPulsePack,
   recordsFromJsonl,
   recordsFromPack,
   recordsToJsonl,
 } from "./ensembly.js";
+import { canPromote, verifyHashFor } from "./promote.js";
+import { buildPulseInject, estimateTokens } from "./pulse-inject.js";
 import { InMemoryGraphMemoryStore } from "./in-memory-store.js";
 import { Neo4jMemoryStore, type CypherRunner, type MemoryDriver } from "./neo4j-store.js";
 import { projectWorkspace } from "./port.js";
@@ -104,15 +109,39 @@ describe("ensembly ledger", () => {
     expect(recordsFromJsonl(`${archiveLine}\nnot-json\n`).skipped).toBe(1);
 
     const pack = exportPulsePack([confirmed, openDecision], { exportedAt: "2026-11-27T12:04:00Z" });
-    expect(pack.memory_traces.map((trace) => trace.nat_key)).toEqual([confirmed.id]);
-    expect(pack.archive_events).toHaveLength(2);
-    expect(pack.memory_traces[0]?.kind).toBe("reflection");
+    expect(pack.schema).toBe(pulsePackSchema);
+    expect(pack.format).toBe("pulse-pack-v1");
+    expect(pack.host).toBe("visualizer");
+    expect(pack.traces.map((trace) => trace.nat_key)).toEqual([confirmed.id]);
+    expect(pack.archive).toHaveLength(2);
+    expect(pack.traces[0]?.kind).toBe("memory");
+    expect(pack.traces[0]?.status).toBe("user-stated");
+    expect(pack.traces[0]?.ext.coherence_milli).toBe(1000);
+    expect(Number.isInteger(pack.traces[0]?.ext.coherence_milli)).toBe(true);
+    expect(pack.traces[0]?.superseded_by).toBeNull();
     const read = readPulsePack(JSON.parse(JSON.stringify(pack)));
-    expect(recordsFromPack(read).map((record) => record.id)).toEqual([confirmed.id, openDecision.id]);
-    const tampered = { ...pack, pack_hash: "00".repeat(32) };
+    expect(recordsFromPack(read).map((record) => record.id)).toEqual([openDecision.id, confirmed.id]);
+    const tampered = { ...pack, ext: { content_sha256: "00".repeat(32) } };
     expect(() => readPulsePack(tampered)).toThrow(/hash/);
-    const legacy = { ...pack, format: legacyPulsePackFormat };
-    expect(readPulsePack(legacy).format).toBe(legacyPulsePackFormat);
+    const fractional = JSON.parse(JSON.stringify(pack)) as { traces: Array<{ ext: { coherence_milli: number } }> };
+    const first = fractional.traces[0];
+    if (!first) throw new Error("missing trace");
+    first.ext.coherence_milli = 1.5;
+    expect(() => readPulsePack(fractional)).toThrow(/float/);
+    const floatText = JSON.stringify(pack).replace('"coherence_milli":1000', '"coherence_milli":1.0');
+    expect(() => readPulsePack(floatText)).toThrow(/float/);
+    const legacy = legacyPulsePackFromRecords([confirmed, openDecision], {
+      exportedAt: "2026-11-27T12:04:00Z",
+      format: legacyEnsemblyPulsePackFormat,
+    });
+    const legacyRead = readPulsePack(JSON.parse(JSON.stringify(legacy)));
+    expect(legacyRead.format).toBe(legacyEnsemblyPulsePackFormat);
+    expect(recordsFromPack(legacyRead).map((record) => record.id)).toEqual([confirmed.id, openDecision.id]);
+    const peram = legacyPulsePackFromRecords([confirmed], {
+      exportedAt: "2026-11-27T12:04:00Z",
+      format: legacyPulsePackFormat,
+    });
+    expect(readPulsePack(peram).format).toBe(legacyPulsePackFormat);
 
     const again = mergeLedger([confirmed], [confirmed, { ...confirmed, summary: "changed" }, openDecision]);
     expect(again.added).toBe(1);
@@ -123,7 +152,7 @@ describe("ensembly ledger", () => {
 });
 
 describe("workspace memory commits", () => {
-  it("promotes a confirmed record, rejects a stale version, and pauses a working phase", () => {
+  it("promotes a confirmed record, rejects a stale version, and keeps a working phase when a lesson is recorded", () => {
     const seeded = createSampleWorkspace();
     const appended = assertCommit(appendEnsemblyRecord(seeded, seeded.stateVersion, openDecision));
     expect(appended.pulseMemory.some((pulse) => pulse.id === openDecision.id)).toBe(false);
@@ -154,6 +183,7 @@ describe("workspace memory commits", () => {
 
     let running = assertCommit(applyPilotEvent(seeded, 0, { type: "START" }));
     running = assertCommit(applyPilotEvent(running, running.stateVersion, { type: "PLAN_READY" }));
+    const version = running.stateVersion;
     const lesson = assertCommit(
       recordWorkflowLesson(running, running.stateVersion, {
         id: "lesson-running-canvas",
@@ -161,13 +191,21 @@ describe("workspace memory commits", () => {
         phase: "running",
         cardId: "card-canvas",
         signal: "rework",
-        lesson: "A stroke during running pauses the railway.",
-        adjustment: "Finish the stroke before the next tick.",
+        lesson: "A lesson during running stays on the aux layer.",
+        adjustment: "Leave the railway in the working phase.",
       }),
     );
-    expect(lesson.autopilot.phase).toBe("paused_by_human");
+    expect(lesson.autopilot.phase).toBe("running");
+    expect(lesson.stateVersion).toBe(version);
+    expect(lesson.autopilot.banner).toBe("working");
     expect(lesson.workflowLessons.some((item) => item.id === "lesson-running-canvas")).toBe(true);
-    expect(lesson.eventLog.at(-1)?.message).toContain("Human edit paused the run.");
+    expect(lesson.eventLog.at(-1)?.kind).toBe("memory");
+    expect(lesson.eventLog.at(-1)?.message).toBe(
+      "Recorded workflow lesson lesson-running-canvas on running for card-canvas.",
+    );
+    const stored = readPersistedWorkspace(serializeWorkspace(lesson));
+    expect(stored?.autopilot.phase).toBe("running");
+    expect(stored?.workflowLessons.some((item) => item.id === "lesson-running-canvas")).toBe(true);
     const unknown = recordWorkflowLesson(lesson, lesson.stateVersion, {
       id: "lesson-missing-card",
       recordedAt: "2026-11-27T12:06:00Z",
@@ -214,6 +252,49 @@ describe("workspace memory commits", () => {
     expect(restored?.strokes).toEqual(current.strokes);
     const roundTrip = WorkspaceStateSchema.parse(JSON.parse(serializeWorkspace(current)));
     expect(roundTrip.pulseMemory.map((pulse) => pulse.id)).toEqual(["ens-rule-stateversion"]);
+  });
+});
+
+describe("canon 1 admission and sparse inject", () => {
+  it("admits user-stated and tool-verified traces and omits superseded rows", () => {
+    const stated = { ...openDecision, id: "ens-stated", status: "user-stated" as const };
+    const hashed = verifyHashFor(openDecision.summary);
+    const verified = {
+      ...openDecision,
+      id: "ens-verified",
+      timestamp: "2026-11-27T19:00:00Z",
+      status: "tool-verified" as const,
+      verifyHash: hashed,
+      traceKind: "fact" as const,
+      coherenceMilli: 1000,
+    };
+    const badHash = { ...verified, id: "ens-bad-hash", verifyHash: "sha256:00" };
+    const superseded = { ...confirmed, id: "ens-old", supersededBy: "ens-verified" };
+    expect(canPromote(stated)).toBe(true);
+    expect(canPromote(verified)).toBe(true);
+    expect(canPromote(badHash)).toBe(false);
+    expect(canPromote({ ...openDecision, status: "tool-verified" })).toBe(false);
+    expect(canPromote({ ...openDecision, status: "inferred" })).toBe(false);
+    expect(canPromote(superseded)).toBe(false);
+    expect(canPromote(confirmed)).toBe(true);
+
+    const filler = "word ".repeat(80).trim();
+    const bulky = Array.from({ length: 9 }, (_, index) => ({
+      ...confirmed,
+      id: `ens-bulk-${index}`,
+      timestamp: `2026-11-27T12:10:0${index}Z`,
+      summary: index === 0 ? filler : `Short fact ${index}`,
+    }));
+    const inject = buildPulseInject([stated, verified, superseded, badHash, ...bulky]);
+    expect(inject.schema).toBe("pulse-pack-v1");
+    expect(inject.limit).toBe(8);
+    expect(inject.token_budget).toBe(120);
+    expect(inject.traces.length).toBeLessThanOrEqual(8);
+    expect(inject.tokens).toBeLessThanOrEqual(120);
+    expect(inject.traces.some((trace) => trace.nat_key === "ens-old")).toBe(false);
+    expect(inject.traces.some((trace) => trace.nat_key === "ens-bad-hash")).toBe(false);
+    expect(inject.traces.some((trace) => trace.status === "tool-verified" && trace.kind === "fact")).toBe(true);
+    expect(inject.tokens).toBe(inject.traces.reduce((sum, trace) => sum + estimateTokens(trace.snippet), 0));
   });
 });
 

@@ -1,15 +1,26 @@
 import { createHash } from "node:crypto";
+import { z } from "zod";
 import {
+  CoherenceMilliSchema,
   EnsemblyKindSchema,
   EnsemblyRecordSchema,
+  PulseLockSchema,
+  PulseStatusSchema,
+  PulseTraceKindSchema,
+  pulsePackSchema,
   type EnsemblyKind,
   type EnsemblyRecord,
+  type PulseLock,
+  type PulseStatus,
+  type PulseTraceKind,
 } from "../state/schema.js";
-import { canPromote } from "./promote.js";
+import { admittedKind, admittedStatus, canPromote } from "./promote.js";
 
 export { canPromote };
+export { pulsePackSchema };
 
-export const pulsePackFormat = "ensembly-pulse-pack-v1";
+export const pulsePackFormat = pulsePackSchema;
+export const legacyEnsemblyPulsePackFormat = "ensembly-pulse-pack-v1";
 export const legacyPulsePackFormat = "peram-pulse-pack-v1";
 
 const trajectoryKind: Record<EnsemblyKind, "reflection" | "observation"> = {
@@ -36,8 +47,8 @@ export type MemoryTrace = {
   admitted_at: string;
 };
 
-export type PulsePack = {
-  format: string;
+export type LegacyPulsePack = {
+  format: typeof legacyEnsemblyPulsePackFormat | typeof legacyPulsePackFormat;
   exported_at: string;
   source_host: string;
   pack_hash: string;
@@ -45,6 +56,47 @@ export type PulsePack = {
   archive_events: ArchiveEvent[];
   memory_crdt: null;
 };
+
+export type CanonTrace = {
+  nat_key: string;
+  snippet: string;
+  source: string;
+  time: string;
+  first_seen: string;
+  last_seen: string;
+  status: PulseStatus;
+  kind: PulseTraceKind;
+  lock: PulseLock;
+  verify_hash: string | null;
+  prefetch_key: string | null;
+  superseded_by: string | null;
+  seen_count: number;
+  ext: {
+    coherence_milli: number;
+    content: Record<string, unknown>;
+    kind: string;
+  };
+};
+
+export type CanonArchiveEvent = {
+  correlation_id: string;
+  payload: string;
+  source: string;
+  ts: string;
+  ext: { kind: string };
+};
+
+export type CanonPulsePack = {
+  schema: typeof pulsePackSchema;
+  format: typeof pulsePackSchema;
+  exported_at: string;
+  host: string;
+  traces: CanonTrace[];
+  archive: CanonArchiveEvent[];
+  ext: { content_sha256: string };
+};
+
+export type PulsePack = CanonPulsePack | LegacyPulsePack;
 
 export type IngestReport = {
   records: EnsemblyRecord[];
@@ -125,7 +177,7 @@ export function packHash(
 }
 
 export function recordPayload(record: EnsemblyRecord): Record<string, unknown> {
-  return {
+  const payload: Record<string, unknown> = {
     id: record.id,
     timestamp: record.timestamp,
     kind: record.kind,
@@ -134,6 +186,14 @@ export function recordPayload(record: EnsemblyRecord): Record<string, unknown> {
     provenance: record.provenance,
     confirmedOutcome: record.confirmedOutcome,
   };
+  if (record.traceKind !== undefined) payload.traceKind = record.traceKind;
+  if (record.status !== undefined) payload.status = record.status;
+  if (record.lock !== undefined) payload.lock = record.lock;
+  if (record.verifyHash !== undefined) payload.verifyHash = record.verifyHash;
+  if (record.prefetchKey !== undefined) payload.prefetchKey = record.prefetchKey;
+  if (record.supersededBy !== undefined) payload.supersededBy = record.supersededBy;
+  if (record.coherenceMilli !== undefined) payload.coherenceMilli = record.coherenceMilli;
+  return payload;
 }
 
 function recordFromPayload(kind: string, payload: Record<string, unknown>, fallbackId: string, fallbackTs: string): EnsemblyRecord | null {
@@ -220,14 +280,236 @@ export function traceFromRecord(record: EnsemblyRecord): MemoryTrace {
   };
 }
 
-export function exportPulsePack(
+function compareUtf8(left: string, right: string): number {
+  return Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
+}
+
+function canonicalJson(value: unknown): string {
+  if (value === null) return "null";
+  if (typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "number") {
+    if (!Number.isInteger(value) || !Number.isSafeInteger(value)) {
+      throw new Error("Ensembly pulse pack rejected a float.");
+    }
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) return `[${value.map((item) => canonicalJson(item)).join(",")}]`;
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, item]) => item !== undefined)
+      .sort(([left], [right]) => compareUtf8(left, right));
+    return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`).join(",")}}`;
+  }
+  throw new Error("Ensembly pulse pack rejected a non-JSON value.");
+}
+
+function sortTraces(traces: readonly CanonTrace[]): CanonTrace[] {
+  return traces.slice().sort((left, right) => compareUtf8(left.nat_key, right.nat_key));
+}
+
+function sortArchive(archive: readonly CanonArchiveEvent[]): CanonArchiveEvent[] {
+  return archive.slice().sort((left, right) => compareUtf8(canonicalJson(left), canonicalJson(right)));
+}
+
+export function canonContentMaterial(
+  archive: readonly CanonArchiveEvent[],
+  traces: readonly CanonTrace[],
+): string {
+  return `${canonicalJson({ archive, traces })}\n`;
+}
+
+export function contentSha256(
+  archive: readonly CanonArchiveEvent[],
+  traces: readonly CanonTrace[],
+): string {
+  return createHash("sha256").update(canonContentMaterial(archive, traces)).digest("hex");
+}
+
+const CanonTraceSchema = z
+  .object({
+    nat_key: z.string().min(1),
+    snippet: z.string(),
+    source: z.string(),
+    time: z.string().min(1),
+    first_seen: z.string().min(1),
+    last_seen: z.string().min(1),
+    status: PulseStatusSchema,
+    kind: PulseTraceKindSchema,
+    lock: PulseLockSchema,
+    verify_hash: z.string().nullable(),
+    prefetch_key: z.string().nullable(),
+    superseded_by: z.string().nullable().optional(),
+    seen_count: z.number().int().min(1),
+    ext: z
+      .object({
+        coherence_milli: CoherenceMilliSchema,
+        content: z.record(z.string(), z.unknown()),
+        kind: z.string().min(1),
+      })
+      .strict(),
+  })
+  .strict();
+
+const CanonPackSchema = z
+  .object({
+    schema: z.literal(pulsePackSchema).optional(),
+    format: z.literal(pulsePackSchema).optional(),
+    exported_at: z.string(),
+    host: z.string(),
+    traces: z.array(CanonTraceSchema),
+    archive: z
+      .array(
+        z
+          .object({
+            correlation_id: z.string().min(1),
+            payload: z.string(),
+            source: z.string(),
+            ts: z.string().min(1),
+            ext: z.object({ kind: z.string().min(1) }).strict(),
+          })
+          .strict(),
+      )
+      .optional(),
+    ext: z.object({ content_sha256: z.string() }).strict(),
+  })
+  .strict()
+  .superRefine((pack, context) => {
+    if (pack.format !== pulsePackSchema && pack.schema !== pulsePackSchema) {
+      context.addIssue({ code: "custom", message: "Canon 1 pack schema is pulse-pack-v1.", path: ["schema"] });
+    }
+    if (pack.format && pack.schema && pack.format !== pack.schema) {
+      context.addIssue({ code: "custom", message: "schema and format disagree.", path: ["schema"] });
+    }
+  });
+
+function rejectFloatLiterals(text: string): void {
+  let index = 0;
+  while (index < text.length) {
+    const char = text[index];
+    if (char === '"') {
+      index += 1;
+      while (index < text.length) {
+        if (text[index] === "\\") {
+          index += 2;
+          continue;
+        }
+        if (text[index] === '"') {
+          index += 1;
+          break;
+        }
+        index += 1;
+      }
+      continue;
+    }
+    if (char === "-" || (char !== undefined && char >= "0" && char <= "9")) {
+      const start = index;
+      if (text[index] === "-") index += 1;
+      while (index < text.length) {
+        const digit = text[index];
+        if (digit === undefined || digit < "0" || digit > "9") break;
+        index += 1;
+      }
+      const token = text.slice(start, index);
+      const next = text[index];
+      if (next === "." || next === "e" || next === "E" || token === "-0") {
+        throw new Error("Ensembly pulse pack rejected a float.");
+      }
+      continue;
+    }
+    index += 1;
+  }
+}
+
+function floatIssue(error: z.ZodError): boolean {
+  return error.issues.some((issue) => {
+    const path = issue.path.join(".");
+    return path.includes("coherence_milli") || path.includes("seen_count");
+  });
+}
+
+function canonTrace(trace: z.infer<typeof CanonTraceSchema>): CanonTrace {
+  return {
+    nat_key: trace.nat_key,
+    snippet: trace.snippet,
+    source: trace.source,
+    time: trace.time,
+    first_seen: trace.first_seen,
+    last_seen: trace.last_seen,
+    status: trace.status,
+    kind: trace.kind,
+    lock: trace.lock,
+    verify_hash: trace.verify_hash,
+    prefetch_key: trace.prefetch_key,
+    superseded_by: trace.superseded_by ?? null,
+    seen_count: trace.seen_count,
+    ext: {
+      coherence_milli: trace.ext.coherence_milli,
+      content: trace.ext.content,
+      kind: trace.ext.kind,
+    },
+  };
+}
+
+function canonArchive(event: {
+  correlation_id: string;
+  payload: string;
+  source: string;
+  ts: string;
+  ext: { kind: string };
+}): CanonArchiveEvent {
+  return {
+    correlation_id: event.correlation_id,
+    payload: event.payload,
+    source: event.source,
+    ts: event.ts,
+    ext: { kind: event.ext.kind },
+  };
+}
+
+function canonTraceFromRecord(record: EnsemblyRecord): CanonTrace {
+  const time = timestampText(record.timestamp);
+  return {
+    nat_key: record.id,
+    snippet: record.summary,
+    source: record.provenance,
+    time,
+    first_seen: time,
+    last_seen: time,
+    status: admittedStatus(record),
+    kind: admittedKind(record),
+    lock: record.lock ?? "open",
+    verify_hash: record.verifyHash ?? null,
+    prefetch_key: record.prefetchKey ?? null,
+    superseded_by: record.supersededBy ?? null,
+    seen_count: 1,
+    ext: {
+      coherence_milli: record.coherenceMilli ?? 1000,
+      content: recordPayload(record),
+      kind: record.kind,
+    },
+  };
+}
+
+function canonArchiveFromRecord(record: EnsemblyRecord): CanonArchiveEvent {
+  return {
+    correlation_id: record.id,
+    payload: canonicalJson(recordPayload(record)),
+    source: "ensembly",
+    ts: timestampText(record.timestamp),
+    ext: { kind: record.kind },
+  };
+}
+
+export function legacyPulsePackFromRecords(
   records: readonly EnsemblyRecord[],
-  options: { exportedAt: string; sourceHost?: string },
-): PulsePack {
+  options: { exportedAt: string; sourceHost?: string; format?: LegacyPulsePack["format"] },
+): LegacyPulsePack {
   const archive = records.map((record) => archiveEventFromRecord(record));
   const traces = records.filter((record) => canPromote(record)).map((record) => traceFromRecord(record));
+  const format = options.format ?? legacyEnsemblyPulsePackFormat;
   return {
-    format: pulsePackFormat,
+    format,
     exported_at: options.exportedAt,
     source_host: options.sourceHost ?? "visualizer",
     pack_hash: packHash(traces, archive, null),
@@ -237,16 +519,31 @@ export function exportPulsePack(
   };
 }
 
-function isKnownFormat(format: string): boolean {
-  return format === pulsePackFormat || format === legacyPulsePackFormat;
+export function exportPulsePack(
+  records: readonly EnsemblyRecord[],
+  options: { exportedAt: string; sourceHost?: string },
+): CanonPulsePack {
+  const archive = sortArchive(records.map((record) => canonArchiveFromRecord(record)));
+  const traces = sortTraces(
+    records.filter((record) => canPromote(record)).map((record) => canonTraceFromRecord(record)),
+  );
+  return {
+    schema: pulsePackSchema,
+    format: pulsePackFormat,
+    exported_at: options.exportedAt,
+    host: options.sourceHost ?? "visualizer",
+    traces,
+    archive,
+    ext: { content_sha256: contentSha256(archive, traces) },
+  };
 }
 
-export function readPulsePack(raw: unknown): PulsePack {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new Error("Ensembly pulse pack is not an object.");
-  }
-  const pack = raw as Record<string, unknown>;
-  if (typeof pack.format !== "string" || !isKnownFormat(pack.format)) {
+function isLegacyFormat(format: string): format is LegacyPulsePack["format"] {
+  return format === legacyEnsemblyPulsePackFormat || format === legacyPulsePackFormat;
+}
+
+function readLegacyPack(pack: Record<string, unknown>): LegacyPulsePack {
+  if (typeof pack.format !== "string" || !isLegacyFormat(pack.format)) {
     throw new Error("Ensembly pulse pack format is not recognized.");
   }
   const traces = Array.isArray(pack.memory_traces) ? pack.memory_traces : null;
@@ -270,6 +567,58 @@ export function readPulsePack(raw: unknown): PulsePack {
     archive_events: parsedArchive,
     memory_crdt: null,
   };
+}
+
+function readCanonPack(raw: unknown): CanonPulsePack {
+  const parsed = CanonPackSchema.safeParse(raw);
+  if (!parsed.success) {
+    if (floatIssue(parsed.error)) throw new Error("Ensembly pulse pack rejected a float.");
+    throw new Error("Ensembly pulse pack is not a Canon 1 object.");
+  }
+  const traces = sortTraces(parsed.data.traces.map((trace) => canonTrace(trace)));
+  const archive = sortArchive((parsed.data.archive ?? []).map((event) => canonArchive(event)));
+  const expected = contentSha256(archive, traces);
+  if (parsed.data.ext.content_sha256 !== expected) {
+    throw new Error("Ensembly pulse pack hash does not match its traces and archive.");
+  }
+  return {
+    schema: pulsePackSchema,
+    format: pulsePackFormat,
+    exported_at: parsed.data.exported_at,
+    host: parsed.data.host,
+    traces,
+    archive,
+    ext: { content_sha256: expected },
+  };
+}
+
+function namedFormat(raw: unknown): string | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const pack = raw as Record<string, unknown>;
+  if (typeof pack.format === "string") return pack.format;
+  if (typeof pack.schema === "string") return pack.schema;
+  return null;
+}
+
+export function readPulsePack(raw: unknown): PulsePack {
+  if (typeof raw === "string") {
+    const format = /"format"\s*:\s*"([^"]+)"/.exec(raw)?.[1] ?? /"schema"\s*:\s*"([^"]+)"/.exec(raw)?.[1];
+    if (format === pulsePackSchema) rejectFloatLiterals(raw);
+    let value: unknown;
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      throw new Error("Ensembly pulse pack is not an object.");
+    }
+    return readPulsePack(value);
+  }
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("Ensembly pulse pack is not an object.");
+  }
+  const format = namedFormat(raw);
+  if (format === pulsePackSchema) return readCanonPack(raw);
+  if (format && isLegacyFormat(format)) return readLegacyPack(raw as Record<string, unknown>);
+  throw new Error("Ensembly pulse pack format is not recognized.");
 }
 
 function parseTrace(raw: unknown): MemoryTrace {
@@ -317,7 +666,36 @@ function parseArchive(raw: unknown): ArchiveEvent {
   };
 }
 
+function isCanonPack(pack: PulsePack): pack is CanonPulsePack {
+  return pack.format === pulsePackSchema && "traces" in pack;
+}
+
+function payloadObject(raw: string): Record<string, unknown> | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    return parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 export function recordsFromPack(pack: PulsePack): EnsemblyRecord[] {
+  if (isCanonPack(pack)) {
+    const records: EnsemblyRecord[] = [];
+    for (const event of pack.archive) {
+      const payload = payloadObject(event.payload);
+      if (!payload) continue;
+      const record = recordFromPayload(event.ext.kind, payload, event.correlation_id, event.ts);
+      if (record) records.push(record);
+    }
+    if (records.length > 0) return records;
+    for (const trace of pack.traces) {
+      const record = recordFromPayload(trace.ext.kind, trace.ext.content, trace.nat_key, trace.time);
+      if (record) records.push(record);
+    }
+    return records;
+  }
   const records: EnsemblyRecord[] = [];
   for (const event of pack.archive_events) {
     const record = recordFromPayload(event.kind, event.payload, event.nat_key, event.ts);

@@ -1,10 +1,15 @@
 import {
+  buildPulseInject,
+  canPromote,
   ensemblyKinds,
   lessonSignals,
   pilotPhases,
+  pulsePackSchema,
+  pulseStatuses,
   type EnsemblyKind,
   type LessonSignal,
   type PilotPhase,
+  type PulseStatus,
   type WorkspaceState,
 } from "@visualizer/core";
 import { useState } from "react";
@@ -16,6 +21,7 @@ export type EnsemblyDraft = {
   rationale: string;
   provenance: string;
   confirmedOutcome: string | null;
+  status: PulseStatus | null;
 };
 
 export type LessonDraft = {
@@ -72,12 +78,15 @@ export function MemoryPanel({
   const [rationale, setRationale] = useState("");
   const [provenance, setProvenance] = useState("");
   const [outcome, setOutcome] = useState("");
+  const [status, setStatus] = useState<PulseStatus | "">("");
   const [signal, setSignal] = useState<LessonSignal>("friction");
   const [phase, setPhase] = useState<PilotPhase>(state.autopilot.phase);
   const [cardId, setCardId] = useState("");
   const [lesson, setLesson] = useState("");
   const [adjustment, setAdjustment] = useState("");
   const promoted = new Set(state.pulseMemory.map((pulse) => pulse.id));
+  const inject = buildPulseInject(state.pulseMemory);
+  const activePulse = state.pulseMemory.filter((pulse) => canPromote(pulse));
   const appendReady = summary.trim() !== "" && rationale.trim() !== "" && provenance.trim() !== "";
   const lessonReady = lesson.trim() !== "" && adjustment.trim() !== "";
 
@@ -93,21 +102,41 @@ export function MemoryPanel({
       </p>
       <div className="memory-grid">
         <div>
+          <h3>Sparse pulse inject</h3>
+          <div className="pulse-inject" data-pulse-schema={pulsePackSchema}>
+            <p>
+              <code>{inject.schema}</code> · {inject.traces.length} of {inject.limit} · {inject.tokens}/
+              {inject.token_budget} tokens
+            </p>
+            {inject.traces.length === 0 ? <p className="pin">No active pulse.</p> : null}
+            <ul className="memory-list">
+              {inject.traces.map((trace) => (
+                <li key={trace.nat_key}>
+                  <strong>
+                    {trace.status} · {trace.kind} · milli {trace.coherence_milli}
+                  </strong>
+                  <span>{trace.snippet}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
           <h3>Pulse Memory</h3>
-          {state.pulseMemory.length === 0 ? <p className="pin">No promoted records yet.</p> : null}
+          {activePulse.length === 0 ? <p className="pin">No promoted records yet.</p> : null}
           <ul className="memory-list">
-            {state.pulseMemory.map((pulse) => (
+            {activePulse.map((pulse) => (
               <li key={pulse.id}>
                 <strong>{kindLabel(pulse.kind)}</strong>
                 <span>{pulse.summary}</span>
-                <em>{pulse.confirmedOutcome}</em>
+                <em>
+                  {pulse.status ?? "confirmed"} · {pulse.confirmedOutcome ?? "No outcome text"}
+                </em>
               </li>
             ))}
           </ul>
           <h3>Ensembly ledger</h3>
           <ul className="memory-list">
             {state.ensemblyLedger.map((record) => {
-              const ready = record.confirmedOutcome !== null && !promoted.has(record.id);
+              const ready = canPromote(record) && !promoted.has(record.id);
               return (
                 <li key={record.id}>
                   <strong>{kindLabel(record.kind)}</strong>
@@ -192,7 +221,25 @@ export function MemoryPanel({
               onChange={(event) => setOutcome(event.target.value)}
             />
           </label>
-          <p className="pin">A confirmed outcome also promotes this record into Pulse Memory.</p>
+          <label>
+            <span>Status</span>
+            <select
+              aria-label="Ensembly status"
+              value={status}
+              onChange={(event) => setStatus(event.target.value as PulseStatus | "")}
+            >
+              <option value="">From confirmed outcome</option>
+              {pulseStatuses.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="pin">
+            A confirmed outcome, a user-stated trace, or a tool-verified trace with a verify hash promotes into Pulse
+            Memory. A workflow lesson stays on the aux layer and does not pause a working phase.
+          </p>
           <Button
             type="button"
             disabled={!appendReady}
@@ -203,11 +250,13 @@ export function MemoryPanel({
                 rationale: rationale.trim(),
                 provenance: provenance.trim(),
                 confirmedOutcome: outcome.trim() === "" ? null : outcome.trim(),
+                status: status === "" ? null : status,
               });
               setSummary("");
               setRationale("");
               setProvenance("");
               setOutcome("");
+              setStatus("");
             }}
           >
             Append Ensembly record
