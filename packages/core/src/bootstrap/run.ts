@@ -172,7 +172,7 @@ export async function applyBuildTick(
     steps: [
       "Publish freehand canvas strokes onto problem cards.",
       "Bridge workspace state through document.modelContext.",
-      "Append the event log to a local @vercel/board SQLite file.",
+      "Append each railway transition to the Ensembly shared log.",
     ],
     runnerSummary: "pending",
   });

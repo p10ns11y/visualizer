@@ -31,11 +31,10 @@ export function createSampleWorkspace(): WorkspaceState {
       },
       {
         id: "card-log",
-        title: "Local board SQLite log",
-        statement:
-          "Mirror the structured event log into a local @vercel/board SQLite file.",
+        title: "Ensembly shared log",
+        statement: "Append structured records to the Ensembly shared log.",
         acceptance:
-          "Each railway transition appends one row that matches the in-memory event log.",
+          "A local write with the current stateVersion appends one Ensembly record and rejects a stale stateVersion.",
       },
     ],
     strokes: [],
@@ -109,11 +108,11 @@ export function createSampleWorkspace(): WorkspaceState {
       },
       {
         id: "plate-log",
-        title: "Board log",
+        title: "Ensembly log",
         kind: "log",
         x: 8,
         y: 58,
-        summary: "Local SQLite rows fed by the event log.",
+        summary: "Ensembly shared-log records appended from the workspace.",
       },
     ],
     connections: [

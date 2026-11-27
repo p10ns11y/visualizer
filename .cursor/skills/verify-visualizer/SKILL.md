@@ -15,7 +15,7 @@ From the repo root, with no session file:
 node scripts/verify-visualizer.mjs launch
 ```
 
-Launch builds the web package, starts `vite preview` on `127.0.0.1:4183`, and opens a headless Chrome page. Ready means the shell `data-mode` is `cockpit`, `data-phase` is `idle`, the version label is `v0`, and the heading is `Visualizer`. The seed is the in-memory sample workspace. There is no database. The command writes `/tmp/verify-visualizer/session.json` with the preview pid, the Chrome pid, and the browser websocket. It leaves Chrome running and disconnects.
+Launch builds the web package, starts `vite preview` on `127.0.0.1:4183`, and opens a headless Chrome page. Ready means the shell `data-mode` is `cockpit`, `data-phase` is `idle`, the version label is `v0`, and the heading is `Visualizer`. A fresh profile starts from the sample workspace. Edits are stored in `localStorage` under `visualizer.workspace`. There is no database. The WebMCP strip shows `Local bridge` unless the browser exposes `modelContext`. The command writes `/tmp/verify-visualizer/session.json` with the preview pid, the Chrome pid, and the browser websocket. It leaves Chrome running and disconnects.
 
 ## Doctor
 

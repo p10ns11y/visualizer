@@ -1,4 +1,4 @@
-import { BrainRouter, workspaceStorageKey } from "@visualizer/core";
+import { BrainRouter, createLocalModelContext, workspaceStorageKey } from "@visualizer/core";
 
 if (typeof PointerEvent === "undefined") {
   class TestPointerEvent extends MouseEvent {
@@ -35,6 +35,7 @@ afterEach(() => {
   document.body.innerHTML = "";
   localStorage.clear();
   window.location.hash = "";
+  Reflect.deleteProperty(document, "modelContext");
 });
 
 function mount(router?: BrainRouter) {
@@ -268,6 +269,32 @@ describe("shared cockpit and code mode", () => {
     expect(field).toBeInstanceOf(HTMLTextAreaElement);
     if (field instanceof HTMLTextAreaElement) expect(field.value).toBe("Kept from main.");
     expect(document.body.textContent).toContain("No promoted records yet.");
+  });
+
+  it("shows the WebMCP strip with the sketch pad and the memory panel", async () => {
+    mount();
+    await waitFor(
+      () => document.querySelector("[data-webmcp-source]")?.getAttribute("data-webmcp-source") === "local",
+    );
+    expect(document.querySelector(".webmcp-mode")?.textContent).toBe("Local bridge");
+    expect(document.querySelector("[data-tool='list_cards']")).not.toBeNull();
+    expect(document.querySelector(".sketch-pad")).not.toBeNull();
+    expect(document.querySelector(".memory-panel")).not.toBeNull();
+    expect(document.body.textContent).toContain("Ensembly shared log");
+    expect(document.body.textContent).toContain("Pulse Memory");
+  });
+
+  it("registers on document.modelContext and clears the tools on unmount", async () => {
+    const host = createLocalModelContext();
+    Object.defineProperty(document, "modelContext", { configurable: true, value: host });
+    mount();
+    await waitFor(() => host.listNames().length === 7);
+    expect(document.querySelector(".webmcp-mode")?.textContent).toBe("Native WebMCP");
+    act(() => {
+      root?.unmount();
+    });
+    root = null;
+    expect(host.listNames()).toHaveLength(0);
   });
 });
 

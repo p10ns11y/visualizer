@@ -94,3 +94,45 @@ Entries dated before the build cadence record what actually happened, including 
 - **Why:** A `WHERE` glued to `OPTIONAL MATCH` only constrains that pattern. A failed predicate nulls `card` and still returns the lesson, so a phase or card filter would not exclude rows in Neo4j.
 - **Basis:** Current lookup on 2026-11-27. The [OPTIONAL MATCH page](https://neo4j.com/docs/cypher-manual/current/clauses/optional-match/) says the `WHERE` clause is part of the pattern description and is considered while looking for matches, not after. The [WHERE page](https://neo4j.com/docs/cypher-manual/current/clauses/where/) says `WHERE` after `WITH` filters the results. Neo4j support article 115012301627 shows the same move: `OPTIONAL MATCH`, then `WITH`, then `WHERE`.
 - **Latest trends checked before choosing:** Not a library choice. Compared leaving the predicate on `OPTIONAL MATCH`, a required `MATCH` on the card whenever `cardId` is set, and `WITH` then `WHERE` for both filters. The `WITH` boundary covers a null phase, a null card, and both filters in one query.
+
+## WebMCP browser bridge
+
+- **Chosen:** `document.modelContext.registerTool(tool, { signal })`, with `navigator.modelContext` only when the document getter is missing, and an in-memory bridge when neither getter exists. Cleanup aborts the `AbortSignal` and calls `unregisterTool(name)` only if that method is still on the host. `provideContext` and `clearContext` are not called. Tool inputs are Zod objects converted by `zodToOpenAPISchema` from `@adaptate/utils@3.0.0`. Recoverable failures return `{ ok: false, code }` from `execute`. Write tools stay read only until the page sets local approval, then they call `pauseRun`, `recordWorkflowLesson`, or `appendEnsemblyRecord`.
+- **Why:** The current WebMCP shape is per document and additive. A replace-all context call was removed because another script could wipe the page's tools. The in-memory host lets unit and jsdom tests register, invoke, and release tools without a browser flag. Zod was already the workspace schema; the installed converter emits the JSON Schema object shape (`type`, `properties`, `required`) that `registerTool` expects. The lesson and Ensembly tools wrap the store helpers already on `main`, and they return shallow copies of the rows.
+- **Basis:** Researched on 2026-11-27, before the bridge was written. [Chrome WebMCP updates](https://developer.chrome.com/docs/ai/webmcp/updates) (navigator getter deprecated in Chrome 150 and removed in Chrome 152; `provideContext` / `clearContext` removed in Chrome 147; `unregisterTool` replaced by `AbortSignal` in Chrome 148; the detection line is `document.modelContext || navigator.modelContext`). [Chrome imperative API guide](https://developer.chrome.com/docs/modern-web-guidance/guides/webmcp/agentic-javascript-tools) (`registerTool` options `signal`, JSON Schema `inputSchema`, `execute(input, { signal })`, structured error returns, `readOnlyHint`). [Migration appendix](https://webmcp.salnikov.no/appendix-d-migration.html) (`provideContext` removed 5 March 2026, `unregisterTool` removed 26 March 2026, getter moved to `Document` on 27 May 2026). Converter check: calling the installed `zodToOpenAPISchema` on a Zod object printed `type: "object"` plus `required`.
+- **Latest trends checked before choosing:** Yes, on 2026-11-27, from those three pages. The current registration shape is `document.modelContext` plus `registerTool` and an abort signal. `navigator.modelContext` remains a compatibility read for older Chrome. `provideContext` is not a current API. Hand-written JSON Schema and a new schema package were not added; the locked Zod and `@adaptate/utils` path already matched the documented object schema. AJV and TypeBox were not surveyed as replacements.
+
+## Chopin interop proposal
+
+- **Chosen:** A written proposal only (`docs/decisions/002-chopin-interop-via-mcp.md`). No Chopin package, client, or adapter code.
+- **Why:** Chopin is a self-hosted Bun and Postgres planning prototype. Its default Planner does not execute code. Coupling the railway to those APIs would import an upstream that can still move.
+- **Basis:** Researched on 2026-11-27 from [`githubnext/chopin` `docs/architecture.md`](https://github.com/githubnext/chopin/blob/main/docs/architecture.md) on `main`: one Bun process, Postgres, Streamable HTTP MCP at `/mcp`, `HARNESS=remote` on the `/api/v1/agent` WebSocket, and Decision records stored outside the MDX prose.
+- **Latest trends checked before choosing:** Yes, that architecture page, before the proposal was written. Other planning servers were not compared. No client library was added.
+
+## Ensembly pulse alignment audit
+
+- **Chosen:** A written audit only (`docs/decisions/003-ensembly-pulse-alignment-audit.md`). No change to `canPromote`, `recordWorkflowLesson`, or the pulse-pack alias in this slice.
+- **Why:** The cockpit ledger matches the sparse verified-decision idea and the "remembers and learns, never decides" line, and it still uses a shorter admission rule and a legacy pack alias. Writing the drift down keeps the next slice from re-litigating the comparison.
+- **Basis:** Read on 2026-11-27, before this note. [Pulse instead of dump](https://captain.kingsparrow.space/articles/memory-issue), [Archive is not memory](https://captain.kingsparrow.space/articles/memory-issue/archive-not-memory), [HITL and HOOTL](https://captain.kingsparrow.space/articles/hitl-hootl), and [`PULSE-PACK-SPEC.md`](https://github.com/thecuriousts/ensembly/blob/master/docs/spec/PULSE-PACK-SPEC.md) plus `crates/ensembly-memory` in `thecuriousts/ensembly`.
+- **Latest trends checked before choosing:** Yes, those pages, before the note was written. No second memory runtime was added.
+
+## Head Plan and Tail Plan for this slice
+
+Checked off after the rebase onto `9ffd45d` and the bridge alignment.
+
+### Head Plan
+
+- [x] Rebase onto `origin/main` (`9ffd45d`) and keep `SketchPad`, `strokes`, `pendingTickStillApplies`, `MemoryPanel`, `ensemblyLedger`, `pulseMemory`, `workflowLessons`, `recordWorkflowLesson`, `appendEnsemblyRecord`, and `workspaceStorageKey = "visualizer.workspace"`.
+- [x] Mount the WebMCP bridge and status strip beside `SketchPad` and `MemoryPanel` in `apps/web/src/App.tsx`.
+- [x] Keep the Zod records and add a regression that hydrates a PR #3 `visualizer.workspace` payload (`strokes`, `ensemblyLedger`, `pulseMemory`, `workflowLessons`) without discarding it. `visualizer.workspace.v1` is a read-only fallback.
+- [x] Point `read_pulse_memory`, `read_workflow_lessons`, `record_workflow_lesson`, and `append_ensembly_record` at those store helpers, return shallow copies, and unregister tools already registered if `registerTool` throws.
+- [x] Rename the sample `card-log` copy to the Ensembly shared log. Leave `docs/decisions/001-ensembly-vs-vercel-board-sync.md` as it is on `main`. Keep `docs/decisions/002-chopin-interop-via-mcp.md`.
+
+### Tail Plan
+
+- [x] `docs/CRITICAL-FLOWS.md` CF-08 and the critical-flow tests.
+- [x] `docs/TEST-SUITE.md` names the WebMCP tests and the persist regression.
+- [x] `docs/ARCHITECTURE-LAYERS.md` links 001, 002, and 003, and keeps the fleet comparison.
+- [x] This file keeps the PR #2 and PR #3 entries and appends the WebMCP, Chopin, and audit entries.
+- [x] `.cursor/skills/verify-visualizer/` describes the strip with the sketch pad and the memory panel. The formal sync commit stays put.
+- [x] `README.md` names the Ensembly shared log card. `@adaptate/core` and `@adaptate/utils` stay credited. The pull request body stays at or under 120 words.

@@ -9,6 +9,8 @@ import { appendEnsemblyRecord, promoteEnsemblyRecord, recordWorkflowLesson } fro
 import { canvasCardId, createSampleWorkspace } from "./state/sample.js";
 import { readPersistedWorkspace, serializeWorkspace } from "./state/persist.js";
 import { appendSketchStroke } from "./state/strokes.js";
+import { mountWorkspaceBridge } from "./webmcp/bridge.js";
+import { createLocalModelContext } from "./webmcp/model-context.js";
 import {
   applyPilotEvent,
   assertCommit,
@@ -262,6 +264,49 @@ describe("critical flows", () => {
     const stored = readPersistedWorkspace(serializeWorkspace(code));
     expect(stored?.pulseMemory[0]?.summary).toBe("A confirmed mistake belongs in Pulse Memory.");
     expect(stored?.ensemblyLedger.map((record) => record.id)).toEqual(["ens-cf07-rule", "ens-cf07-mistake"]);
+  });
+
+  it("CF-08 registers WebMCP tools, rejects a stale Ensembly write, and clears them on release", async () => {
+    const absent = await mountWorkspaceBridge({
+      globals: {},
+      getState: createSampleWorkspace,
+      getApproval: () => "read-only",
+      onCommit: () => undefined,
+    });
+    expect(absent.source).toBe("local");
+    const listed = await absent.execute("list_cards", {});
+    expect(listed).toMatchObject({ ok: true });
+    await absent.release();
+    expect(await absent.execute("read_pulse_memory", {})).toMatchObject({
+      ok: false,
+      code: "UNREGISTERED",
+    });
+
+    const host = createLocalModelContext();
+    let state = assertCommit(applyPilotEvent(createSampleWorkspace(), 0, { type: "START" }));
+    const bridge = await mountWorkspaceBridge({
+      globals: { document: { modelContext: host } },
+      getState: () => state,
+      getApproval: () => "local",
+      onCommit: (result) => {
+        if (result.ok) state = result.state;
+      },
+    });
+    expect(host.listNames()).toContain("append_ensembly_record");
+    const stale = await bridge.execute("append_ensembly_record", {
+      stateVersion: 0,
+      id: "ens-cf08",
+      timestamp: "2026-11-27T12:00:00Z",
+      kind: "decision",
+      summary: "Stale append",
+      rationale: "The version moved.",
+      provenance: "packages/core/src/critical-flows.test.ts",
+      confirmedOutcome: null,
+    });
+    expect(stale).toMatchObject({ ok: false, code: "STATE_CONFLICT" });
+    expect(state.ensemblyLedger.some((record) => record.id === "ens-cf08")).toBe(false);
+    await bridge.release();
+    expect(host.listNames()).toHaveLength(0);
   });
 
   it("holds the lockstep properties on the real transition functions", async () => {

@@ -365,6 +365,9 @@ describe("self-bootstrap brief", () => {
       "ashby",
     ]);
     expect(result.state.brief?.runnerSummary).toContain("Cursor accepted");
+    expect(result.state.brief?.steps).toContain(
+      "Append each railway transition to the Ensembly shared log.",
+    );
     expect(result.state.eventLog.some((entry) => entry.kind === "transition")).toBe(true);
   });
 

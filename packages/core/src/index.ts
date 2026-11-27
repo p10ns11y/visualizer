@@ -42,7 +42,9 @@ export type {
 
 export { createSampleWorkspace, canvasCardId } from "./state/sample.js";
 export {
+  legacyWorkspaceStorageKey,
   readPersistedWorkspace,
+  readWorkspaceStorage,
   serializeWorkspace,
   workspaceStorageKey,
 } from "./state/persist.js";
@@ -132,3 +134,28 @@ export {
 export { InMemoryGraphMemoryStore } from "./memory/in-memory-store.js";
 export { projectWorkspace } from "./memory/port.js";
 export type { LessonFilter, MemoryGraphStore } from "./memory/port.js";
+
+export {
+  describeWebMcpBridge,
+  mountWorkspaceBridge,
+  webMcpToolNames,
+} from "./webmcp/bridge.js";
+export type {
+  WebMcpApproval,
+  WebMcpToolName,
+  WebMcpToolResult,
+  WebMcpToolSummary,
+  WorkspaceBridge,
+} from "./webmcp/bridge.js";
+export {
+  createLocalModelContext,
+  detectModelContext,
+  readModelContextGlobals,
+} from "./webmcp/model-context.js";
+export type {
+  LocalModelContext,
+  ModelContextGlobals,
+  ModelContextHost,
+  WebMcpSource,
+  WebMcpTool,
+} from "./webmcp/model-context.js";

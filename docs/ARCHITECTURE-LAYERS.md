@@ -54,15 +54,25 @@ Exactly one thin surface exposes the core to JavaScript:
 
 The bridge transports typed calls and results. It does not host UI state, and it does not re-check payloads that `adaptate-accel` already checks.
 
+## Browser tool surface
+
+Visual Cockpit and Code Mode register a WebMCP tool list from `@visualizer/core` (`packages/core/src/webmcp/`). The page reads `document.modelContext` first and `navigator.modelContext` only when the document getter is missing. Registration uses `registerTool` and an `AbortSignal`. Cleanup aborts that signal and, when the host still exposes it, calls `unregisterTool`. `provideContext` is not used.
+
+When neither getter exists, the same calls run on an in-memory bridge and the strip says `Local bridge`. Read tools list cards, the railway phase, Pulse Memory, and workflow lessons. Write tools pause a build, record a lesson, or append an Ensembly record. Those writes stay read only until the page grants local approval, then they use the same `stateVersion` check as a cockpit edit.
+
+This surface is the page's tool producer. It is not the native core bridge in section 3. Payload checks stay in `adaptate`. Input schemas are Zod objects converted with `zodToOpenAPISchema` from `@adaptate/utils`.
+
+Chopin stays outside this core. A proposed adapter port, not a dependency, is recorded in [`docs/decisions/002-chopin-interop-via-mcp.md`](decisions/002-chopin-interop-via-mcp.md).
+
 ## 4. JS / WebView UI and state
 
-Visual Cockpit and Code Mode stay a JavaScript WebView. XState 6 owns the pilot railway. `stateVersion`, human pause, and the tool-call contracts stay in that state layer and drive the core through the bridge. A view change still does not pause a run. A human edit during a working phase still does.
+Visual Cockpit and Code Mode stay a JavaScript WebView. XState 6 owns the pilot railway. `stateVersion`, human pause, and the tool-call contracts stay in that state layer and drive the core through the bridge. A view change still does not pause a run. A human edit during a working phase still does. The WebMCP strip in both modes shows whether the browser getter was found and which tools are registered. The workspace is stored in `localStorage` under `visualizer.workspace`. A payload left under `visualizer.workspace.v1` is read only when the current key is empty. Missing strokes, ledger, Pulse Memory, and lesson arrays hydrate as empty lists, and a stored card statement is left as written.
 
 Freehand strokes are fields on that same workspace: a `cardId` plus normalized pointer samples. The canvas plate paints them. Code Mode lists and clears them. They are not a bridge payload and not a board log. A stroke during a working phase uses the same human-edit pause as a statement edit.
 
 Pulse Memory and workflow lessons are fields on that same workspace. The Ensembly ledger is the append-only record. Pulse Memory holds a record only after a confirmed outcome. A workflow lesson points at a railway phase and, when present, a problem card. Neo4j is an optional projection of those fields through `MemoryGraphStore`. The cockpit does not require a running database. Setup and the Cypher constraints are in `docs/MEMORY-NEO4J.md`. A memory write during a working phase uses the same human-edit pause as a statement edit.
 
-Ensembly, adapted for this cockpit, is also the shared event and board log. A separate `@vercel/board` SQLite mirror is not that log. Cross-machine sync is an open design slice (Cloudflare Workers, hooks, and Cloudflare storage such as Durable Objects, D1, or R2). The record is [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md).
+Ensembly, adapted for this cockpit, is also the shared event and board log. A separate `@vercel/board` SQLite mirror is not that log. Cross-machine sync is an open design slice (Cloudflare Workers, hooks, and Cloudflare storage such as Durable Objects, D1, or R2). The record is [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md). How this two-layer memory lines up with Ensembly pulse admissions, and which three drifts stay for the next slice, is [`docs/decisions/003-ensembly-pulse-alignment-audit.md`](decisions/003-ensembly-pulse-alignment-audit.md).
 
 ## What this step does not do
 
@@ -140,7 +150,7 @@ flowchart TB
 - **Cockpit, Code Mode, and ink, on a checked statechart.** The run is not a chat-only loop. Model-based paths and the formal check walk the XState 6 machine. A human edit during a working phase pauses the build. The statement, the stroke, and `stateVersion` stay. The formal check writes that machine with `machineToJSON`, so the chart is portable machine JSON.
 - **Two memory layers, not one flat store.** Ensembly is the append-only ledger. Pulse Memory receives a rule, a costly mistake, or a decision only after a confirmed outcome. Agentic workflow memory is the lesson graph: phase, card, friction, rework, and adjustment. Neo4j is the optional projection. CI uses the in-memory port.
 - **Four portable layers, local-first or hybrid.** The target is a thin Rust or Zig core, `adaptate` native and WASM acceleration, one thin bridge, and the JS/WebView. This file still does not pick Rust or Zig, and this repo does not add that crate. The post describes a deploymentless fleet on Vercel infrastructure. Visualizer is not tied to that deployment.
-- **Tiered brain and WebMCP.** Tier 3 falls through to Tier 2, then to Tier 1 deterministic code. The spoken design publishes the same workspace on `document.modelContext`. The problem card is in the cockpit. The publish step is still ahead.
+- **Tiered brain and WebMCP.** Tier 3 falls through to Tier 2, then to Tier 1 deterministic code. The spoken design publishes the same workspace on `document.modelContext`. The problem card is in the cockpit. The page now publishes the tool list on `document.modelContext` (or the local bridge).
 
 ### How this can grow
 
