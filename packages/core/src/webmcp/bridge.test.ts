@@ -4,6 +4,7 @@ import { createSampleWorkspace } from "../state/sample.js";
 import {
   describeWebMcpBridge,
   mountWorkspaceBridge,
+  webMcpToolNames,
   type WebMcpApproval,
 } from "./bridge.js";
 import {
@@ -100,10 +101,17 @@ describe("workspace WebMCP tools", () => {
       "read_workspace",
       "read_pulse_memory",
       "read_pulse_inject",
+      "read_ensembly_ledger",
       "read_workflow_lessons",
+      "read_event_log",
       "pause_build",
       "record_workflow_lesson",
       "append_ensembly_record",
+      "promote_record",
+      "export_pulse_pack",
+      "import_pulse_pack",
+      "start_build",
+      "resume_build",
     ]);
     const cards = await bridge.execute("list_cards", {});
     expect(cards).toMatchObject({ ok: true });
@@ -125,6 +133,16 @@ describe("workspace WebMCP tools", () => {
     expect(harness.state.pulseMemory[0]?.summary).toBe(
       "A stale stateVersion never overwrites the workspace.",
     );
+    const ledger = await bridge.execute("read_ensembly_ledger", { limit: 1 });
+    expect(ledger).toMatchObject({ ok: true, nextCursor: "1" });
+    if (!ledger.ok) return;
+    const first = ledger.records as Array<{ id: string }>;
+    expect(first).toHaveLength(1);
+    const nextLedger = await bridge.execute("read_ensembly_ledger", { limit: 1, cursor: "1" });
+    expect(nextLedger).toMatchObject({ ok: true });
+    if (!nextLedger.ok) return;
+    const second = nextLedger.records as Array<{ id: string }>;
+    expect(second[0]?.id).not.toBe(first[0]?.id);
     const lessons = await bridge.execute("read_workflow_lessons", {});
     expect(lessons).toMatchObject({
       ok: true,
@@ -132,6 +150,22 @@ describe("workspace WebMCP tools", () => {
     });
     const schema = bridge.tools.find((tool) => tool.name === "pause_build");
     expect(schema?.access).toBe("write");
+  });
+
+  it("starts a build from idle when local approval is on", async () => {
+    let state = createSampleWorkspace();
+    const bridge = await mountWorkspaceBridge({
+      globals: {},
+      getState: () => state,
+      getApproval: () => "local",
+      onCommit: (result) => {
+        if (result.ok) state = result.state;
+      },
+    });
+    const started = await bridge.execute("start_build", { stateVersion: state.stateVersion });
+    expect(started).toMatchObject({ ok: true, phase: "completed" });
+    expect(state.autopilot.phase).toBe("completed");
+    expect(state.brief?.verified).toBe(true);
   });
 
   it("rejects external writes until local approval", async () => {
@@ -226,6 +260,18 @@ describe("workspace WebMCP tools", () => {
     expect(during).toMatchObject({ ok: true, phase: "planning", stateVersion: version });
     expect(running.autopilot.phase).toBe("planning");
     expect(running.workflowLessons.some((lesson) => lesson.id === "lesson-while-planning")).toBe(true);
+    const appendedLive = await live.execute("append_ensembly_record", {
+      stateVersion: version,
+      id: "ens-while-planning",
+      timestamp: "2026-11-27T12:01:01Z",
+      kind: "decision",
+      summary: "Ledger writes leave the railway running.",
+      rationale: "Only an explicit pause stops the build.",
+      provenance: "packages/core/src/webmcp/bridge.test.ts",
+      confirmedOutcome: null,
+    });
+    expect(appendedLive).toMatchObject({ ok: true, phase: "planning", stateVersion: version });
+    expect(running.autopilot.phase).toBe("planning");
     const appended = await bridge.execute("append_ensembly_record", {
       stateVersion: state.stateVersion,
       id: "ens-webmcp",
@@ -248,6 +294,7 @@ describe("workspace WebMCP tools", () => {
     });
     const withInject = await bridge.execute("read_pulse_memory", { inject: true });
     expect(withInject).toMatchObject({ ok: true, inject: { schema: "pulse-pack-v1" } });
+    expect(withInject).not.toHaveProperty("entries");
     const lessons = await bridge.execute("read_workflow_lessons", {});
     expect(lessons).toMatchObject({
       ok: true,
@@ -266,7 +313,7 @@ describe("workspace WebMCP tools", () => {
       onCommit: () => undefined,
     });
     expect(bridge.source).toBe("document");
-    expect(host.listNames()).toHaveLength(8);
+    expect(host.listNames()).toHaveLength(webMcpToolNames.length);
     expect(host.getTools?.().find((tool) => tool.name === "pause_build")?.inputSchema).toMatchObject({
       type: "object",
       required: ["stateVersion"],

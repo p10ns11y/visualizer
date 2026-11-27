@@ -1,4 +1,10 @@
-import { BrainRouter, createLocalModelContext, workspaceStorageKey } from "@visualizer/core";
+import {
+  BrainRouter,
+  createLocalModelContext,
+  webMcpApprovalStorageKey,
+  webMcpToolNames,
+  workspaceStorageKey,
+} from "@visualizer/core";
 
 if (typeof PointerEvent === "undefined") {
   class TestPointerEvent extends MouseEvent {
@@ -214,7 +220,8 @@ describe("shared cockpit and code mode", () => {
       promote.click();
     });
     expect(document.querySelector(".shell")?.getAttribute("data-pulse-count")).toBe("2");
-    expect(document.querySelector(".version")?.textContent).toBe("v1");
+    expect(document.querySelector(".shell")?.getAttribute("data-phase")).toBe("idle");
+    expect(document.querySelector(".version")?.textContent).toBe("v0");
     expect(document.body.textContent).toContain(
       "Applying a judge tick after a human edit restores the pre-edit workspace.",
     );
@@ -293,13 +300,39 @@ describe("shared cockpit and code mode", () => {
     const host = createLocalModelContext();
     Object.defineProperty(document, "modelContext", { configurable: true, value: host });
     mount();
-    await waitFor(() => host.listNames().length === 8);
+    await waitFor(() => host.listNames().length === webMcpToolNames.length);
     expect(document.querySelector(".webmcp-mode")?.textContent).toBe("Native WebMCP");
     act(() => {
       root?.unmount();
     });
     root = null;
     expect(host.listNames()).toHaveLength(0);
+  });
+
+  it("keeps local write approval across a reload and revokes it", async () => {
+    localStorage.setItem(webMcpApprovalStorageKey, "local");
+    mount();
+    await waitFor(
+      () => document.querySelector("[data-webmcp-approval]")?.getAttribute("data-webmcp-approval") === "local",
+    );
+    act(() => {
+      root?.unmount();
+    });
+    root = null;
+    document.body.innerHTML = "";
+    mount();
+    await waitFor(
+      () => document.querySelector("[data-webmcp-approval]")?.getAttribute("data-webmcp-approval") === "local",
+    );
+    const toggle = document.querySelector('button[aria-label="Allow local writes"]');
+    if (!(toggle instanceof HTMLButtonElement)) throw new Error("Missing approval toggle");
+    act(() => {
+      toggle.click();
+    });
+    expect(document.querySelector("[data-webmcp-approval]")?.getAttribute("data-webmcp-approval")).toBe(
+      "read-only",
+    );
+    expect(localStorage.getItem(webMcpApprovalStorageKey)).toBeNull();
   });
 });
 

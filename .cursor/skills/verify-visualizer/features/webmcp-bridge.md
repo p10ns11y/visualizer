@@ -5,8 +5,8 @@ The WebMCP strip shows whether the page found native `modelContext` or is runnin
 ## Sub-features
 
 - `webmcp-status` shows `Local bridge` when `modelContext` is absent, or `Native WebMCP` when `document.modelContext` registered the tools.
-- `webmcp-tools` lists `list_cards`, `read_workspace`, `read_pulse_memory`, `read_pulse_inject`, `read_workflow_lessons`, `pause_build`, `record_workflow_lesson`, and `append_ensembly_record`.
-- `webmcp-approval` starts read only. `Allow local writes` is the control that turns local approval on.
+- `webmcp-tools` lists `list_cards`, `read_workspace`, `read_pulse_memory`, `read_pulse_inject`, `read_ensembly_ledger`, `read_workflow_lessons`, `read_event_log`, `pause_build`, `record_workflow_lesson`, `append_ensembly_record`, `promote_record`, `export_pulse_pack`, `import_pulse_pack`, `start_build`, and `resume_build`.
+- `webmcp-approval` starts read only. `Allow local writes` is the control that turns local approval on. The choice is stored under `visualizer.webmcp.approval` and is cleared when the toggle goes off.
 
 ## How to get to it (user POV)
 
@@ -29,6 +29,6 @@ Preconditions:
 ## Gotchas
 
 - Chrome without `modelContext` shows `Local bridge` and `In-app inspector`. That is the expected fallback, not a failed registration.
-- `Allow local writes` is `aria-label` on the toggle. Leaving it off keeps external writes read only.
-- Launch wipes the Chrome profile, so the strip starts from the sample workspace at `v0`. A stored older log-card sentence appears only when `visualizer.workspace.v1` is already set.
+- `Allow local writes` is `aria-label` on the toggle. Leaving it off keeps external writes read only. Turning it on writes `local` to `visualizer.webmcp.approval`. A reload reads that key back. Turning it off removes the key.
+- Launch wipes the Chrome profile, so the strip starts from the sample workspace at `v0` and approval is read only. A stored older log-card sentence appears only when `visualizer.workspace.v1` is already set.
 - Opening Code Mode bumps `stateVersion`. The strip's tool list does not.

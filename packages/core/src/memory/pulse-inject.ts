@@ -37,6 +37,15 @@ export function estimateTokens(text: string): number {
   return Math.ceil(bytes / bytesPerToken);
 }
 
+export function pulseInjectPromptText(inject: Pick<PulseInject, "schema" | "traces">): string {
+  return JSON.stringify({ schema: inject.schema, traces: inject.traces });
+}
+
+function promptTokens(traces: readonly PulseInjectTrace[]): number {
+  if (traces.length === 0) return 0;
+  return estimateTokens(pulseInjectPromptText({ schema: pulsePackSchema, traces: [...traces] }));
+}
+
 function injectTrace(row: EnsemblyRecord, snippet: string): PulseInjectTrace {
   return {
     nat_key: row.id,
@@ -51,16 +60,24 @@ function injectTrace(row: EnsemblyRecord, snippet: string): PulseInjectTrace {
   };
 }
 
-function fitSnippet(snippet: string, remaining: number): string | null {
-  if (estimateTokens(snippet) <= remaining) return snippet;
-  const chars = Array.from(snippet);
+function fits(traces: readonly PulseInjectTrace[]): boolean {
+  return promptTokens(traces) <= pulseInjectTokenBudget;
+}
+
+function fitTrace(row: EnsemblyRecord): PulseInjectTrace | null {
+  const full = injectTrace(row, row.summary);
+  if (fits([full])) return full;
+  const chars = Array.from(row.summary);
   let next = "";
+  let chosen: string | null = null;
   for (const char of chars) {
     const candidate = next + char;
-    if (estimateTokens(candidate) > remaining) break;
+    if (!fits([injectTrace(row, candidate)])) break;
     next = candidate;
+    chosen = candidate;
   }
-  return next.length > 0 ? next : null;
+  if (!chosen) return null;
+  return injectTrace(row, chosen);
 }
 
 export function buildPulseInject(rows: readonly EnsemblyRecord[]): PulseInject {
@@ -73,35 +90,26 @@ export function buildPulseInject(rows: readonly EnsemblyRecord[]): PulseInject {
       return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
     });
   const traces: PulseInjectTrace[] = [];
-  let tokens = 0;
-  const overflow: EnsemblyRecord[] = [];
+  let skippedBulky = false;
   for (const row of ranked) {
     if (traces.length >= pulseInjectTraceLimit) break;
-    const remaining = pulseInjectTokenBudget - tokens;
-    if (remaining <= 0) break;
-    const cost = estimateTokens(row.summary);
-    if (cost > remaining) {
-      overflow.push(row);
+    const candidate = injectTrace(row, row.summary);
+    if (fits([...traces, candidate])) {
+      traces.push(candidate);
       continue;
     }
-    traces.push(injectTrace(row, row.summary));
-    tokens += cost;
+    skippedBulky = true;
   }
-  if (traces.length === 0) {
-    const row = overflow[0];
-    if (row) {
-      const snippet = fitSnippet(row.summary, pulseInjectTokenBudget);
-      if (snippet) {
-        traces.push(injectTrace(row, snippet));
-        tokens += estimateTokens(snippet);
-      }
-    }
+  if (traces.length === 0 && skippedBulky) {
+    const row = ranked.find((item) => !fits([injectTrace(item, item.summary)]));
+    const fitted = row ? fitTrace(row) : null;
+    if (fitted) traces.push(fitted);
   }
   return {
     schema: pulsePackSchema,
     limit: pulseInjectTraceLimit,
     token_budget: pulseInjectTokenBudget,
-    tokens,
+    tokens: promptTokens(traces),
     traces,
   };
 }

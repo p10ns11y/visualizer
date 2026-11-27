@@ -7,7 +7,7 @@ import {
   recordWorkflowLesson,
 } from "@visualizer/core";
 import { describe, expect, it } from "vitest";
-import { mergeAuxIntoTick } from "./tick-guard.js";
+import { mergeAuxIntoTick } from "@visualizer/core";
 
 describe("build tick aux merge", () => {
   it("keeps a workflow lesson recorded while a build tick is awaiting", async () => {

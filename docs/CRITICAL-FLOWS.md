@@ -44,15 +44,21 @@ Test: `CF-06` in `packages/core/src/critical-flows.test.ts`, plus the sketch ren
 
 ## CF-07 A confirmed Ensembly record becomes Pulse Memory
 
-A pre-memory workspace still loads: the ledger, Pulse Memory, and workflow lessons are empty, and the problem cards stay. Appending a record with no confirmed outcome leaves Pulse Memory empty. Appending one with a confirmed outcome promotes it. A workflow lesson stays attached to its phase and card after Code Mode opens. Recording that lesson during a working phase leaves the phase running and does not change `stateVersion`. A lesson recorded while a build tick is awaiting is still present after that tick lands, and the railway keeps the tick. A stale `stateVersion` does not append. The promoted record is still there after serialize and read.
+A pre-memory workspace still loads: the ledger, Pulse Memory, and workflow lessons are empty, and the problem cards stay. Appending a record with no confirmed outcome leaves Pulse Memory empty. Appending one with a confirmed outcome promotes it. A workflow lesson stays attached to its phase and card after Code Mode opens. Recording that lesson, appending a ledger row, or promoting a row during a working phase leaves the phase running and does not change `stateVersion`. A lesson recorded while a build tick is awaiting is still present after that tick lands, and the railway keeps the tick. A stale `stateVersion` does not append. The promoted record is still there after serialize and read.
 
 Test: `CF-07` in `packages/core/src/critical-flows.test.ts`, including the working-phase lesson, plus the promote, code-mode, reload, and pre-memory hydration renders in `apps/web/src/critical-flow.dom.test.tsx`, and the mid-await lesson in `apps/web/src/tick-guard.test.ts`.
 
 ## CF-08 WebMCP bridge registers, rejects a stale write, and unregisters
 
-The page registers read tools and `stateVersion`-guarded write tools on `document.modelContext` when that getter exists, otherwise on an in-app bridge. Read tools include `read_pulse_inject` and `read_pulse_memory`. A write with local approval and a stale `stateVersion` returns `STATE_CONFLICT` and does not append. Releasing the bridge removes the tools.
+The page registers read tools and `stateVersion`-guarded write tools on `document.modelContext` when that getter exists, otherwise on an in-app bridge. Read tools include `read_pulse_inject`, `read_pulse_memory`, the ledger, and the event log. Ledger, lesson, and event-log reads take `limit` and `cursor`. `read_pulse_memory` with `inject` returns the sparse inject and does not repeat the entry list. A write with local approval and a stale `stateVersion` returns `STATE_CONFLICT` and does not append. An approved ledger append during a working phase does not pause the railway. Releasing the bridge removes the tools. Local write approval is stored under `visualizer.webmcp.approval` and is removed when the toggle is turned off.
 
-Test: `CF-08` in `packages/core/src/critical-flows.test.ts`, plus the bridge strip in `apps/web/src/critical-flow.dom.test.tsx`.
+Test: `CF-08` in `packages/core/src/critical-flows.test.ts`, plus the bridge strip and the approval reload in `apps/web/src/critical-flow.dom.test.tsx`.
+
+## CF-09 A separate MCP client uses the headless server
+
+`@visualizer/mcp` listens on `127.0.0.1` and persists the workspace to a JSON file. With writes off, `list_cards` succeeds and `append_ensembly_record` returns `READ_ONLY`. With `VISUALIZER_MCP_ALLOW_WRITES=1`, an append is visible to a second client process on the same file. With `VISUALIZER_MCP_WRITE_TOKEN` set, a promote without the bearer stays read only, and the same call with the bearer succeeds. The server refuses a host other than `127.0.0.1`.
+
+Test: `external MCP client` in `apps/mcp/src/server.e2e.test.ts`, executed by `pnpm test`.
 
 ## Lockstep properties
 

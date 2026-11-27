@@ -176,3 +176,26 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 
 - [x] Update the stale sentences in `docs/ARCHITECTURE-LAYERS.md`, `docs/CRITICAL-FLOWS.md`, `docs/TEST-SUITE.md`, and the verification notes. Leave decisions 001 and 002 and the formal sync commit in place.
 - [x] Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`, then confirm CI `verify`.
+
+## Headless MCP for outside SI agents
+
+- **Chosen:** `@modelcontextprotocol/server@2.4.0`, `@modelcontextprotocol/client@2.4.0`, and `@modelcontextprotocol/node@2.1.2` in `apps/mcp`. `createMcpHandler` plus `toNodeHandler`, with `localhostHostValidation` and `localhostOriginValidation`, listening only on `127.0.0.1`. The tool list is the WebMCP bridge in `@visualizer/core`. State is a JSON file locked with `open(..., "wx")`. Writes require `VISUALIZER_MCP_ALLOW_WRITES=1` or a matching bearer. `@modelcontextprotocol/sdk` `1.32.2` was not added. No tokenizer package. Ledger, lesson, promotion, and pack import stay on the aux commit. `buildPulseInject` counts `JSON.stringify({ schema, traces })`. Pack hashing uses the in-repo `sha256Hex` so those helpers can sit on the main entry without `node:crypto` in the browser bundle.
+- **Why:** Outside SI agents need the workspace tools without a browser tab, and a second process has to see the same records. v1 of the SDK is the maintenance line for the 2025-11-25 spec. v2 is the stable line for the 2026-07-28 spec and already ships the Streamable HTTP handler this server needs. The file lock stays in `node:fs` so the server does not take a second locking library. The token count has to describe the payload that enters a prompt and still fit in 120. A snippet count reported a smaller number than that JSON.
+- **Basis:** Live research on 2026-11-27, before the package was added. `npm view` reported `@modelcontextprotocol/server` `2.4.0`, `@modelcontextprotocol/client` `2.4.0`, `@modelcontextprotocol/node` `2.1.2`, and `@modelcontextprotocol/sdk` `1.32.2`. The [sdk readme](https://www.npmjs.com/package/@modelcontextprotocol/sdk) says v1 is maintenance and v2 ships as `@modelcontextprotocol/server` and `@modelcontextprotocol/client`. The [HTTP serving guide](https://ts.sdk.modelcontextprotocol.io/v2/serving/http) shows `createMcpHandler`, `toNodeHandler`, and the localhost host and origin guards. The dogfood note in the task is the source of the missing tools, the box-pack shape, the lesson loss, the pause, and the 97-versus-366 token gap. The byte/4 estimator stays the one already recorded in the Canon 1 entry.
+- **Latest trends checked before choosing:** Yes, on 2026-11-27, before the install. Compared the v1 SDK `1.32.2` (maintenance, spec 2025-11-25, `StreamableHTTPServerTransport`) with the v2 server and client `2.4.0` (stable, spec 2026-07-28, `createMcpHandler`). v2 is the current line. A file lock from `node:fs` was compared with adding `proper-lockfile`; no lock package was added. `js-tiktoken` and `gpt-tokenizer` were not added; the Canon 1 entry already recorded that check.
+
+## Head Plan and Tail Plan for the headless MCP slice
+
+### Head Plan
+
+- [x] Add `@visualizer/mcp` Streamable HTTP on `127.0.0.1`, with writes off by default, a JSON workspace file, and an end-to-end test that calls tools from a separate client process.
+- [x] Register `start_build`, `resume_build`, `export_pulse_pack`, `import_pulse_pack`, and `promote_record`, and export `exportPulsePack`, `readPulsePack`, `recordsFromPack`, and `mergeLedger` from `@visualizer/core`.
+- [x] Accept a `pulse-pack-v1` object that omits `ext`, compute a missing content hash, fall back to trace envelope fields, and keep the `tool-verified` hash check. Add a synthetic fixture.
+- [x] Move `mergeAuxIntoTick` into core and call it from the page and from `runGuidedBuild`.
+- [x] Keep ledger and lesson writes off the human-pause path. Count the serialized inject, drop duplicate entries when `inject` is set, and paginate ledger, lesson, and event-log reads.
+- [x] Persist the local-write approval under `visualizer.webmcp.approval` and clear it when the toggle is off.
+
+### Tail Plan
+
+- [x] Update `docs/ARCHITECTURE-LAYERS.md`, `README.md`, `docs/CRITICAL-FLOWS.md`, `docs/TEST-SUITE.md`, `docs/decisions/004-headless-mcp.md`, and this file. Credit `@adaptate/utils` on the tool schemas. Leave the formal sync commit in place and update the formal note so it matches the aux ledger writes.
+- [x] Update `.cursor/skills/verify-visualizer/` for the saved approval, the tool list, the promote behavior, and the headless server. Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`.

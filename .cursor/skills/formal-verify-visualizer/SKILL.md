@@ -21,7 +21,7 @@ Synced with commit `58c593d6053d64b063fbab040bcb2402d76257e0`. Move that hash fo
 - `packages/core/src/formal/pilot.safe.checks.json`
 - `packages/core/src/formal/pilot.fail.checks.json`
 
-Ledger append and promotion call `commitHuman`. Workflow lessons write through the aux layer in `packages/core/src/memory/commit.ts` and do not call `commitHuman`, so they do not pause a working phase or change `stateVersion`. The page merges those aux lessons and aux log lines onto a completed build tick in `apps/web/src/tick-guard.ts`. `applyBuildTick` itself is unchanged, so this sync commit stays.
+Ledger append, promotion, pack import, and workflow lessons write through the aux layer in `packages/core/src/memory/commit.ts`. They do not call `commitHuman`, so they do not pause a working phase or change `stateVersion`. Only `pauseRun` and a human edit or stroke do. `mergeAuxIntoTick` in `packages/core/src/state/merge-aux.ts` copies those aux lessons and aux log lines onto a completed build tick. The page and `runGuidedBuild` both call it. `applyBuildTick` itself is unchanged, so this sync commit stays.
 
 ## How to run
 
@@ -41,7 +41,7 @@ XState's bundled CLI checks the railway graph. `pilot.safe.checks.json` supplies
 
 This check is not a TLA+ model. If a later change adds a TLA+ model of the same promise, read that result with `/statechart`.
 
-WebMCP write tools in `packages/core/src/webmcp/bridge.ts` call `pauseRun`, `commitHuman` for an Ensembly append, and the aux lesson writer. They do not change the covered functions, so the sync commit above stays. A stale `stateVersion` still returns `STATE_CONFLICT` before a write. External writes stay read only until the page grants local approval. That approval flag is outside this search. A lesson write that matches the current version does not move `stateVersion`.
+WebMCP write tools in `packages/core/src/webmcp/bridge.ts` call `pauseRun`, `resumeRun`, `runGuidedBuild`, and the aux writers for lessons, ledger appends, promotion, and pack import. They do not change the covered functions, so the sync commit above stays. A stale `stateVersion` still returns `STATE_CONFLICT` before a write. External writes stay read only until local approval is on. That approval flag is outside this search. An aux write that matches the current version does not move `stateVersion` and does not pause the railway.
 
 `pnpm test:mbt` is a separate check. It calls `getSimplePaths` from `xstate/graph` and executes those paths on the workspace. A green model-based run does not replace this lockstep check, and a green lockstep run does not replace the path walk.
 

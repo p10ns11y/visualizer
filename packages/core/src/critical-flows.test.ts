@@ -246,7 +246,7 @@ describe("critical flows", () => {
         adjustment: "Keep the lesson when the view changes.",
       }),
     );
-    const stale = appendEnsemblyRecord(state, 0, {
+    const stale = appendEnsemblyRecord(state, state.stateVersion + 1, {
       id: "ens-cf07-stale",
       timestamp: "2026-11-27T18:00:03Z",
       kind: "decision",
@@ -279,6 +279,19 @@ describe("critical flows", () => {
         signal: "friction",
         lesson: "Record the lesson while the railway is running.",
         adjustment: "Keep the working phase.",
+      }),
+    );
+    expect(state.autopilot.phase).toBe("running");
+    expect(state.stateVersion).toBe(version);
+    state = assertCommit(
+      appendEnsemblyRecord(state, state.stateVersion, {
+        id: "ens-cf07-running",
+        timestamp: "2026-11-27T18:05:01Z",
+        kind: "decision",
+        summary: "A ledger write does not pause the railway.",
+        rationale: "Only pause_build sends HUMAN_PAUSE.",
+        provenance: "docs/CRITICAL-FLOWS.md",
+        confirmedOutcome: null,
       }),
     );
     expect(state.autopilot.phase).toBe("running");
