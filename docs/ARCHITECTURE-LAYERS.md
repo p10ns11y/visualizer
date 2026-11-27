@@ -65,3 +65,83 @@ Pulse Memory and workflow lessons are fields on that same workspace. The Ensembl
 ## What this step does not do
 
 No Rust or Zig toolchain is added here. No new package depends on `@adaptate/native`, `@adaptate/wasm`, or `@adaptate/accel`. Those integrations are a later step, after review of this foundation.
+
+## Origin, Pain Points, and Fleet Topology Comparison (`@ctatedev` Reference)
+
+This section is about Visualizer only. It records why the cockpit exists, what was already settled in spoken design on 27 Nov 2026, and how that shape sits next to Chris Tate's (`@ctatedev`) fleet diagram from the same day: [How I manage my agent fleet](https://x.com/ctatedev/status/2126180726278353288).
+
+### Original intent and the pain
+
+Multi-agent SI work loses the operator. A human edit mid-run can be overwritten with no trace. The live state is a black box. Costly mistakes repeat in the next session. Decisions scatter, with no verified path into memory. A single vendor or a single language then owns the run.
+
+Visualizer's intent is one calm cockpit. Human intent, freehand sketches, the typed workspace, and verified memory stay on one store. The XState 6 railway is the deterministic rule for when a write may land.
+
+### Independent arrival on 27 Nov 2026
+
+Spoken design on 27 Nov 2026 settled this shape before that post was used as a reference:
+
+- Visual Cockpit and Code Mode share one store.
+- `stateVersion` optimistic locking, and the human-pause collision guard.
+- An XState 6 railway checked by model-based paths and `pnpm verify:formal`.
+- The four-layer portable core, with heavy payload work in [`adaptate`](https://github.com/p10ns11y/adaptate).
+- Freehand strokes pinned to a problem card.
+- Two-layer memory: an Ensembly ledger into Pulse Memory, plus workflow lessons on the Neo4j projection.
+- A shared `@vercel/board` log, and a WebMCP `document.modelContext` bridge.
+
+The post went up the same day (27 Nov 2026, 05:06 UTC) and draws the same split: a person on the local side, a coordinator with memory, an orchestrator that scales work, and a shared board. It is an independent check of that shape, not the source of the cockpit.
+
+```mermaid
+flowchart LR
+  subgraph localSide [Local]
+    me[Me]
+    approvals[Approvals]
+  end
+  subgraph remoteSide [Remote]
+    coordinator[Coordinator + Memory]
+    orchestrator[Orchestrator + Jobs]
+    board[Board]
+    fleet[Sandboxed agent fleet]
+  end
+  me --> coordinator
+  approvals -.-> coordinator
+  coordinator --> orchestrator
+  coordinator --> board
+  orchestrator --> fleet
+  fleet --> board
+```
+
+### What Visualizer borrows from that topology
+
+Three parts of the diagram are worth taking as drawn.
+
+- **Local versus remote.** `Me` and `Approvals` stay on the local side of the line. An external write is approved there before it runs remotely. The diagram names GitHub, Slack, and Vercel on that list. The same local approval is the rule for any other remote write this cockpit will send, including Greenhouse, Workspace, and Ashby.
+- **Coordinator and Orchestrator.** Long-lived intent and memory stay with the Coordinator. Fleet scale and job scheduling stay with the Orchestrator. The two do not share one loop.
+- **Radial fleet and a central Board.** Sandboxed workers sit around one Board. Workers and the Coordinator both read that Board. Visualizer already names `@vercel/board` for this log. The fleet itself is not connected yet.
+
+### How Visualizer differs
+
+```mermaid
+flowchart TB
+  cockpit[Visual Cockpit and Code Mode]
+  railway[XState 6 railway]
+  store[Shared workspace and stateVersion]
+  pulse[Pulse Memory from a confirmed Ensembly record]
+  lessons[Workflow lessons on Neo4j]
+  tiers[Tier 3 to Tier 2 to Tier 1]
+  cockpit --> store
+  railway --> store
+  store --> pulse
+  store --> lessons
+  tiers --> railway
+```
+
+- **Cockpit, Code Mode, and ink, on a checked statechart.** The run is not a chat-only loop. Model-based paths and the formal check walk the XState 6 machine. A human edit during a working phase pauses the build. The statement, the stroke, and `stateVersion` stay. The formal check writes that machine with `machineToJSON`, so the chart is portable machine JSON.
+- **Two memory layers, not one flat store.** Ensembly is the append-only ledger. Pulse Memory receives a rule, a costly mistake, or a decision only after a confirmed outcome. Agentic workflow memory is the lesson graph: phase, card, friction, rework, and adjustment. Neo4j is the optional projection. CI uses the in-memory port.
+- **Four portable layers, local-first or hybrid.** The target is a thin Rust or Zig core, `adaptate` native and WASM acceleration, one thin bridge, and the JS/WebView. This file still does not pick Rust or Zig, and this repo does not add that crate. The post describes a deploymentless fleet on Vercel infrastructure. Visualizer is not tied to that deployment.
+- **Tiered brain and WebMCP.** Tier 3 falls through to Tier 2, then to Tier 1 deterministic code. The spoken design publishes the same workspace on `document.modelContext`. The problem card is in the cockpit. The publish step is still ahead.
+
+### How this can grow
+
+The same cockpit can stay local while Approvals remains the local check on every remote write. A remote Orchestrator and a sandboxed fleet can attach later, without moving memory or the railway off the shared store.
+
+Cursor, Claude, Grok, and Grok Bot can share that portable statechart, the central Board, and the Ensembly plus Neo4j memory. Scheduled reviews of a functional area can then read several repositories from the same Board and the same confirmed Pulse Memory, instead of opening a fresh session with none of the prior lessons.
