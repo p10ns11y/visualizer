@@ -6,6 +6,7 @@ import {
   type WorkflowLesson,
 } from "../state/schema.js";
 import type { LessonFilter, MemoryGraphStore } from "./port.js";
+import { canPromote } from "./promote.js";
 
 function byTimestampThenId<T extends { id: string }>(
   rows: readonly T[],
@@ -36,11 +37,11 @@ export class InMemoryGraphMemoryStore implements MemoryGraphStore {
     if (!this.records.has(record.id)) this.records.set(record.id, record);
   }
 
-  async promote(id: string): Promise<PulseMemory | null> {
+  async promote(id: string, _expectedVerifyHash?: string | null): Promise<PulseMemory | null> {
     const existing = this.pulse.get(id);
     if (existing) return existing;
     const record = this.records.get(id);
-    if (!record?.confirmedOutcome) return null;
+    if (!record || !canPromote(record)) return null;
     const pulse = PulseMemorySchema.parse(record);
     this.pulse.set(id, pulse);
     return pulse;
@@ -51,7 +52,10 @@ export class InMemoryGraphMemoryStore implements MemoryGraphStore {
   }
 
   async listPulse(kind?: EnsemblyKind | null): Promise<PulseMemory[]> {
-    const rows = [...this.pulse.values()].filter((pulse) => kind == null || pulse.kind === kind);
+    const rows = [...this.pulse.values()].filter((pulse) => {
+      if (pulse.supersededBy) return false;
+      return kind == null || pulse.kind === kind;
+    });
     return byTimestampThenId(rows, (pulse) => pulse.timestamp);
   }
 

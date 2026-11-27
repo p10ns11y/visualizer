@@ -282,13 +282,18 @@ describe("shared cockpit and code mode", () => {
     expect(document.querySelector(".memory-panel")).not.toBeNull();
     expect(document.body.textContent).toContain("Ensembly shared log");
     expect(document.body.textContent).toContain("Pulse Memory");
+    expect(document.querySelector("[data-pulse-schema]")?.getAttribute("data-pulse-schema")).toBe(
+      "pulse-pack-v1",
+    );
+    expect(document.body.textContent).toContain("user-stated");
+    expect(document.querySelector("[data-tool='read_pulse_inject']")).not.toBeNull();
   });
 
   it("registers on document.modelContext and clears the tools on unmount", async () => {
     const host = createLocalModelContext();
     Object.defineProperty(document, "modelContext", { configurable: true, value: host });
     mount();
-    await waitFor(() => host.listNames().length === 7);
+    await waitFor(() => host.listNames().length === 8);
     expect(document.querySelector(".webmcp-mode")?.textContent).toBe("Native WebMCP");
     act(() => {
       root?.unmount();

@@ -44,13 +44,13 @@ Test: `CF-06` in `packages/core/src/critical-flows.test.ts`, plus the sketch ren
 
 ## CF-07 A confirmed Ensembly record becomes Pulse Memory
 
-A pre-memory workspace still loads: the ledger, Pulse Memory, and workflow lessons are empty, and the problem cards stay. Appending a record with no confirmed outcome leaves Pulse Memory empty. Appending one with a confirmed outcome promotes it. A workflow lesson stays attached to its phase and card after Code Mode opens. A stale `stateVersion` does not append. The promoted record is still there after serialize and read.
+A pre-memory workspace still loads: the ledger, Pulse Memory, and workflow lessons are empty, and the problem cards stay. Appending a record with no confirmed outcome leaves Pulse Memory empty. Appending one with a confirmed outcome promotes it. A workflow lesson stays attached to its phase and card after Code Mode opens. Recording that lesson during a working phase leaves the phase running and does not change `stateVersion`. A lesson recorded while a build tick is awaiting is still present after that tick lands, and the railway keeps the tick. A stale `stateVersion` does not append. The promoted record is still there after serialize and read.
 
-Test: `CF-07` in `packages/core/src/critical-flows.test.ts`, plus the promote, code-mode, reload, and pre-memory hydration renders in `apps/web/src/critical-flow.dom.test.tsx`.
+Test: `CF-07` in `packages/core/src/critical-flows.test.ts`, including the working-phase lesson, plus the promote, code-mode, reload, and pre-memory hydration renders in `apps/web/src/critical-flow.dom.test.tsx`, and the mid-await lesson in `apps/web/src/tick-guard.test.ts`.
 
 ## CF-08 WebMCP bridge registers, rejects a stale write, and unregisters
 
-The page registers read tools and `stateVersion`-guarded write tools on `document.modelContext` when that getter exists, otherwise on an in-app bridge. A write with local approval and a stale `stateVersion` returns `STATE_CONFLICT` and does not append. Releasing the bridge removes the tools.
+The page registers read tools and `stateVersion`-guarded write tools on `document.modelContext` when that getter exists, otherwise on an in-app bridge. Read tools include `read_pulse_inject` and `read_pulse_memory`. A write with local approval and a stale `stateVersion` returns `STATE_CONFLICT` and does not append. Releasing the bridge removes the tools.
 
 Test: `CF-08` in `packages/core/src/critical-flows.test.ts`, plus the bridge strip in `apps/web/src/critical-flow.dom.test.tsx`.
 

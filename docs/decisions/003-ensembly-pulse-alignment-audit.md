@@ -1,7 +1,7 @@
 # 003 Ensembly pulse alignment audit
 
 - **Date:** 2026-11-27
-- **Status:** Recorded. The three drifts below are tracked for the next slice. This note does not change the store.
+- **Status:** The three drifts below are resolved in the Canon 1 slice. The comparison itself is unchanged.
 
 ## What was compared
 
@@ -23,10 +23,10 @@ Sparse, portable, high-barrier verified decisions and mistakes line up with Ense
 2. Admission uses Ensembly tags. `kind` is `data`, `context`, `fact`, or `memory`. `status` is `user-stated`, `tool-verified`, `inferred`, or `unknown`. The record also carries `lock`, `verify_hash`, `prefetch_key`, and `superseded_by`. A non-empty `confirmedOutcome` is not the whole admission rule.
 3. Ensembly separates four stores: the T1 ops ledger (authorize, claim, complete), Pulse-memory SQLite, the aux episodic CRDT in `crates/ensembly-memory`, and the life-os vault.
 
-## Tracked drift for the next slice
+## Tracked drift
 
-These stay as they are in this pull request. The next slice resolves them.
+These three were open when this note was first recorded. The Canon 1 slice resolves each one.
 
-1. `recordWorkflowLesson` runs through `commitHuman` and pauses an active build. Move that write to an SI-maintained aux layer.
-2. `packages/core/src/memory/ensembly.ts` emits the legacy alias `ensembly-pulse-pack-v1` with a float `coherence`. Migrate to Canon 1 `pulse-pack-v1`: refuse floats, and use `coherence_milli`, hint tags, and `verify_hash`.
-3. `canPromote` checks only `confirmedOutcome`. Add Ensembly tags, supersession through `superseded_by`, and sparse pulse retrieval at about 120 tokens with `LIMIT 8`.
+1. Resolved. `recordWorkflowLesson` writes through the aux layer in `packages/core/src/memory/commit.ts`. A lesson during a working phase stays in that phase and does not change `stateVersion`. The lesson remains on `visualizer.workspace`, in the Memory panel, and on `record_workflow_lesson`.
+2. Resolved. `packages/core/src/memory/ensembly.ts` emits Canon 1 `pulse-pack-v1` (`schema` and `format`) with integer `coherence_milli`. Zod rejects a fractional milli. A raw pack string rejects a float token. `ensembly-pulse-pack-v1` and `peram-pulse-pack-v1` stay readable and are not rewritten. The field list is in [`docs/ARCHITECTURE-LAYERS.md`](../ARCHITECTURE-LAYERS.md).
+3. Resolved. `canPromote` admits a confirmed outcome, a `user-stated` trace, and a `tool-verified` trace whose `verify_hash` matches the summary. `superseded_by` removes a row from the active pulse. `buildPulseInject` keeps at most 8 traces inside the 120-token budget and is available as `read_pulse_inject` and as `inject` on `read_pulse_memory`.

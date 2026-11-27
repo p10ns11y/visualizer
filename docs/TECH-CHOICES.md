@@ -136,3 +136,43 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - [x] This file keeps the PR #2 and PR #3 entries and appends the WebMCP, Chopin, and audit entries.
 - [x] `.cursor/skills/verify-visualizer/` describes the strip with the sketch pad and the memory panel. The formal sync commit stays put.
 - [x] `README.md` names the Ensembly shared log card. `@adaptate/core` and `@adaptate/utils` stay credited. The pull request body stays at or under 120 words.
+
+## Canon 1 Ensembly pulse alignment
+
+- **Chosen:** Keep Zod `^4.1.12` (already in `@visualizer/core`) as the Canon 1 checker for this cockpit. Emit `schema` and `format` as `pulse-pack-v1`. `coherence_milli` is a Zod integer `0..=1000`; a fractional number fails that schema, and a raw pack string whose number token contains `.`, an exponent, or `-0` is refused before `JSON.parse`. Legacy `ensembly-pulse-pack-v1` and `peram-pulse-pack-v1` stay readable through the existing float hash. `recordWorkflowLesson` writes an aux workspace update: same `stateVersion`, same railway phase, lesson still stored on `visualizer.workspace`. `canPromote` admits a non-superseded row when the outcome is confirmed, when `status` is `user-stated`, or when `status` is `tool-verified` and `verifyHash` equals `sha256:` plus the SHA-256 of the summary. `buildPulseInject` keeps at most 8 active traces and a 120-token budget, counting `ceil(utf-8-bytes / 4)`. No new package.
+- **Why:** Canon 1 is the pack the alignment audit named. The workspace already validates with Zod, and `@adaptate/utils` already turns those objects into WebMCP input schemas. A second checker process would not change the cockpit store. Lessons are operational memory: they should remain visible and persisted without taking the human-pause path that `commitHuman` uses for a statement.
+- **Basis:** Read on 2026-11-27, before this choice. [`PULSE-PACK-SPEC.md`](https://github.com/thecuriousts/ensembly/blob/master/docs/spec/PULSE-PACK-SPEC.md) (blob `2595494a673e2b88b1d1a570aec0652f4590635a`, status E2, 2026-11-13) is the only file under `docs/spec` besides `PULSE-READ.md` and `docs/spec/tla`. It names `format: pulse-pack-v1`, integer-only numbers, `coherence_milli` on trace `ext` (`0..=1000`), `kind`, `status`, `lock`, `verify_hash`, `prefetch_key`, and `superseded_by`, and it maps `ensembly-pulse-pack-v1` and `peram-pulse-pack-v1` on read. [`PULSE-READ.md`](https://github.com/thecuriousts/ensembly/blob/master/docs/spec/PULSE-READ.md) ranks a superseded row below its successor and uses `LIMIT ?`, not a fixed 8. The 8-trace cap is the limit already written in `docs/decisions/003-ensembly-pulse-alignment-audit.md` and in the earlier memory entry in this file. [Pulse instead of dump](https://captain.kingsparrow.space/articles/memory-issue) describes a return of roughly 120 verified tokens and does not name a tokenizer. The byte/4 count is a fixed estimate because that page and the spec do not name one. The Python checker and the Rust canon crate were not executed here.
+- **Latest trends checked before choosing:** Yes, on 2026-11-27, before the code. The spec directory listing shows no Canon 2 file. Compared embedding `scripts/pulse/pulse_pack_check.py`, depending on a tokenizer package, and staying on the Zod already pinned here. Zod stays. `js-tiktoken` and `gpt-tokenizer` were not added; the spec's integer rule is a schema check, not a model tokenizer.
+
+## Head Plan and Tail Plan for the Canon 1 slice
+
+### Head Plan
+
+- [x] Move `recordWorkflowLesson` off `commitHuman` onto an aux write that keeps the working phase and `stateVersion`, and prove that with a test.
+- [x] Emit Canon 1 `pulse-pack-v1` (`schema`, `format`, integer `coherence_milli`, `traces`, `archive`, `host`, `kind`, `status`, `lock`, `verify_hash`, `prefetch_key`, optional `superseded_by`) and keep a read-only import of `ensembly-pulse-pack-v1`.
+- [x] Admit `user-stated` and hash-backed `tool-verified` traces beside `confirmedOutcome`, drop superseded rows from the active pulse, and add `buildPulseInject` (8 traces, 120-token budget) on WebMCP and `MemoryPanel`.
+- [x] Hydrate a PR #3 / PR #4 `visualizer.workspace` payload that has no Canon 1 fields, and reject a fractional `coherence_milli`.
+
+### Tail Plan
+
+- [x] Mark the three drifts resolved in `docs/decisions/003-ensembly-pulse-alignment-audit.md`. Link the Canon 1 pack from `docs/ARCHITECTURE-LAYERS.md`. Leave `001` and `002` untouched.
+- [x] Update `docs/CRITICAL-FLOWS.md`, `docs/TEST-SUITE.md`, `README.md`, and `.cursor/skills/verify-visualizer/` for the aux lesson and the sparse inject. Leave the formal sync commit in place; note that lessons no longer call `commitHuman`.
+- [x] Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`. Capture `ensembly-canon1-cockpit.png` and `ensembly-canon1-code-mode.png`.
+
+## Review repair for the Canon 1 slice
+
+- **Chosen:** Stay on the Zod checker, the aux lesson write, and `pendingTickStillApplies` already chosen above. No new package. Pack import reads admission fields from the payload and falls back to the trace envelope. A completed build tick keeps newer aux lessons and aux log lines. `promotePulse` takes the expected verify hash and matches it.
+- **Why:** The review found tagged traces losing admission on import, and an in-flight tick dropping a lesson because the aux write does not move `stateVersion`. The hash check in Cypher was looser than `canPromote`.
+- **Basis:** The review of `121e78b0` against the code in this repo, read on 2026-11-27 before the repair. The Canon 1 spec cited in the entry above is unchanged. No second checker was compared.
+- **Latest trends checked before choosing:** No new tool. The Canon 1 trend check above still holds: Zod stays, and no tokenizer package is added.
+
+### Head Plan
+
+- [x] Restore `traceKind`, `status`, `lock`, `verifyHash`, `prefetchKey`, `supersededBy`, and `coherenceMilli` on pack import, with a tagged round-trip test.
+- [x] Merge live aux lessons and aux log lines onto a completed build tick, with a mid-await regression.
+- [x] Align `promotePulse` with the `canPromote` verify-hash rule and cover the inject edges.
+
+### Tail Plan
+
+- [x] Update the stale sentences in `docs/ARCHITECTURE-LAYERS.md`, `docs/CRITICAL-FLOWS.md`, `docs/TEST-SUITE.md`, and the verification notes. Leave decisions 001 and 002 and the formal sync commit in place.
+- [x] Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`, then confirm CI `verify`.

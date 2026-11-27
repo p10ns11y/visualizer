@@ -1,6 +1,6 @@
 # Memory panel
 
-The Memory panel lists Pulse Memory, the Ensembly ledger, and workflow lessons in Visual Cockpit and in Code Mode. A confirmed ledger row can be promoted. The same lists survive a reload.
+The Memory panel lists Pulse Memory, the Canon 1 sparse inject, the Ensembly ledger, and workflow lessons in Visual Cockpit and in Code Mode. A confirmed ledger row can be promoted. The inject is labeled `pulse-pack-v1`. The same lists survive a reload. A workflow lesson recorded during a working phase leaves that phase running.
 
 ## Sub-features
 
@@ -11,7 +11,7 @@ The Memory panel lists Pulse Memory, the Ensembly ledger, and workflow lessons i
 
 ## How to get to it (user POV)
 
-- Open the preview. The header reads Visual Cockpit. The Memory panel reads `Ledger 3 · Pulse 1 · Lessons 1`.
+- Open the preview. The header reads Visual Cockpit. The Memory panel reads `Ledger 3 · Pulse 1 · Lessons 1` and shows `pulse-pack-v1` on the sparse inject.
 - Read the Pulse Memory rule about `stateVersion`.
 - Press `Promote ens-mistake-stale-tick`.
 - Press `Code Mode`. The lesson about the bridge publish is still on the page.
@@ -32,6 +32,8 @@ Preconditions:
 ## Gotchas
 
 - Promotion is a human edit. During a working phase it pauses the run.
-- A record with no confirmed outcome has no Promote button.
+- Recording a workflow lesson does not pause a working phase and does not change `stateVersion`. A lesson recorded while a build tick is still awaiting stays after that tick lands.
+- A record with no confirmed outcome, and no `user-stated` or hash-backed `tool-verified` status, has no Promote button.
+- A superseded row stays off the sparse inject.
 - A workspace saved before these fields were added loads with empty memory arrays. The problem cards stay.
 - The Neo4j adapter is not on this page. The panel reads the shared workspace.

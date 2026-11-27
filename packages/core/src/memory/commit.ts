@@ -9,7 +9,7 @@ import {
   type WorkspaceState,
 } from "../state/schema.js";
 import { commitHuman, type CommitResult } from "../state/store.js";
-import { canPromote } from "./promote.js";
+import { canPromote, verifyHashFor } from "./promote.js";
 
 function sameOrConflict(state: WorkspaceState, expectedVersion: number): CommitResult {
   if (expectedVersion !== state.stateVersion) {
@@ -23,6 +23,35 @@ function sameOrConflict(state: WorkspaceState, expectedVersion: number): CommitR
     };
   }
   return { ok: true, state };
+}
+
+function commitAux(
+  state: WorkspaceState,
+  expectedVersion: number,
+  mutate: (draft: WorkspaceState) => WorkspaceState,
+  message: string,
+): CommitResult {
+  if (expectedVersion !== state.stateVersion) return sameOrConflict(state, expectedVersion);
+  const edited = mutate(structuredClone(state));
+  const logSeq = state.logSeq + 1;
+  return {
+    ok: true,
+    state: WorkspaceStateSchema.parse({
+      ...edited,
+      stateVersion: state.stateVersion,
+      autopilot: state.autopilot,
+      logSeq,
+      eventLog: [
+        ...state.eventLog,
+        {
+          id: `log-${logSeq}`,
+          stateVersion: state.stateVersion,
+          kind: "memory",
+          message,
+        },
+      ],
+    }),
+  };
 }
 
 function withMemoryLog(result: CommitResult, detail: string, before: WorkspaceState): CommitResult {
@@ -44,7 +73,11 @@ export function appendEnsemblyRecord(
   expectedVersion: number,
   input: EnsemblyRecord,
 ): CommitResult {
-  const record = EnsemblyRecordSchema.parse(input);
+  const parsed = EnsemblyRecordSchema.parse(input);
+  const record =
+    parsed.status === "tool-verified" && !parsed.verifyHash
+      ? EnsemblyRecordSchema.parse({ ...parsed, verifyHash: verifyHashFor(parsed.summary) })
+      : parsed;
   const existing = state.ensemblyLedger.find((item) => item.id === record.id);
   if (existing) return sameOrConflict(state, expectedVersion);
   const promoted = canPromote(record);
@@ -96,14 +129,14 @@ export function recordWorkflowLesson(
   if (lesson.cardId !== null && !state.problemCards.some((card) => card.id === lesson.cardId)) {
     return sameOrConflict(state, expectedVersion);
   }
-  const result = commitHuman(state, expectedVersion, (draft) => ({
-    ...draft,
-    workflowLessons: [...draft.workflowLessons, lesson],
-  }));
   const card = lesson.cardId ?? "no card";
-  return withMemoryLog(
-    result,
-    `Recorded workflow lesson ${lesson.id} on ${lesson.phase} for ${card}.`,
+  return commitAux(
     state,
+    expectedVersion,
+    (draft) => ({
+      ...draft,
+      workflowLessons: [...draft.workflowLessons, lesson],
+    }),
+    `Recorded workflow lesson ${lesson.id} on ${lesson.phase} for ${card}.`,
   );
 }

@@ -5,7 +5,7 @@ The WebMCP strip shows whether the page found native `modelContext` or is runnin
 ## Sub-features
 
 - `webmcp-status` shows `Local bridge` when `modelContext` is absent, or `Native WebMCP` when `document.modelContext` registered the tools.
-- `webmcp-tools` lists `list_cards`, `read_workspace`, `read_pulse_memory`, `read_workflow_lessons`, `pause_build`, `record_workflow_lesson`, and `append_ensembly_record`.
+- `webmcp-tools` lists `list_cards`, `read_workspace`, `read_pulse_memory`, `read_pulse_inject`, `read_workflow_lessons`, `pause_build`, `record_workflow_lesson`, and `append_ensembly_record`.
 - `webmcp-approval` starts read only. `Allow local writes` is the control that turns local approval on.
 
 ## How to get to it (user POV)

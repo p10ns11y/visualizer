@@ -122,6 +122,39 @@ describe("persisted workspace", () => {
     expect(hydrated?.problemCards.find((card) => card.id === "card-log")?.title).toBe(
       "Local board SQLite log",
     );
+    expect(hydrated?.ensemblyLedger[0]?.status).toBeUndefined();
+    expect(hydrated?.ensemblyLedger[0]?.coherenceMilli).toBeUndefined();
+    expect(hydrated?.pulseMemory[0]?.verifyHash).toBeUndefined();
+  });
+
+  it("keeps a PR #4 visualizer.workspace payload that predates Canon 1 fields", () => {
+    const pr4 = {
+      ...pr3Workspace,
+      problemCards: pr3Workspace.problemCards.map((card) =>
+        card.id === "card-log"
+          ? {
+              ...card,
+              title: "Ensembly shared log",
+              statement: "Append structured records to the Ensembly shared log.",
+              acceptance:
+                "A local write with the current stateVersion appends one Ensembly record and rejects a stale stateVersion.",
+            }
+          : card,
+      ),
+    };
+    const hydrated = readPersistedWorkspace(JSON.stringify(pr4));
+    expect(hydrated?.stateVersion).toBe(3);
+    expect(hydrated?.strokes[0]?.id).toBe("stroke-pr3");
+    expect(hydrated?.ensemblyLedger).toHaveLength(1);
+    expect(hydrated?.pulseMemory).toHaveLength(1);
+    expect(hydrated?.workflowLessons).toHaveLength(1);
+    expect(hydrated?.problemCards.find((card) => card.id === "card-log")?.title).toBe("Ensembly shared log");
+    expect(hydrated?.ensemblyLedger[0]?.traceKind).toBeUndefined();
+    const fractional = {
+      ...pr4,
+      ensemblyLedger: pr4.ensemblyLedger.map((record) => ({ ...record, coherenceMilli: 1.5 })),
+    };
+    expect(readPersistedWorkspace(JSON.stringify(fractional))).toBeNull();
   });
 
   it("reads visualizer.workspace.v1 only when the current key is empty", () => {

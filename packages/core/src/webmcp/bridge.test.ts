@@ -99,6 +99,7 @@ describe("workspace WebMCP tools", () => {
       "list_cards",
       "read_workspace",
       "read_pulse_memory",
+      "read_pulse_inject",
       "read_workflow_lessons",
       "pause_build",
       "record_workflow_lesson",
@@ -200,8 +201,31 @@ describe("workspace WebMCP tools", () => {
       lesson: "Pause before the next tick.",
       adjustment: "Read the card before publishing.",
     });
-    expect(recorded).toMatchObject({ ok: true });
+    expect(recorded).toMatchObject({ ok: true, phase: "paused_by_human" });
     expect(state.workflowLessons.at(-1)?.lesson).toBe("Pause before the next tick.");
+    const running = assertCommit(applyPilotEvent(createSampleWorkspace(), 0, { type: "START" }));
+    const live = await mountWorkspaceBridge({
+      globals: {},
+      getState: () => running,
+      getApproval: () => "local",
+      onCommit: (result) => {
+        if (result.ok) Object.assign(running, result.state);
+      },
+    });
+    const version = running.stateVersion;
+    const during = await live.execute("record_workflow_lesson", {
+      stateVersion: version,
+      id: "lesson-while-planning",
+      recordedAt: "2026-11-27T12:01:00Z",
+      phase: "planning",
+      cardId: "card-bridge",
+      signal: "adjustment",
+      lesson: "Leave the working phase running.",
+      adjustment: "Write the lesson on the aux layer.",
+    });
+    expect(during).toMatchObject({ ok: true, phase: "planning", stateVersion: version });
+    expect(running.autopilot.phase).toBe("planning");
+    expect(running.workflowLessons.some((lesson) => lesson.id === "lesson-while-planning")).toBe(true);
     const appended = await bridge.execute("append_ensembly_record", {
       stateVersion: state.stateVersion,
       id: "ens-webmcp",
@@ -217,6 +241,13 @@ describe("workspace WebMCP tools", () => {
       id: "ens-webmcp",
       summary: "Planning paused.",
     });
+    const inject = await bridge.execute("read_pulse_inject", {});
+    expect(inject).toMatchObject({
+      ok: true,
+      inject: { schema: "pulse-pack-v1", limit: 8, token_budget: 120 },
+    });
+    const withInject = await bridge.execute("read_pulse_memory", { inject: true });
+    expect(withInject).toMatchObject({ ok: true, inject: { schema: "pulse-pack-v1" } });
     const lessons = await bridge.execute("read_workflow_lessons", {});
     expect(lessons).toMatchObject({
       ok: true,
@@ -235,7 +266,7 @@ describe("workspace WebMCP tools", () => {
       onCommit: () => undefined,
     });
     expect(bridge.source).toBe("document");
-    expect(host.listNames()).toHaveLength(7);
+    expect(host.listNames()).toHaveLength(8);
     expect(host.getTools?.().find((tool) => tool.name === "pause_build")?.inputSchema).toMatchObject({
       type: "object",
       required: ["stateVersion"],
