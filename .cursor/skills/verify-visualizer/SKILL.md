@@ -33,6 +33,8 @@ Shared page commands:
 
 ```sh
 node scripts/verify-visualizer.mjs browser fill --role textbox --name "Statement for Freehand canvas sketching" --value "Verification stroke pinned to the canvas card."
+node scripts/verify-visualizer.mjs browser draw --card card-canvas
+node scripts/verify-visualizer.mjs browser reload
 node scripts/verify-visualizer.mjs browser click --role button --name "Code Mode"
 node scripts/verify-visualizer.mjs browser click --role button --name "Build"
 node scripts/verify-visualizer.mjs browser click --role button --name "Stop"
@@ -40,10 +42,14 @@ node scripts/verify-visualizer.mjs browser text --path /opt/cursor/artifacts/ver
 node scripts/verify-visualizer.mjs browser screenshot --path /opt/cursor/artifacts/verify-visualizer/visual-cockpit-editing.png
 ```
 
-One-session cockpit proof, from a fresh launch:
+One-session proofs, each from its own fresh launch:
 
 ```sh
 node scripts/verify-visualizer.mjs drive visual-cockpit-editing
+```
+
+```sh
+node scripts/verify-visualizer.mjs drive freehand-canvas-sketch
 ```
 
 The fill command pastes the whole value in one `input` event. The click on `Code Mode` uses `button[aria-label="Code Mode"]`. `Build` and `Stop` match the button's visible name. Do not call React state setters or a test-only route.

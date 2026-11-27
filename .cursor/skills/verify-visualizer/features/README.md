@@ -33,6 +33,7 @@ Each feature file has an H1, one opening paragraph, and these H2 sections in ord
 
 ## Features
 
+- [Freehand canvas sketching](./freehand-canvas-sketch.md) draws a stroke on the canvas plate, reloads it, and reads the pin in Code Mode.
 - [Visual Cockpit editing](./visual-cockpit-editing.md) edits a problem statement and reads it from Code Mode.
 - [Code Mode parity](./code-mode-parity.md) opens Code Mode and confirms the shared version.
 - [Pilot railway Build and human pause](./pilot-railway-build-pause.md) starts Build and pauses it from the banner.

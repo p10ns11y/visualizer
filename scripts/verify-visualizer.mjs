@@ -197,6 +197,40 @@ async function browserCommand(argv) {
       console.log(JSON.stringify({ ok: true, action, name }));
       return;
     }
+    if (action === "draw") {
+      const card = flag(rest, "--card");
+      const surface = await page.$(`svg[data-sketch="${card}"]`);
+      if (!surface) throw new Error(`Missing sketch surface ${card}`);
+      const box = await surface.boundingBox();
+      if (!box) throw new Error(`Sketch surface ${card} has no box`);
+      const marks = [
+        [0.18, 0.32],
+        [0.46, 0.22],
+        [0.74, 0.48],
+        [0.4, 0.72],
+      ];
+      const first = marks[0];
+      if (!first) throw new Error("Missing stroke sample");
+      await page.mouse.move(box.x + box.width * first[0], box.y + box.height * first[1]);
+      await page.mouse.down();
+      for (const mark of marks.slice(1)) {
+        await page.mouse.move(box.x + box.width * mark[0], box.y + box.height * mark[1], {
+          steps: 8,
+        });
+      }
+      await page.mouse.up();
+      await page.waitForFunction(
+        () => document.querySelector(".shell")?.getAttribute("data-stroke-count") === "1",
+      );
+      console.log(JSON.stringify({ ok: true, action, card }));
+      return;
+    }
+    if (action === "reload") {
+      await page.reload({ waitUntil: "networkidle0" });
+      await page.waitForSelector(".shell");
+      console.log(JSON.stringify({ ok: true, action }));
+      return;
+    }
     if (action === "text") {
       const text = await page.$eval(".shell", (node) => {
         const fields = [...node.querySelectorAll("textarea")].map(
@@ -240,6 +274,57 @@ function flag(argv, name) {
 }
 
 async function drive(feature) {
+  if (feature === "freehand-canvas-sketch") {
+    await browserCommand(["draw", "--card", "card-canvas"]);
+    await browserCommand(["reload"]);
+    const { browser, page } = await connect();
+    try {
+      const kept = await page.evaluate(() => ({
+        count: document.querySelector(".shell")?.getAttribute("data-stroke-count"),
+        version: document.querySelector(".version")?.textContent ?? "",
+        ink: document.querySelector(".sketch-pad path")?.getAttribute("d") ?? "",
+      }));
+      if (kept.count !== "1" || kept.version !== "v1" || kept.ink.length < 8) {
+        throw new Error(`Reload dropped the stroke: ${JSON.stringify(kept)}`);
+      }
+    } finally {
+      await browser.disconnect();
+    }
+    await browserCommand(["click", "--role", "button", "--name", "Code Mode"]);
+    const after = await connect();
+    try {
+      await after.page.waitForFunction(
+        () => document.querySelector(".shell")?.getAttribute("data-mode") === "code",
+      );
+      const observed = await after.page.evaluate(() => ({
+        mode: document.querySelector(".shell")?.getAttribute("data-mode"),
+        version: document.querySelector(".version")?.textContent ?? "",
+        text: document.body.innerText,
+      }));
+      if (
+        observed.mode !== "code" ||
+        observed.version !== "v2" ||
+        !observed.text.includes("stroke-2") ||
+        !observed.text.includes("1 stroke pinned to Freehand canvas sketching")
+      ) {
+        throw new Error(`Code mode did not show the stroke: ${JSON.stringify(observed)}`);
+      }
+    } finally {
+      await after.browser.disconnect();
+    }
+    await browserCommand([
+      "text",
+      "--path",
+      path.join(evidenceDir, "freehand-canvas-sketch.txt"),
+    ]);
+    await browserCommand([
+      "screenshot",
+      "--path",
+      path.join(evidenceDir, "freehand-canvas-sketch.png"),
+    ]);
+    console.log(JSON.stringify({ ok: true, feature, evidenceDir }));
+    return;
+  }
   if (feature !== "visual-cockpit-editing") {
     throw new Error(`Unmapped feature ${feature}`);
   }

@@ -36,6 +36,12 @@ Stop during a working phase commits `HUMAN_PAUSE`. A later judge tick is a no-op
 
 Test: `CF-05` in `packages/core/src/critical-flows.test.ts`.
 
+## CF-06 A stroke stays pinned to its card
+
+A stroke drawn on the canvas plate is stored on the freehand problem card. The same stroke is still there after the workspace is serialized and read back, and Code Mode shows that card id. Drawing while the railway is in a working phase pauses the run. A later agent tick does not drop the stroke or leave `paused_by_human`.
+
+Test: `CF-06` in `packages/core/src/critical-flows.test.ts`, plus the sketch render, reload, and slow-judgement pause in `apps/web/src/critical-flow.dom.test.tsx`.
+
 ## Lockstep properties
 
 `pnpm verify:formal` checks the promise those flows rely on: monotonic `stateVersion`, stale-write rejection, no agent commit while paused or after a terminal phase, and a rest path from every railway phase. The bounds and the command live in `.cursor/skills/formal-verify-visualizer/SKILL.md`.

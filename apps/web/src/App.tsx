@@ -1,37 +1,48 @@
 import {
+  appendSketchStroke,
   applyBuildTick,
   bannerFor,
   BrainRouter,
+  canvasCardId,
+  clearSketchStrokes,
   commitHuman,
   commitView,
   connectorCatalog,
   createSampleWorkspace,
   pauseRun,
   pilotPhases,
+  readPersistedWorkspace,
   remainingTicks,
   resumeRun,
+  serializeWorkspace,
   themePresets,
+  workspaceStorageKey,
   type BuildBrief,
   type CommitResult,
   type MockupNode,
+  type SketchPoint,
   type ThemeId,
   type WorkspaceState,
 } from "@visualizer/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SketchPad } from "./sketch-pad.js";
+import { pendingTickStillApplies } from "./tick-guard.js";
 import { Button, Toggle } from "./ui/controls.js";
 
-const brain = new BrainRouter({ prefer: 1 });
+const defaultRouter = new BrainRouter({ prefer: 1 });
 const connectors = connectorCatalog();
 
 function readInitialState(): WorkspaceState {
   const seeded = createSampleWorkspace();
-  if (typeof window !== "undefined" && window.location.hash === "#code") {
-    return { ...seeded, mode: "code" };
-  }
-  return seeded;
+  if (typeof window === "undefined") return seeded;
+  const stored = readPersistedWorkspace(window.localStorage.getItem(workspaceStorageKey));
+  let state = stored ?? seeded;
+  if (window.location.hash === "#code") state = { ...state, mode: "code" };
+  if (window.location.hash === "#cockpit") state = { ...state, mode: "cockpit" };
+  return state;
 }
 
-export function App() {
+export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
   const [state, setState] = useState<WorkspaceState>(readInitialState);
   const [notice, setNotice] = useState<string | null>(null);
   const stateRef = useRef(state);
@@ -69,10 +80,32 @@ export function App() {
         return;
       }
       const tick = current.autopilot.cursor;
-      const result = await applyBuildTick(current, current.stateVersion, tick, brain);
+      const startedVersion = current.stateVersion;
+      const result = await applyBuildTick(current, startedVersion, tick, router);
+      if (
+        !pendingTickStillApplies(
+          token.current,
+          mine,
+          stateRef.current.stateVersion,
+          startedVersion,
+        )
+      ) {
+        if (token.current !== mine) return;
+        continue;
+      }
       if (!apply(result)) return;
     }
-  }, [apply]);
+  }, [apply, router]);
+
+  useEffect(() => {
+    window.localStorage.setItem(workspaceStorageKey, serializeWorkspace(state));
+  }, [state]);
+
+  useEffect(() => {
+    return () => {
+      token.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -110,6 +143,16 @@ export function App() {
     );
   }
 
+  function addStroke(cardId: string, points: SketchPoint[]) {
+    const current = stateRef.current;
+    apply(appendSketchStroke(current, current.stateVersion, { cardId, points }));
+  }
+
+  function clearStrokes(cardId: string) {
+    const current = stateRef.current;
+    apply(clearSketchStrokes(current, current.stateVersion, cardId));
+  }
+
   function changeTheme(themeId: ThemeId) {
     const current = stateRef.current;
     apply(
@@ -130,7 +173,12 @@ export function App() {
   const ticksLeft = remainingTicks(state.autopilot.cursor);
 
   return (
-    <div className="shell" data-mode={state.mode} data-phase={state.autopilot.phase}>
+    <div
+      className="shell"
+      data-mode={state.mode}
+      data-phase={state.autopilot.phase}
+      data-stroke-count={state.strokes.length}
+    >
       <header className="top">
         <div className="brand">
           <span className="mark" aria-hidden="true">
@@ -225,9 +273,9 @@ export function App() {
       ) : null}
 
       {state.mode === "cockpit" ? (
-        <Cockpit state={state} onStatement={editStatement} />
+        <Cockpit state={state} onStatement={editStatement} onStroke={addStroke} />
       ) : (
-        <CodeMode state={state} onStatement={editStatement} />
+        <CodeMode state={state} onStatement={editStatement} onClearStrokes={clearStrokes} />
       )}
     </div>
   );
@@ -236,9 +284,11 @@ export function App() {
 function Cockpit({
   state,
   onStatement,
+  onStroke,
 }: {
   state: WorkspaceState;
   onStatement: (id: string, statement: string) => void;
+  onStroke: (cardId: string, points: SketchPoint[]) => void;
 }) {
   return (
     <main className="split">
@@ -294,7 +344,19 @@ function Cockpit({
             >
               <p>{node.kind}</p>
               <h3>{node.title}</h3>
-              <PlateBody kind={node.kind} />
+              {node.kind === "canvas" ? (
+                <SketchPad
+                  cardId={canvasCardId}
+                  cardTitle={
+                    state.problemCards.find((card) => card.id === canvasCardId)?.title ??
+                    "Freehand canvas sketching"
+                  }
+                  strokes={state.strokes}
+                  onStroke={onStroke}
+                />
+              ) : (
+                <PlateBody kind={node.kind} />
+              )}
               <p className="summary">{node.summary}</p>
             </article>
           ))}
@@ -321,37 +383,38 @@ function port(node: MockupNode, toward: MockupNode) {
   return { x: dx > 0 ? node.x + 42 : node.x, y: node.y + 12 };
 }
 
-function PlateBody({ kind }: { kind: MockupNode["kind"] }) {
-  if (kind === "canvas") {
-    return (
-      <svg className="scribble" viewBox="0 0 120 36" aria-hidden="true">
-        <path d="M4 24 C 18 6, 28 30, 42 16 S 70 8, 86 22 112 14, 116 20" />
-      </svg>
-    );
+function PlateBody({ kind }: { kind: Exclude<MockupNode["kind"], "canvas"> }) {
+  switch (kind) {
+    case "bridge":
+      return (
+        <p className="kv">
+          <span>document.modelContext</span>
+          <span>workspace</span>
+        </p>
+      );
+    case "log":
+      return (
+        <ol className="log-rows">
+          <li>v0 seed</li>
+          <li>v1 planning</li>
+          <li>v2 running</li>
+        </ol>
+      );
+    default: {
+      const unreachable: never = kind;
+      return unreachable;
+    }
   }
-  if (kind === "bridge") {
-    return (
-      <p className="kv">
-        <span>document.modelContext</span>
-        <span>workspace</span>
-      </p>
-    );
-  }
-  return (
-    <ol className="log-rows">
-      <li>v0 seed</li>
-      <li>v1 planning</li>
-      <li>v2 running</li>
-    </ol>
-  );
 }
 
 function CodeMode({
   state,
   onStatement,
+  onClearStrokes,
 }: {
   state: WorkspaceState;
   onStatement: (id: string, statement: string) => void;
+  onClearStrokes: (cardId: string) => void;
 }) {
   const spec = useMemo(
     () => ({
@@ -366,6 +429,7 @@ function CodeMode({
         title: card.title,
         statement: card.statement,
       })),
+      strokes: state.strokes,
       brief: state.brief,
     }),
     [state],
@@ -392,6 +456,32 @@ function CodeMode({
           <p>Typed spec</p>
           <h2>Shared workspace</h2>
         </header>
+        <div className="sketch-list" aria-label="Pinned strokes">
+          <h3>Pinned strokes</h3>
+          {state.strokes.length === 0 ? <p className="pin">No strokes pinned yet.</p> : null}
+          {state.problemCards.map((card) => {
+            const pinned = state.strokes.filter((stroke) => stroke.cardId === card.id);
+            if (pinned.length === 0) return null;
+            return (
+              <article key={card.id}>
+                <p className="pin">
+                  {pinned.length} {pinned.length === 1 ? "stroke" : "strokes"} pinned to {card.title}
+                </p>
+                <ol>
+                  {pinned.map((stroke) => (
+                    <li key={stroke.id}>
+                      <span>{stroke.id}</span>
+                      <span>{stroke.points.length} points</span>
+                    </li>
+                  ))}
+                </ol>
+                <Button type="button" onClick={() => onClearStrokes(card.id)}>
+                  Clear strokes for {card.title}
+                </Button>
+              </article>
+            );
+          })}
+        </div>
         <div className="spec-cards">
           {state.problemCards.map((card) => (
             <label key={card.id}>

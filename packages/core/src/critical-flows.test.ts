@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 import { BrainRouter } from "./brain/router.js";
 import { applyBuildTick, runSelfBootstrap } from "./bootstrap/run.js";
 import { checkLockstep } from "./formal/lockstep.js";
-import { createSampleWorkspace } from "./state/sample.js";
+import { canvasCardId, createSampleWorkspace } from "./state/sample.js";
+import { readPersistedWorkspace, serializeWorkspace } from "./state/persist.js";
+import { appendSketchStroke } from "./state/strokes.js";
 import {
   applyPilotEvent,
   assertCommit,
@@ -156,6 +158,41 @@ describe("critical flows", () => {
     expect(stopped.ok).toBe(true);
     if (!stopped.ok) return;
     expect(stopped.state).toBe(state);
+  });
+
+  it("CF-06 pins a stroke to its card, reloads it, and keeps it when a draw pauses the build", async () => {
+    const router = new BrainRouter({ prefer: 1 });
+    let state = createSampleWorkspace();
+    const points = [
+      { x: 0.15, y: 0.3 },
+      { x: 0.62, y: 0.48 },
+      { x: 0.4, y: 0.8 },
+    ];
+    state = assertCommit(
+      appendSketchStroke(state, state.stateVersion, { cardId: canvasCardId, points }),
+    );
+    expect(state.strokes).toHaveLength(1);
+    expect(state.strokes[0]?.cardId).toBe(canvasCardId);
+    expect(state.autopilot.phase).toBe("idle");
+    const reloaded = readPersistedWorkspace(serializeWorkspace(state));
+    expect(reloaded?.strokes[0]?.points).toEqual(points);
+    state = assertCommit(commitView(reloaded ?? state, (reloaded ?? state).stateVersion, "code"));
+    expect(state.mode).toBe("code");
+    expect(state.strokes[0]?.id).toBe("stroke-2");
+    state = createSampleWorkspace();
+    state = assertCommit(await applyBuildTick(state, state.stateVersion, "start", router));
+    expect(state.autopilot.phase).toBe("planning");
+    state = assertCommit(
+      appendSketchStroke(state, state.stateVersion, { cardId: canvasCardId, points }),
+    );
+    expect(state.autopilot.phase).toBe("paused_by_human");
+    expect(state.autopilot.banner).toBe("paused");
+    expect(state.strokes).toHaveLength(1);
+    const later = await applyBuildTick(state, state.stateVersion, "judge", router);
+    expect(later.ok).toBe(true);
+    if (!later.ok) return;
+    expect(later.state).toBe(state);
+    expect(later.state.strokes[0]?.points).toEqual(points);
   });
 
   it("holds the lockstep properties on the real transition functions", async () => {

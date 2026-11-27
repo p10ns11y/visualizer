@@ -4,6 +4,8 @@ import {
   type WorkspaceState,
 } from "./schema.js";
 
+export const canvasCardId = "card-canvas";
+
 export function createSampleWorkspace(): WorkspaceState {
   return WorkspaceStateSchema.parse({
     stateVersion: 0,
@@ -13,7 +15,7 @@ export function createSampleWorkspace(): WorkspaceState {
     tokens: themePresets.paper,
     problemCards: [
       {
-        id: "card-canvas",
+        id: canvasCardId,
         title: "Freehand canvas sketching",
         statement:
           "Draw on the cockpit canvas and pin each stroke to the problem card it explains.",
@@ -36,6 +38,7 @@ export function createSampleWorkspace(): WorkspaceState {
           "Each railway transition appends one row that matches the in-memory event log.",
       },
     ],
+    strokes: [],
     mockups: [
       {
         id: "plate-canvas",

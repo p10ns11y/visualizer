@@ -1,9 +1,31 @@
+import { BrainRouter, workspaceStorageKey } from "@visualizer/core";
+
+if (typeof PointerEvent === "undefined") {
+  class TestPointerEvent extends MouseEvent {
+    pointerId: number;
+    pointerType: string;
+    pressure: number;
+    constructor(type: string, init: MouseEventInit & { pointerId?: number; pointerType?: string; pressure?: number } = {}) {
+      super(type, init);
+      this.pointerId = init.pointerId ?? 1;
+      this.pointerType = init.pointerType ?? "mouse";
+      this.pressure = init.pressure ?? 0.5;
+    }
+  }
+  Object.defineProperty(globalThis, "PointerEvent", { value: TestPointerEvent });
+}
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "./App.js";
+import { pendingTickStillApplies } from "./tick-guard.js";
 
 let root: Root | null = null;
+
+beforeEach(() => {
+  localStorage.clear();
+  window.location.hash = "";
+});
 
 afterEach(() => {
   act(() => {
@@ -11,14 +33,16 @@ afterEach(() => {
   });
   root = null;
   document.body.innerHTML = "";
+  localStorage.clear();
+  window.location.hash = "";
 });
 
-function mount() {
+function mount(router?: BrainRouter) {
   const host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
   act(() => {
-    root?.render(<App />);
+    root?.render(router ? <App router={router} /> : <App />);
   });
 }
 
@@ -89,4 +113,126 @@ describe("shared cockpit and code mode", () => {
     expect(field.value).toBe(statement);
     expect(document.querySelector(".shell")?.getAttribute("data-phase")).toBe("paused_by_human");
   });
+
+  it("draws a stroke, reloads it, and shows the pin in code mode", () => {
+    mount();
+    const surface = document.querySelector("svg.sketch-pad");
+    if (!(surface instanceof SVGSVGElement)) throw new Error("Missing sketch surface");
+    drawOn(surface);
+    expect(document.querySelector(".shell")?.getAttribute("data-stroke-count")).toBe("1");
+    expect(document.querySelector(".sketch-pad path")?.getAttribute("d")?.length).toBeGreaterThan(8);
+    expect(document.body.textContent).toContain("1 stroke pinned to Freehand canvas sketching");
+    const stored = localStorage.getItem(workspaceStorageKey);
+    act(() => {
+      root?.unmount();
+    });
+    root = null;
+    document.body.innerHTML = "";
+    expect(stored).toBeTruthy();
+    mount();
+    expect(document.querySelector(".shell")?.getAttribute("data-stroke-count")).toBe("1");
+    expect(document.querySelector(".sketch-pad path")).not.toBeNull();
+    const toggle = document.querySelector('button[aria-label="Code Mode"]');
+    if (!(toggle instanceof HTMLButtonElement)) throw new Error("Missing Code Mode toggle");
+    act(() => {
+      toggle.click();
+    });
+    expect(document.querySelector(".shell")?.getAttribute("data-mode")).toBe("code");
+    expect(document.body.textContent).toContain("stroke-2");
+    expect(document.body.textContent).toContain("1 stroke pinned to Freehand canvas sketching");
+    const clear = [...document.querySelectorAll("button")].find(
+      (button) => button.textContent === "Clear strokes for Freehand canvas sketching",
+    );
+    if (!clear) throw new Error("Missing clear strokes");
+    act(() => {
+      clear.click();
+    });
+    expect(document.querySelector(".shell")?.getAttribute("data-stroke-count")).toBe("0");
+    expect(document.body.textContent).toContain("No strokes pinned yet.");
+  });
+
+  it("keeps a stroke that pauses a build during a slow judgement", async () => {
+    expect(pendingTickStillApplies(1, 1, 4, 4)).toBe(true);
+    expect(pendingTickStillApplies(2, 1, 4, 4)).toBe(false);
+    expect(pendingTickStillApplies(1, 1, 5, 4)).toBe(false);
+    let release: () => void = () => {};
+    let started: () => void = () => {};
+    const judging = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const router = new BrainRouter({
+      prefer: 2,
+      tier2: {
+        complete: async () => {
+          started();
+          await held;
+          return JSON.stringify({
+            route: "freehand-canvas",
+            rank: 0.5,
+            drift: false,
+            reason: "Held for the stroke.",
+          });
+        },
+      },
+    });
+    mount(router);
+    const build = [...document.querySelectorAll("button")].find(
+      (button) => button.textContent === "Build",
+    );
+    if (!build) throw new Error("Missing Build");
+    act(() => {
+      build.click();
+    });
+    await waitFor(() => document.querySelector(".shell")?.getAttribute("data-phase") === "planning");
+    await judging;
+    const surface = document.querySelector("svg.sketch-pad");
+    if (!(surface instanceof SVGSVGElement)) throw new Error("Missing sketch surface");
+    drawOn(surface);
+    expect(document.querySelector(".shell")?.getAttribute("data-phase")).toBe("paused_by_human");
+    expect(document.querySelector(".shell")?.getAttribute("data-stroke-count")).toBe("1");
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    expect(document.querySelector(".shell")?.getAttribute("data-phase")).toBe("paused_by_human");
+    expect(document.querySelector(".shell")?.getAttribute("data-stroke-count")).toBe("1");
+    expect(document.querySelector(".sketch-pad path")).not.toBeNull();
+  });
 });
+
+function drawOn(surface: SVGSVGElement) {
+  surface.getBoundingClientRect = () =>
+    ({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 128,
+      width: 200,
+      height: 128,
+      toJSON() {
+        return {};
+      },
+    }) as DOMRect;
+  const fire = (type: string, x: number, y: number) => {
+    surface.dispatchEvent(
+      new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        pointerId: 1,
+        pointerType: "mouse",
+        buttons: type === "pointerup" ? 0 : 1,
+      }),
+    );
+  };
+  act(() => {
+    fire("pointerdown", 24, 36);
+    fire("pointermove", 90, 48);
+    fire("pointermove", 140, 88);
+    fire("pointerup", 160, 70);
+  });
+}
