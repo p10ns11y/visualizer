@@ -1,4 +1,4 @@
-import type { EnsemblyRecord, LogEntry, PulseMemory, WorkspaceState } from "./schema.js";
+import type { EnsemblyRecord, FleetProposal, LogEntry, PulseMemory, WorkspaceState } from "./schema.js";
 
 function logKey(entry: LogEntry): string {
   return `${entry.id}\u0000${entry.kind}\u0000${entry.message}`;
@@ -38,10 +38,12 @@ export function mergeAuxIntoTick(live: WorkspaceState, tick: WorkspaceState): Wo
   }
   const ensemblyLedger: EnsemblyRecord[] = mergeById(tick.ensemblyLedger, live.ensemblyLedger);
   const pulseMemory: PulseMemory[] = mergeById(tick.pulseMemory, live.pulseMemory);
+  const fleetProposals: FleetProposal[] = mergeById(tick.fleetProposals, live.fleetProposals);
   return {
     ...tick,
     ensemblyLedger,
     pulseMemory,
+    fleetProposals,
     workflowLessons,
     eventLog: [...tick.eventLog, ...appended],
     logSeq,

@@ -47,11 +47,13 @@ pnpm dev
 pnpm typecheck && pnpm test && pnpm test:critical-flows && pnpm test:mbt && pnpm verify:formal && pnpm build
 ```
 
-`@visualizer/core` holds the shared workspace, collision guards, XState railway, 3-tier brain, and local tool contracts. `@visualizer/web` is the one app: Visual Cockpit and Code Mode read and write that same state. Button and toggle behavior comes from `@ui-sdk/react`, wrapped in `apps/web/src/ui/controls.tsx`.
+`@visualizer/core` holds the shared workspace, collision guards, XState railway, 3-tier brain, and local tool contracts. `@visualizer/web` is the one app: Visual Cockpit and Code Mode read and write that same state. XState 6 is the only state owner. Button and toggle behavior comes from `@ui-sdk/react`, wrapped in `apps/web/src/ui/controls.tsx`. `createAgent().snapshot()` feeds the compact cockpit snapshot. `act` files a pending fleet proposal by action id.
 
 Step 1 opens with problem cards for Step 2 of Visualizer itself: freehand canvas sketching, a live WebMCP `document.modelContext` bridge, and a card titled "Ensembly shared log". [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](docs/decisions/001-ensembly-vs-vercel-board-sync.md) records why that log is Ensembly, not a `@vercel/board` SQLite file. Build runs the Tier 1 railway. Stop pauses it. A verified Step 2 brief then shows in both modes.
 
 The canvas plate takes freehand ink. Each stroke is pinned to the freehand problem card, stored on the shared workspace, and kept in `localStorage` across a reload. Code Mode lists those strokes and can clear them. A stroke during a working phase pauses the run and keeps the ink. The page now registers the WebMCP tools on native `modelContext` or the local bridge. Cross-machine Ensembly sync remains open.
+
+Both modes also show a sample interconnection map of an SI bot fleet: bots, routines, tasks, and shared stores, with hands-off, trigger, read, and write edges. The map is rendered from one Zod catalog. An unknown component or a prop the schema does not name is rejected, and the spec is not executed. Findings call out a cycle, fan-in and fan-out hotspots, orphan nodes, and a dead edge. An SI agent reads `snapshot` and files a refactor with `act`. The proposal stays pending until a person approves or rejects it, and the graph is not rewritten. On this sample surface the snapshot is 704 tokens, the accessibility listing is 853, and the HTML serialization is 1144. The decision is [`docs/decisions/005-dynamic-ui-catalog.md`](docs/decisions/005-dynamic-ui-catalog.md).
 
 The Memory panel, in both modes, lists Pulse Memory, the Canon 1 `pulse-pack-v1` sparse inject, and workflow lessons. Ensembly is the append-only ledger. A record promotes into Pulse Memory after a confirmed outcome, a user-stated trace, or a tool-verified trace with a matching verify hash. Superseded traces stay out of the active inject. The inject token count is the serialized `{ schema, traces }` payload and stays inside 120. A lesson, a ledger append, and a promotion name the current railway phase and do not pause it. Older workspaces that lack those fields still load. A `pulse-pack-v1` file that omits `ext` still imports. Neo4j is an optional projection; the commands and Cypher are in `docs/MEMORY-NEO4J.md`. CI uses the in-memory graph port.
 
@@ -79,8 +81,9 @@ Critical flows are listed in `docs/CRITICAL-FLOWS.md`. Test commands are listed 
 
 ## References
 
-- [`adaptate`](https://github.com/p10ns11y/adaptate) (`@adaptate/core`, `@adaptate/utils`) — typed contracts reused with Zod. The autopilot stream uses `transformSchema`, `makeConditionalSchemaTransformer`, `parse` / `parseStream` from `@adaptate/core/result`, and `fromAsyncIterableSteps` from `@adaptate/core/stream-incremental`. Connector calls use `createStreamValidator`, `isSettled`, and `verifyStream` from `@adaptate/core`, and connector schemas use `zodToOpenAPISchema` from `@adaptate/utils`.
-- `@ui-sdk/react` — one-app, two-modes primitives and shared-state interaction
+- [`adaptate`](https://github.com/p10ns11y/adaptate) (`@adaptate/core`, `@adaptate/utils`) — typed contracts reused with Zod. The autopilot stream uses `transformSchema`, `makeConditionalSchemaTransformer`, `parse` / `parseStream` from `@adaptate/core/result`, and `fromAsyncIterableSteps` from `@adaptate/core/stream-incremental`. Connector calls use `createStreamValidator`, `isSettled`, and `verifyStream` from `@adaptate/core`, connector schemas use `zodToOpenAPISchema` from `@adaptate/utils`, and the fleet catalog uses `parse` from `@adaptate/core`.
+- `@ui-sdk/react` — one-app, two-modes primitives. `createAgent` reads control refs. Fleet writes go through `act` by action id.
+- [Uncle Bob, 27 Nov 2026](https://x.com/unclebobmartin/status/2123401950305660969) — a bot fleet grows from one task into intertwined routines that need a bot to retune the connections. The sample map is that picture, with generic names.
 - [XState](https://xstate.js.org) 6 — statecharts and the railway backbone
 - [Chopin](https://githubnext.com/projects/chopin/) — GitHub Next's multiplayer MDX planning prototype
 - [Lopsi](https://github.com/frankievalentine/lopsi-bot-eve) — folder-per-agent layout inspiration

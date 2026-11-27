@@ -60,6 +60,12 @@ Test: `CF-08` in `packages/core/src/critical-flows.test.ts`, plus the bridge str
 
 Test: `external MCP client` in `apps/mcp/src/server.e2e.test.ts` and `keeps a ledger append from a second process` in `apps/mcp/src/workspace-file.test.ts`, both executed by `pnpm test`.
 
+## CF-10 An agent files a fleet proposal by action id
+
+The interconnection map renders the sample fleet from a Zod catalog. An unknown component is rejected. `snapshot` lists typed action ids. `act` without local approval returns `READ_ONLY` and files nothing. With approval, `act` appends one pending proposal and does not change the fleet graph or `stateVersion`. A proposal written beside a railway step is still there after `mergeAuxIntoTick`. Approving the proposal changes its status and still does not rewrite the graph. The sample analysis reports a cycle, a fan-in hotspot, a fan-out hotspot, orphan nodes, and a dead edge.
+
+Test: `CF-10` in `packages/core/src/critical-flows.test.ts`, the catalog and bridge cases in `packages/core/src/fleet/fleet.test.ts`, the MCP round-trip in `apps/mcp/src/server.e2e.test.ts`, and the map render in `apps/web/src/critical-flow.dom.test.tsx`.
+
 ## Lockstep properties
 
 `pnpm verify:formal` checks the promise those flows rely on: monotonic `stateVersion`, stale-write rejection, no agent commit while paused or after a terminal phase, and a rest path from every railway phase. The bounds and the command live in `.cursor/skills/formal-verify-visualizer/SKILL.md`.

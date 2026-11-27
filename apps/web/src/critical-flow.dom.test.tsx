@@ -24,6 +24,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "./App.js";
+import { actOnUiControl } from "./ui/cockpit-agent.js";
 import { pendingTickStillApplies } from "./tick-guard.js";
 
 let root: Root | null = null;
@@ -333,6 +334,22 @@ describe("shared cockpit and code mode", () => {
       "read-only",
     );
     expect(localStorage.getItem(webMcpApprovalStorageKey)).toBeNull();
+  });
+
+  it("shows the sample interconnection map and refuses a ui-sdk control act", async () => {
+    mount();
+    const map = document.querySelector("[aria-label='Interconnection map']");
+    expect(map?.textContent).toContain("Intake bot");
+    expect(map?.textContent).toContain("Cycle across");
+    const snapshot = Number(document.querySelector("[data-token='snapshot']")?.textContent);
+    const accessibility = Number(document.querySelector("[data-token='accessibility']")?.textContent);
+    const dom = Number(document.querySelector("[data-token='dom']")?.textContent);
+    expect(snapshot).toBeGreaterThan(0);
+    expect(snapshot).toBeLessThan(accessibility);
+    expect(snapshot).toBeLessThan(dom);
+    expect(document.body.innerHTML.includes("dangerouslySetInnerHTML")).toBe(false);
+    const acted = await actOnUiControl("Build", "press");
+    expect(acted.ok).toBe(false);
   });
 });
 

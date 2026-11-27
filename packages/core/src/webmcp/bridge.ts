@@ -5,6 +5,8 @@ import { runGuidedBuild, type GuidedLanding } from "../bootstrap/guided.js";
 import { appendEnsemblyRecord, importEnsemblyRecords, promoteEnsemblyRecord, recordWorkflowLesson } from "../memory/commit.js";
 import { exportPulsePack, readPulsePack, recordsFromPack } from "../memory/ensembly.js";
 import { buildPulseInject } from "../memory/pulse-inject.js";
+import { proposeFleetAction } from "../fleet/propose.js";
+import { buildCockpitSnapshot, type UiControlSnapshot } from "../fleet/snapshot.js";
 import { pauseRun, resumeRun, type CommitResult } from "../state/store.js";
 import {
   EnsemblyRecordSchema,
@@ -37,6 +39,8 @@ export const webMcpToolNames = [
   "import_pulse_pack",
   "start_build",
   "resume_build",
+  "snapshot",
+  "act",
 ] as const;
 
 export const webMcpApprovalStorageKey = "visualizer.webmcp.approval";
@@ -78,6 +82,10 @@ const LessonInput = WorkflowLessonSchema.extend({
 const EnsemblyInput = EnsemblyRecordSchema.extend({
   stateVersion: z.number().int().nonnegative(),
 });
+const ActInput = z.object({
+  stateVersion: z.number().int().nonnegative(),
+  actionId: z.string().min(1).max(120),
+});
 
 export const webMcpInputSchemas: Record<WebMcpToolName, z.ZodType> = {
   list_cards: EmptyInput,
@@ -95,6 +103,8 @@ export const webMcpInputSchemas: Record<WebMcpToolName, z.ZodType> = {
   import_pulse_pack: ImportInput,
   start_build: VersionInput,
   resume_build: VersionInput,
+  snapshot: EmptyInput,
+  act: ActInput,
 };
 
 export type WebMcpToolResult =
@@ -140,6 +150,7 @@ type BridgeDeps = {
   getApproval: () => WebMcpApproval;
   onCommit: (result: CommitResult) => void;
   landTick?: GuidedLanding;
+  getUiSnapshot?: () => readonly UiControlSnapshot[];
 };
 
 function jsonSchema(schema: z.ZodType): Record<string, unknown> {
@@ -505,6 +516,46 @@ function workspaceTools(deps: BridgeDeps): WebMcpTool[] {
           ),
           deps.onCommit,
         );
+      },
+    },
+    {
+      name: "snapshot",
+      description: "Reads a compact typed cockpit snapshot: fleet ids, findings, action ids, and ui-sdk control refs.",
+      inputSchema: jsonSchema(EmptyInput),
+      annotations: { readOnlyHint: true },
+      execute(input) {
+        const parsed = EmptyInput.safeParse(input ?? {});
+        if (!parsed.success) return invalid(parsed.error);
+        const controls = deps.getUiSnapshot?.() ?? [];
+        return { ok: true, snapshot: buildCockpitSnapshot(deps.getState(), controls) };
+      },
+    },
+    {
+      name: "act",
+      description: "Files a pending fleet proposal for an action id when local approval is on. It does not change the fleet graph.",
+      inputSchema: jsonSchema(ActInput),
+      annotations: { readOnlyHint: false },
+      execute(input) {
+        const parsed = ActInput.safeParse(input ?? {});
+        if (!parsed.success) return invalid(parsed.error);
+        const denied = guardWrite(deps, parsed.data.stateVersion);
+        if (denied) return denied;
+        const proposed = proposeFleetAction(
+          deps.getState(),
+          parsed.data.stateVersion,
+          parsed.data.actionId,
+          new Date().toISOString(),
+        );
+        if (!proposed.ok) {
+          if ("code" in proposed) {
+            return { ok: false, code: "INVALID_INPUT", message: `Unknown action ${proposed.actionId}.` };
+          }
+          return fromCommit(proposed, deps.onCommit);
+        }
+        const committed = fromCommit(proposed, deps.onCommit);
+        if (!committed.ok) return committed;
+        const pending = proposed.state.fleetProposals.find((item) => item.actionId === parsed.data.actionId);
+        return { ...committed, proposalId: pending?.id ?? null, status: pending?.status ?? null };
       },
     },
   ];

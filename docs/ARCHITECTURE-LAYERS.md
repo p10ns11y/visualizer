@@ -6,7 +6,7 @@ The diagram is the dependency direction: the UI talks to a thin bridge, the brid
 
 ```mermaid
 flowchart TB
-  ui["UI and state: Visual Cockpit, Code Mode, XState 6"]
+  ui["Cockpit and Code Mode. XState 6 owns state"]
   mcp["Headless MCP: Streamable HTTP on 127.0.0.1"]
   file["Workspace JSON file"]
   memory["Memory: Ensembly ledger, Pulse Memory, workflow lessons"]
@@ -15,7 +15,9 @@ flowchart TB
   core["Thin core: CLI or native module, WASM when needed"]
   accel["adaptate-accel, packages/native, packages/wasm"]
   streams["@adaptate/core typed streams"]
+  catalog["Catalog: Zod fleet spec, typed events only"]
   ui --> memory
+  ui --> catalog
   mcp --> memory
   mcp --> file
   memory --> neo4jGraph
@@ -68,6 +70,10 @@ When neither getter exists, the same calls run on an in-memory bridge and the st
 
 This surface is the page's tool producer. It is not the native core bridge in section 3. Payload checks stay in `adaptate`. Input schemas are Zod objects converted with `zodToOpenAPISchema` from `@adaptate/utils`.
 
+`snapshot` is a read. It returns a compact typed view of the sample fleet: node and edge ids, finding codes, proposal status, and action ids, plus any `@ui-sdk/react` control refs from `createAgent().snapshot()`. `act` is a write. It takes an action id and files a pending proposal. It does not click the page. Writes stay off until the page grants local approval, or until the headless server is given `VISUALIZER_MCP_ALLOW_WRITES=1` or a matching bearer. `@visualizer/mcp` registers the same two tools because it registers the bridge list.
+
+The interconnection map is one Zod catalog. `readCatalogSpec` rejects an unknown component, a prop the schema does not name, and keys such as `dangerouslySetInnerHTML`. Specs are checked again with `parse` from `@adaptate/core`. The renderer paints text and SVG from that spec. It does not run spec text as code. XState 6 remains the only state owner. The catalog does not keep its own store, and no chat runtime owns the cockpit.
+
 Chopin stays outside this core. A proposed adapter port, not a dependency, is recorded in [`docs/decisions/002-chopin-interop-via-mcp.md`](decisions/002-chopin-interop-via-mcp.md).
 
 ## 4. JS / WebView UI and state
@@ -75,6 +81,8 @@ Chopin stays outside this core. A proposed adapter port, not a dependency, is re
 Visual Cockpit and Code Mode stay a JavaScript WebView. XState 6 owns the pilot railway. `stateVersion`, human pause, and the tool-call contracts stay in that state layer and drive the core through the bridge. A view change still does not pause a run. A human edit during a working phase still does. The WebMCP strip in both modes shows whether the browser getter was found and which tools are registered. The workspace is stored in `localStorage` under `visualizer.workspace`. A payload left under `visualizer.workspace.v1` is read only when the current key is empty. Missing strokes, ledger, Pulse Memory, and lesson arrays hydrate as empty lists, and a stored card statement is left as written.
 
 Freehand strokes are fields on that same workspace: a `cardId` plus normalized pointer samples. The canvas plate paints them. Code Mode lists and clears them. They are not a bridge payload and not a board log. A stroke during a working phase uses the same human-edit pause as a statement edit.
+
+The sample fleet graph and its proposal ledger are fields on that same workspace. The graph is sample data with generic names. A proposal filed by `act` is aux data: same `stateVersion`, same railway phase, status `pending`. A person can approve or reject it in the cockpit. That decision changes the proposal status only. The graph stays as written. `mergeAuxIntoTick` keeps a proposal that arrived while a build tick was awaiting, the same way it keeps a lesson. On the sample fleet, the compact snapshot is 704 tokens, a role-and-name accessibility listing of the same surface is 853 tokens, and an HTML serialization of those nodes and edges is 1144 tokens (`ceil(utf-8 bytes / 4)`).
 
 Pulse Memory and workflow lessons are fields on that same workspace. The Ensembly ledger is the append-only record. A row enters Pulse Memory when `canPromote` admits it: a confirmed outcome, `status: user-stated`, or `status: tool-verified` whose `verifyHash` is `sha256:` plus the SHA-256 of the summary. `supersededBy` keeps that row out of the active pulse. `buildPulseInject` returns at most 8 active traces and stays inside a 120-token budget. The count is `ceil(utf-8 bytes / 4)` of the serialized `{ schema, traces }` payload. The exchange format is Canon 1 `pulse-pack-v1` (`schema` and `format`): integer `coherence_milli`, `traces`, `archive`, `host`, `kind` (`data`, `context`, `fact`, `memory`), `status` (`user-stated`, `tool-verified`, `inferred`, `unknown`), `lock`, `verify_hash`, `prefetch_key`, and optional `superseded_by`. Top-level `ext.content_sha256` and per-trace `ext` may be absent. A missing pack hash is computed. A present pack hash must match. A missing trace `ext` falls back to the envelope fields. Packs labeled `ensembly-pulse-pack-v1` or `peram-pulse-pack-v1` are read only. A payload saved before those fields existed still hydrates. A fractional `coherence_milli` does not.
 

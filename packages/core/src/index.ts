@@ -120,8 +120,21 @@ export {
   PulseMemorySchema,
   PulseStatusSchema,
   PulseTraceKindSchema,
+  FleetEdgeKindSchema,
+  FleetEdgeSchema,
+  FleetGraphSchema,
+  FleetNodeKindSchema,
+  FleetNodeSchema,
+  FleetProposalKindSchema,
+  FleetProposalSchema,
+  FleetProposalStatusSchema,
   WorkflowLessonSchema,
   ensemblyKinds,
+  fleetEdgeKinds,
+  fleetNodeKinds,
+  fleetProposalKinds,
+  fleetProposalStatuses,
+  sampleFleetGraph,
   lessonSignals,
   pulseLocks,
   pulsePackSchema,
@@ -136,6 +149,14 @@ export type {
   PulseMemory,
   PulseStatus,
   PulseTraceKind,
+  FleetEdge,
+  FleetEdgeKind,
+  FleetGraph,
+  FleetNode,
+  FleetNodeKind,
+  FleetProposal,
+  FleetProposalKind,
+  FleetProposalStatus,
   WorkflowLesson,
 } from "./state/schema.js";
 export {
@@ -164,6 +185,20 @@ export { projectWorkspace } from "./memory/port.js";
 export type { LessonFilter, MemoryGraphStore } from "./memory/port.js";
 
 export { mergeAuxIntoTick } from "./state/merge-aux.js";
+export { analyzeFleet, findCycles, fleetHotspotDegree, liveEdges } from "./fleet/analyze.js";
+export type { FleetFinding } from "./fleet/analyze.js";
+export { fleetActionById, fleetActions } from "./fleet/actions.js";
+export type { FleetAction } from "./fleet/actions.js";
+export {
+  CatalogSpecSchema,
+  buildFleetSpec,
+  catalogComponentNames,
+  readCatalogSpec,
+} from "./fleet/catalog.js";
+export type { CatalogElement, CatalogRead, CatalogSpec } from "./fleet/catalog.js";
+export { decideFleetProposal, proposeFleetAction } from "./fleet/propose.js";
+export { buildCockpitSnapshot, measureCockpitSurface } from "./fleet/snapshot.js";
+export type { CockpitSnapshot, CockpitTokenReport, UiControlSnapshot } from "./fleet/snapshot.js";
 export {
   approvalFromStorage,
   describeWebMcpBridge,

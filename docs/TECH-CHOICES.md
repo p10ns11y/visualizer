@@ -223,3 +223,26 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - **Why:** GitHub rejected the architecture diagram because a node id was the reserved word `graph`. `mermaid.parse` is the library's parser entry and reports that same error. In Node, DOMPurify's default export has no `addHook` until a document exists, so the script creates a jsdom window before importing mermaid. A browser render would also parse the diagram, and it would download Chromium on every CI run.
 - **Basis:** Live research on 2026-11-27, before the packages were added. `npm view mermaid version` returned `12.4.0` (published 2026-11-27). `npm view @mermaid-js/mermaid-cli version` returned `12.2.0`. `npm view jsdom version` returned `31.0.1`. A local `mermaid.parse` call on the old diagram threw `Parse error on line 3` with `got 'GRAPH'`. The renamed diagram, and the other two fences in `docs/ARCHITECTURE-LAYERS.md`, parse.
 - **Latest trends checked before choosing:** Yes, on 2026-11-27, before the install. Compared `mermaid` `12.4.0` (`mermaid.parse`) with `@mermaid-js/mermaid-cli` `12.2.0` (Puppeteer render). The library line is newer than the CLI line. The check uses the library parser.
+
+## Dynamic catalog and agent snapshot
+
+- **Chosen:** Stay on `@ui-sdk/react` and `@ui-sdk/core` `0.1.0-beta.17`. Wire `createAgent().snapshot()` into the cockpit snapshot and `createAgent().act()` with `allow` returning false, so a control press is refused. Fleet writes use a new bridge tool `act` that files a pending proposal by action id. `snapshot` is the read. `@visualizer/mcp` picks both up from `webMcpToolNames`. The map is an in-repo Zod catalog checked with `parse` from `@adaptate/core` and `zodToOpenAPISchema` from `@adaptate/utils` on the tool input. No `@json-render/core`, no `@a2ui/react`, no chat UI runtime. Proposals are aux rows. `mergeAuxIntoTick` keeps them. Measured on the sample fleet with `ceil(utf-8 bytes / 4)`: snapshot 704 tokens, accessibility listing 853, HTML serialization 1144.
+- **Why:** XState 6 already owns the railway. A second UI runtime would own a tree of its own. The agent needs ids it can name, and the page needs a spec that rejects unknown components and executable props. The published ui-sdk line is still `0.1.0-beta.17`, which already exports `createAgent`. A newer GitHub release was not on npm. The token gap is the fleet surface only, not a full browser accessibility tree of another app.
+- **Basis:** Live research on 2026-11-27, before the catalog was written. `npm view @ui-sdk/react version` and `npm view @ui-sdk/core version` both returned `0.1.0-beta.17`. [Connect an agent](https://ui-sdk.dev/docs/agents/connect-an-agent) and the [reference](https://ui-sdk.dev/docs/agents/connect-an-agent/reference) document `createAgent`, `snapshot`, `act`, and `registerTools`. The installed `agent.d.ts` matches that `act({ steps })` shape. `npm view @json-render/core version` returned `0.23.2` (updated 2026-11-19). [json-render schemas](https://json-render.dev/docs/schemas) describe a catalog plus a generative spec, and [its A2UI page](https://json-render.dev/docs/a2ui) shows a second message format. `npm view @a2ui/react version` returned `0.16.1`, with peer `zod` `^3.25.76`. [A2UI v1.0](https://a2ui.org/specification/v1.0-a2ui/) (updated 2026-06-08) adds envelopes, `@path` bindings, and function RPC. This repo is on Zod 4. The Uncle Bob note was read as the task link `https://x.com/unclebobmartin/status/2123401950305660969`. Token counts were printed from `measureCockpitSurface(createSampleWorkspace())` on this branch.
+- **Latest trends checked before choosing:** Yes, on 2026-11-27, before the code. Compared staying on ui-sdk `0.1.0-beta.17` (npm current) with the GitHub pre-release `@ui-sdk/react@0.1.0-beta.19` from the same day, which npm did not list. Compared `@json-render/core` `0.23.2`, `@a2ui/react` `0.16.1` against A2UI 1.0, and a small in-repo Zod renderer. The in-repo renderer matched one surface and the Zod 4 already pinned here. No catalog package was added.
+
+## Head Plan and Tail Plan for the dynamic catalog
+
+### Head Plan
+
+- [x] Add the sample fleet graph, cycle / hotspot / orphan / dead-edge analysis, and aux proposals that do not change `stateVersion` or the graph.
+- [x] Validate one Zod catalog with `@adaptate/core` `parse`. Reject unknown components, bad props, and executable keys.
+- [x] Expose `snapshot` and `act` on the WebMCP bridge and through `@visualizer/mcp`. Writes stay off until local approval.
+- [x] Render the map in the cockpit from that spec. `createAgent().snapshot()` is included. `createAgent().act()` is refused.
+- [x] Keep a proposal that lands while a build tick is awaiting, via `mergeAuxIntoTick`.
+
+### Tail Plan
+
+- [x] Update the architecture diagram, `README.md`, `docs/decisions/005-dynamic-ui-catalog.md`, `docs/CRITICAL-FLOWS.md`, `docs/TEST-SUITE.md`, and this file. Credit `@adaptate/core` and `@adaptate/utils`.
+- [x] Update `.cursor/skills/verify-visualizer/` for the map. Leave the formal sync commit in place and note that proposals are aux.
+- [x] Run `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`.

@@ -190,6 +190,87 @@ export const BuildBriefSchema = z.object({
 });
 export type BuildBrief = z.infer<typeof BuildBriefSchema>;
 
+export const fleetNodeKinds = ["bot", "routine", "task", "store"] as const;
+export const FleetNodeKindSchema = z.enum(fleetNodeKinds);
+export type FleetNodeKind = z.infer<typeof FleetNodeKindSchema>;
+
+export const fleetEdgeKinds = ["hands_off", "triggers", "reads", "writes"] as const;
+export const FleetEdgeKindSchema = z.enum(fleetEdgeKinds);
+export type FleetEdgeKind = z.infer<typeof FleetEdgeKindSchema>;
+
+export const FleetNodeSchema = z.object({
+  id: z.string().min(1),
+  kind: FleetNodeKindSchema,
+  label: z.string().min(1),
+  summary: z.string().min(1),
+});
+export type FleetNode = z.infer<typeof FleetNodeSchema>;
+
+export const FleetEdgeSchema = z.object({
+  id: z.string().min(1),
+  fromId: z.string().min(1),
+  toId: z.string().min(1),
+  kind: FleetEdgeKindSchema,
+  label: z.string().min(1),
+  live: z.boolean(),
+});
+export type FleetEdge = z.infer<typeof FleetEdgeSchema>;
+
+export const FleetGraphSchema = z.object({
+  nodes: z.array(FleetNodeSchema),
+  edges: z.array(FleetEdgeSchema),
+});
+export type FleetGraph = z.infer<typeof FleetGraphSchema>;
+
+export const fleetProposalKinds = ["merge_routines", "flag_cycle", "flag_hotspot", "mark_dead_edge"] as const;
+export const FleetProposalKindSchema = z.enum(fleetProposalKinds);
+export type FleetProposalKind = z.infer<typeof FleetProposalKindSchema>;
+
+export const fleetProposalStatuses = ["pending", "approved", "rejected"] as const;
+export const FleetProposalStatusSchema = z.enum(fleetProposalStatuses);
+export type FleetProposalStatus = z.infer<typeof FleetProposalStatusSchema>;
+
+export const FleetProposalSchema = z.object({
+  id: z.string().min(1),
+  actionId: z.string().min(1),
+  kind: FleetProposalKindSchema,
+  summary: z.string().min(1),
+  status: FleetProposalStatusSchema,
+  subjectIds: z.array(z.string().min(1)).min(1),
+  createdAt: z.string().datetime(),
+});
+export type FleetProposal = z.infer<typeof FleetProposalSchema>;
+
+export const sampleFleetGraph: FleetGraph = FleetGraphSchema.parse({
+  nodes: [
+    { id: "bot-intake", kind: "bot", label: "Intake bot", summary: "Accepts one new task." },
+    { id: "bot-router", kind: "bot", label: "Router bot", summary: "Hands work to sweeps and review." },
+    { id: "bot-review", kind: "bot", label: "Review bot", summary: "Reads the shared pulse." },
+    { id: "routine-morning", kind: "routine", label: "Morning sweep", summary: "Reads the ledger and writes the pulse." },
+    { id: "routine-dawn", kind: "routine", label: "Dawn sweep", summary: "Overlaps the morning sweep." },
+    { id: "task-classify", kind: "task", label: "Classify task", summary: "Hands off to the summary task." },
+    { id: "task-summarize", kind: "task", label: "Summarize task", summary: "Hands back to classify and writes the ledger." },
+    { id: "store-ledger", kind: "store", label: "Shared ledger", summary: "Append-only sample store." },
+    { id: "store-pulse", kind: "store", label: "Shared pulse", summary: "Short sample memory store." },
+    { id: "bot-spare", kind: "bot", label: "Spare notifier", summary: "No live connection." },
+    { id: "routine-stale", kind: "routine", label: "Stale sweep", summary: "Only a dead edge remains." },
+  ],
+  edges: [
+    { id: "edge-hand-intake", fromId: "bot-intake", toId: "bot-router", kind: "hands_off", label: "Hands off", live: true },
+    { id: "edge-trig-morning", fromId: "bot-router", toId: "routine-morning", kind: "triggers", label: "Triggers", live: true },
+    { id: "edge-trig-dawn", fromId: "bot-router", toId: "routine-dawn", kind: "triggers", label: "Triggers", live: true },
+    { id: "edge-hand-review", fromId: "bot-router", toId: "bot-review", kind: "hands_off", label: "Hands off", live: true },
+    { id: "edge-read-morning", fromId: "routine-morning", toId: "store-ledger", kind: "reads", label: "Reads", live: true },
+    { id: "edge-read-dawn", fromId: "routine-dawn", toId: "store-ledger", kind: "reads", label: "Reads", live: true },
+    { id: "edge-write-morning", fromId: "routine-morning", toId: "store-pulse", kind: "writes", label: "Writes", live: true },
+    { id: "edge-read-review", fromId: "bot-review", toId: "store-pulse", kind: "reads", label: "Reads", live: true },
+    { id: "edge-hand-classify", fromId: "task-classify", toId: "task-summarize", kind: "hands_off", label: "Hands off", live: true },
+    { id: "edge-hand-summarize", fromId: "task-summarize", toId: "task-classify", kind: "hands_off", label: "Hands off", live: true },
+    { id: "edge-write-summarize", fromId: "task-summarize", toId: "store-ledger", kind: "writes", label: "Writes", live: true },
+    { id: "edge-stale", fromId: "routine-stale", toId: "store-ledger", kind: "writes", label: "Writes", live: false },
+  ],
+});
+
 export const WorkspaceStateSchema = z.object({
   stateVersion: z.number().int().nonnegative(),
   mode: z.enum(["cockpit", "code"]),
@@ -198,6 +279,8 @@ export const WorkspaceStateSchema = z.object({
   ensemblyLedger: z.array(EnsemblyRecordSchema).default(() => []),
   pulseMemory: z.array(PulseMemorySchema).default(() => []),
   workflowLessons: z.array(WorkflowLessonSchema).default(() => []),
+  fleetGraph: FleetGraphSchema.default(() => structuredClone(sampleFleetGraph)),
+  fleetProposals: z.array(FleetProposalSchema).default(() => []),
   mockups: z.array(MockupNodeSchema),
   connections: z.array(ConnectionSchema),
   tokens: DesignTokensSchema,
