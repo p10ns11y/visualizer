@@ -44,9 +44,9 @@ Test: `CF-06` in `packages/core/src/critical-flows.test.ts`, plus the sketch ren
 
 ## CF-07 A confirmed Ensembly record becomes Pulse Memory
 
-A pre-memory workspace still loads: the ledger, Pulse Memory, and workflow lessons are empty, and the problem cards stay. Appending a record with no confirmed outcome leaves Pulse Memory empty. Appending one with a confirmed outcome promotes it. A workflow lesson stays attached to its phase and card after Code Mode opens. Recording that lesson during a working phase leaves the phase running and does not change `stateVersion`. A stale `stateVersion` does not append. The promoted record is still there after serialize and read.
+A pre-memory workspace still loads: the ledger, Pulse Memory, and workflow lessons are empty, and the problem cards stay. Appending a record with no confirmed outcome leaves Pulse Memory empty. Appending one with a confirmed outcome promotes it. A workflow lesson stays attached to its phase and card after Code Mode opens. Recording that lesson during a working phase leaves the phase running and does not change `stateVersion`. A lesson recorded while a build tick is awaiting is still present after that tick lands, and the railway keeps the tick. A stale `stateVersion` does not append. The promoted record is still there after serialize and read.
 
-Test: `CF-07` in `packages/core/src/critical-flows.test.ts`, including the working-phase lesson, plus the promote, code-mode, reload, and pre-memory hydration renders in `apps/web/src/critical-flow.dom.test.tsx`.
+Test: `CF-07` in `packages/core/src/critical-flows.test.ts`, including the working-phase lesson, plus the promote, code-mode, reload, and pre-memory hydration renders in `apps/web/src/critical-flow.dom.test.tsx`, and the mid-await lesson in `apps/web/src/tick-guard.test.ts`.
 
 ## CF-08 WebMCP bridge registers, rejects a stale write, and unregisters
 

@@ -196,10 +196,32 @@ export function recordPayload(record: EnsemblyRecord): Record<string, unknown> {
   return payload;
 }
 
-function recordFromPayload(kind: string, payload: Record<string, unknown>, fallbackId: string, fallbackTs: string): EnsemblyRecord | null {
+type AdmissionEnvelope = {
+  traceKind?: unknown;
+  status?: unknown;
+  lock?: unknown;
+  verifyHash?: unknown;
+  prefetchKey?: unknown;
+  supersededBy?: unknown;
+  coherenceMilli?: unknown;
+};
+
+function admissionValue(payload: Record<string, unknown>, key: string, fallback: unknown): unknown {
+  if (Object.prototype.hasOwnProperty.call(payload, key)) return payload[key];
+  if (fallback === undefined || fallback === null) return undefined;
+  return fallback;
+}
+
+function recordFromPayload(
+  kind: string,
+  payload: Record<string, unknown>,
+  fallbackId: string,
+  fallbackTs: string,
+  envelope?: AdmissionEnvelope,
+): EnsemblyRecord | null {
   const parsedKind = EnsemblyKindSchema.safeParse(payload.kind ?? kind);
   if (!parsedKind.success) return null;
-  const parsed = EnsemblyRecordSchema.safeParse({
+  const candidate: Record<string, unknown> = {
     id: payload.id ?? fallbackId,
     timestamp: payload.timestamp ?? fallbackTs,
     kind: parsedKind.data,
@@ -207,7 +229,20 @@ function recordFromPayload(kind: string, payload: Record<string, unknown>, fallb
     rationale: payload.rationale,
     provenance: payload.provenance,
     confirmedOutcome: payload.confirmedOutcome ?? null,
-  });
+  };
+  const optional: Array<[string, unknown]> = [
+    ["traceKind", admissionValue(payload, "traceKind", envelope?.traceKind)],
+    ["status", admissionValue(payload, "status", envelope?.status)],
+    ["lock", admissionValue(payload, "lock", envelope?.lock)],
+    ["verifyHash", admissionValue(payload, "verifyHash", envelope?.verifyHash)],
+    ["prefetchKey", admissionValue(payload, "prefetchKey", envelope?.prefetchKey)],
+    ["supersededBy", admissionValue(payload, "supersededBy", envelope?.supersededBy)],
+    ["coherenceMilli", admissionValue(payload, "coherenceMilli", envelope?.coherenceMilli)],
+  ];
+  for (const [key, value] of optional) {
+    if (value !== undefined) candidate[key] = value;
+  }
+  const parsed = EnsemblyRecordSchema.safeParse(candidate);
   return parsed.success ? parsed.data : null;
 }
 
@@ -691,7 +726,15 @@ export function recordsFromPack(pack: PulsePack): EnsemblyRecord[] {
     }
     if (records.length > 0) return records;
     for (const trace of pack.traces) {
-      const record = recordFromPayload(trace.ext.kind, trace.ext.content, trace.nat_key, trace.time);
+      const record = recordFromPayload(trace.ext.kind, trace.ext.content, trace.nat_key, trace.time, {
+        traceKind: trace.kind,
+        status: trace.status,
+        lock: trace.lock,
+        verifyHash: trace.verify_hash,
+        prefetchKey: trace.prefetch_key,
+        supersededBy: trace.superseded_by,
+        coherenceMilli: trace.ext.coherence_milli,
+      });
       if (record) records.push(record);
     }
     return records;

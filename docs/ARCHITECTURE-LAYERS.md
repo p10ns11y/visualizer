@@ -72,9 +72,9 @@ Freehand strokes are fields on that same workspace: a `cardId` plus normalized p
 
 Pulse Memory and workflow lessons are fields on that same workspace. The Ensembly ledger is the append-only record. A row enters Pulse Memory when `canPromote` admits it: a confirmed outcome, `status: user-stated`, or `status: tool-verified` whose `verifyHash` is `sha256:` plus the SHA-256 of the summary. `supersededBy` keeps that row out of the active pulse. `buildPulseInject` returns at most 8 active traces and stays inside a 120-token budget (`ceil(utf-8 bytes / 4)`). The exchange format is Canon 1 `pulse-pack-v1` (`schema` and `format`): integer `coherence_milli`, `traces`, `archive`, `host`, `kind` (`data`, `context`, `fact`, `memory`), `status` (`user-stated`, `tool-verified`, `inferred`, `unknown`), `lock`, `verify_hash`, `prefetch_key`, and optional `superseded_by`. Packs labeled `ensembly-pulse-pack-v1` or `peram-pulse-pack-v1` are read only. A payload saved before those fields existed still hydrates. A fractional `coherence_milli` does not.
 
-A workflow lesson points at a railway phase and, when present, a problem card. That write is the SI-maintained aux layer: it stays on `visualizer.workspace` and in the Memory panel, and it does not pause a working phase or change `stateVersion`. Appending or promoting an Ensembly record still uses the human-edit pause. Neo4j is an optional projection of those fields through `MemoryGraphStore`. The cockpit does not require a running database. Setup and the Cypher constraints are in `docs/MEMORY-NEO4J.md`. The projection's promote query follows the same admission tags; the in-memory port also checks the verify hash.
+A workflow lesson points at a railway phase and, when present, a problem card. That write is the SI-maintained aux layer: it stays on `visualizer.workspace` and in the Memory panel, and it does not pause a working phase or change `stateVersion`. Appending or promoting an Ensembly record still uses the human-edit pause. Neo4j is an optional projection of those fields through `MemoryGraphStore`. The cockpit does not require a running database. Setup and the Cypher constraints are in `docs/MEMORY-NEO4J.md`. The projection's promote query and the in-memory port both require a tool-verified row to carry the verify hash of its summary.
 
-Ensembly, adapted for this cockpit, is also the shared event and board log. A separate `@vercel/board` SQLite mirror is not that log. Cross-machine sync is an open design slice (Cloudflare Workers, hooks, and Cloudflare storage such as Durable Objects, D1, or R2). The record is [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md). How this two-layer memory lines up with Ensembly pulse admissions, and which three drifts stay for the next slice, is [`docs/decisions/003-ensembly-pulse-alignment-audit.md`](decisions/003-ensembly-pulse-alignment-audit.md).
+Ensembly, adapted for this cockpit, is also the shared event and board log. A separate `@vercel/board` SQLite mirror is not that log. Cross-machine sync is an open design slice (Cloudflare Workers, hooks, and Cloudflare storage such as Durable Objects, D1, or R2). The record is [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md). How this two-layer memory lines up with Ensembly pulse admissions is recorded in [`docs/decisions/003-ensembly-pulse-alignment-audit.md`](decisions/003-ensembly-pulse-alignment-audit.md). That note marks the three drifts resolved.
 
 ## What this step does not do
 
@@ -139,7 +139,7 @@ flowchart TB
   cockpit[Visual Cockpit and Code Mode]
   railway[XState 6 railway]
   store[Shared workspace and stateVersion]
-  pulse[Pulse Memory from a confirmed Ensembly record]
+  pulse[Pulse Memory from user-stated, hash-backed tool-verified, or confirmed outcome]
   lessons[Workflow lessons on Neo4j]
   tiers[Tier 3 to Tier 2 to Tier 1]
   cockpit --> store
@@ -150,7 +150,7 @@ flowchart TB
 ```
 
 - **Cockpit, Code Mode, and ink, on a checked statechart.** The run is not a chat-only loop. Model-based paths and the formal check walk the XState 6 machine. A human edit during a working phase pauses the build. The statement, the stroke, and `stateVersion` stay. The formal check writes that machine with `machineToJSON`, so the chart is portable machine JSON.
-- **Two memory layers, not one flat store.** Ensembly is the append-only ledger. Pulse Memory receives a rule, a costly mistake, or a decision only after a confirmed outcome. Agentic workflow memory is the lesson graph: phase, card, friction, rework, and adjustment. Neo4j is the optional projection. CI uses the in-memory port.
+- **Two memory layers, not one flat store.** Ensembly is the append-only ledger. Pulse Memory receives a rule, a costly mistake, or a decision when the row is user-stated, tool-verified with a matching verify hash, or has a confirmed outcome, and `supersededBy` is empty. Agentic workflow memory is the lesson graph: phase, card, friction, rework, and adjustment. Neo4j is the optional projection. CI uses the in-memory port.
 - **Four portable layers, local-first or hybrid.** The target is a thin Rust or Zig core, `adaptate` native and WASM acceleration, one thin bridge, and the JS/WebView. This file still does not pick Rust or Zig, and this repo does not add that crate. The post describes a deploymentless fleet on Vercel infrastructure. Visualizer is not tied to that deployment.
 - **Tiered brain and WebMCP.** Tier 3 falls through to Tier 2, then to Tier 1 deterministic code. The spoken design publishes the same workspace on `document.modelContext`. The problem card is in the cockpit. The page now publishes the tool list on `document.modelContext` (or the local bridge).
 

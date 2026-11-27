@@ -61,14 +61,14 @@ ON CREATE SET
   };
 }
 
-export function promotePulse(id: string): BoundQuery {
+export function promotePulse(id: string, verifyHash: string | null): BoundQuery {
   return {
     text: `MATCH (record:VisualizerEnsemblyRecord {id: $id})
 WHERE (record.supersededBy IS NULL OR record.supersededBy = "")
   AND (
     (record.confirmedOutcome IS NOT NULL AND record.confirmedOutcome <> "" AND (record.status IS NULL OR record.status <> "tool-verified"))
     OR record.status = "user-stated"
-    OR (record.status = "tool-verified" AND record.verifyHash IS NOT NULL AND record.verifyHash <> "")
+    OR (record.status = "tool-verified" AND $verifyHash IS NOT NULL AND record.verifyHash = $verifyHash)
   )
 MERGE (pulse:VisualizerPulseMemory {id: record.id})
 ON CREATE SET
@@ -92,7 +92,7 @@ RETURN pulse.id AS id, pulse.timestamp AS timestamp, pulse.kind AS kind,
   pulse.status AS status, pulse.traceKind AS traceKind, pulse.lock AS lock,
   pulse.verifyHash AS verifyHash, pulse.prefetchKey AS prefetchKey,
   pulse.supersededBy AS supersededBy, pulse.coherenceMilli AS coherenceMilli`,
-    params: { id },
+    params: { id, verifyHash },
   };
 }
 

@@ -37,6 +37,20 @@ export function estimateTokens(text: string): number {
   return Math.ceil(bytes / bytesPerToken);
 }
 
+function injectTrace(row: EnsemblyRecord, snippet: string): PulseInjectTrace {
+  return {
+    nat_key: row.id,
+    snippet,
+    kind: admittedKind(row),
+    status: admittedStatus(row),
+    lock: row.lock ?? "open",
+    verify_hash: row.verifyHash ?? null,
+    prefetch_key: row.prefetchKey ?? null,
+    superseded_by: null,
+    coherence_milli: row.coherenceMilli ?? 1000,
+  };
+}
+
 function fitSnippet(snippet: string, remaining: number): string | null {
   if (estimateTokens(snippet) <= remaining) return snippet;
   const chars = Array.from(snippet);
@@ -60,25 +74,28 @@ export function buildPulseInject(rows: readonly EnsemblyRecord[]): PulseInject {
     });
   const traces: PulseInjectTrace[] = [];
   let tokens = 0;
+  const overflow: EnsemblyRecord[] = [];
   for (const row of ranked) {
     if (traces.length >= pulseInjectTraceLimit) break;
     const remaining = pulseInjectTokenBudget - tokens;
     if (remaining <= 0) break;
-    const snippet = fitSnippet(row.summary, remaining);
-    if (!snippet) break;
-    const cost = estimateTokens(snippet);
-    traces.push({
-      nat_key: row.id,
-      snippet,
-      kind: admittedKind(row),
-      status: admittedStatus(row),
-      lock: row.lock ?? "open",
-      verify_hash: row.verifyHash ?? null,
-      prefetch_key: row.prefetchKey ?? null,
-      superseded_by: null,
-      coherence_milli: row.coherenceMilli ?? 1000,
-    });
+    const cost = estimateTokens(row.summary);
+    if (cost > remaining) {
+      overflow.push(row);
+      continue;
+    }
+    traces.push(injectTrace(row, row.summary));
     tokens += cost;
+  }
+  if (traces.length === 0) {
+    const row = overflow[0];
+    if (row) {
+      const snippet = fitSnippet(row.summary, pulseInjectTokenBudget);
+      if (snippet) {
+        traces.push(injectTrace(row, snippet));
+        tokens += estimateTokens(snippet);
+      }
+    }
   }
   return {
     schema: pulsePackSchema,

@@ -37,7 +37,7 @@ export class InMemoryGraphMemoryStore implements MemoryGraphStore {
     if (!this.records.has(record.id)) this.records.set(record.id, record);
   }
 
-  async promote(id: string): Promise<PulseMemory | null> {
+  async promote(id: string, _expectedVerifyHash?: string | null): Promise<PulseMemory | null> {
     const existing = this.pulse.get(id);
     if (existing) return existing;
     const record = this.records.get(id);

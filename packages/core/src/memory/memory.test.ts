@@ -26,7 +26,7 @@ import { buildPulseInject, estimateTokens } from "./pulse-inject.js";
 import { InMemoryGraphMemoryStore } from "./in-memory-store.js";
 import { Neo4jMemoryStore, type CypherRunner, type MemoryDriver } from "./neo4j-store.js";
 import { projectWorkspace } from "./port.js";
-import { schemaScript, listLessonsQuery, mergeEnsemblyRecord } from "./cypher.js";
+import { schemaScript, listLessonsQuery, mergeEnsemblyRecord, promotePulse } from "./cypher.js";
 
 const confirmed: EnsemblyRecord = {
   id: "ens-test-rule",
@@ -296,6 +296,150 @@ describe("canon 1 admission and sparse inject", () => {
     expect(inject.traces.some((trace) => trace.status === "tool-verified" && trace.kind === "fact")).toBe(true);
     expect(inject.tokens).toBe(inject.traces.reduce((sum, trace) => sum + estimateTokens(trace.snippet), 0));
   });
+
+  it("round-trips tagged traces through a pulse pack", () => {
+    const hashed = verifyHashFor(openDecision.summary);
+    const stated = {
+      ...openDecision,
+      status: "user-stated" as const,
+      traceKind: "context" as const,
+      lock: "locked" as const,
+      prefetchKey: "card-canvas",
+      coherenceMilli: 250,
+    };
+    const verified = {
+      ...openDecision,
+      id: "ens-verified-rt",
+      status: "tool-verified" as const,
+      verifyHash: hashed,
+      traceKind: "fact" as const,
+      lock: "open" as const,
+      coherenceMilli: 800,
+    };
+    const superseded = { ...confirmed, id: "ens-old-rt", supersededBy: "ens-verified-rt" };
+    const pack = exportPulsePack([stated, verified, superseded], { exportedAt: "2026-11-27T20:00:00Z" });
+    const back = recordsFromPack(readPulsePack(JSON.parse(JSON.stringify(pack))));
+    const byId = new Map(back.map((record) => [record.id, record]));
+    expect(byId.get(stated.id)).toMatchObject({
+      status: "user-stated",
+      traceKind: "context",
+      lock: "locked",
+      prefetchKey: "card-canvas",
+      coherenceMilli: 250,
+      confirmedOutcome: null,
+    });
+    expect(canPromote(byId.get(stated.id)!)).toBe(true);
+    expect(byId.get(verified.id)).toMatchObject({
+      status: "tool-verified",
+      verifyHash: hashed,
+      traceKind: "fact",
+      coherenceMilli: 800,
+      confirmedOutcome: null,
+    });
+    expect(canPromote(byId.get(verified.id)!)).toBe(true);
+    expect(byId.get(superseded.id)?.supersededBy).toBe("ens-verified-rt");
+    expect(canPromote(byId.get(superseded.id)!)).toBe(false);
+
+    const trace = pack.traces.find((item) => item.nat_key === stated.id);
+    if (!trace) throw new Error("missing stated trace");
+    const content = { ...trace.ext.content };
+    delete content.status;
+    delete content.traceKind;
+    delete content.lock;
+    delete content.prefetchKey;
+    delete content.verifyHash;
+    delete content.coherenceMilli;
+    const recovered = recordsFromPack({
+      ...pack,
+      archive: [],
+      traces: [
+        {
+          ...trace,
+          status: "user-stated",
+          kind: "context",
+          lock: "locked",
+          verify_hash: null,
+          prefetch_key: "card-canvas",
+          superseded_by: null,
+          ext: { ...trace.ext, coherence_milli: 250, content },
+        },
+      ],
+    });
+    expect(recovered[0]).toMatchObject({
+      status: "user-stated",
+      traceKind: "context",
+      lock: "locked",
+      prefetchKey: "card-canvas",
+      coherenceMilli: 250,
+    });
+    expect(canPromote(recovered[0]!)).toBe(true);
+  });
+
+  it("skips superseded chains and cycles and keeps a short row after a bulky one", () => {
+    expect(buildPulseInject([])).toEqual({
+      schema: "pulse-pack-v1",
+      limit: 8,
+      token_budget: 120,
+      tokens: 0,
+      traces: [],
+    });
+    const chainC = { ...confirmed, id: "ens-chain-c", timestamp: "2026-11-27T18:00:00Z" };
+    const chainB = {
+      ...confirmed,
+      id: "ens-chain-b",
+      timestamp: "2026-11-27T18:00:01Z",
+      supersededBy: "ens-chain-c",
+    };
+    const chainA = {
+      ...confirmed,
+      id: "ens-chain-a",
+      timestamp: "2026-11-27T18:00:02Z",
+      supersededBy: "ens-chain-b",
+    };
+    const cycleA = {
+      ...confirmed,
+      id: "ens-cycle-a",
+      timestamp: "2026-11-27T18:00:03Z",
+      supersededBy: "ens-cycle-b",
+    };
+    const cycleB = {
+      ...confirmed,
+      id: "ens-cycle-b",
+      timestamp: "2026-11-27T18:00:04Z",
+      supersededBy: "ens-cycle-a",
+    };
+    expect(buildPulseInject([chainA, chainB, chainC, cycleA, cycleB]).traces.map((trace) => trace.nat_key)).toEqual([
+      "ens-chain-c",
+    ]);
+
+    const bulky = {
+      ...confirmed,
+      id: "ens-bulky",
+      timestamp: "2026-11-27T22:00:00Z",
+      summary: "word ".repeat(200).trim(),
+    };
+    const short = {
+      ...confirmed,
+      id: "ens-short",
+      timestamp: "2026-11-27T21:00:00Z",
+      summary: "Keep the short row.",
+    };
+    expect(estimateTokens(bulky.summary)).toBeGreaterThan(120);
+    const fitted = buildPulseInject([bulky, short]);
+    expect(fitted.traces.map((trace) => trace.nat_key)).toEqual(["ens-short"]);
+    expect(fitted.tokens).toBeLessThanOrEqual(120);
+    expect(fitted.tokens).toBe(estimateTokens(short.summary));
+
+    const roomy = {
+      ...confirmed,
+      id: "ens-roomy",
+      timestamp: "2026-11-27T23:00:00Z",
+      summary: "word ".repeat(40).trim(),
+    };
+    const after = { ...short, id: "ens-after", timestamp: "2026-11-27T22:30:00Z" };
+    expect(estimateTokens(roomy.summary) + estimateTokens(after.summary)).toBeLessThanOrEqual(120);
+    expect(buildPulseInject([roomy, after]).traces.map((trace) => trace.nat_key)).toEqual(["ens-roomy", "ens-after"]);
+  });
 });
 
 describe("memory graph port", () => {
@@ -354,6 +498,13 @@ describe("memory graph port", () => {
     expect(calls.some((call) => call.query === bound.text && call.params.summary === hostile)).toBe(true);
     expect(calls.filter((call) => call.query.startsWith("CREATE CONSTRAINT"))).toHaveLength(5);
     expect(calls.every((call) => !call.query.includes(hostile))).toBe(true);
+    const hash = verifyHashFor(record.summary);
+    const boundPulse = promotePulse(record.id, hash);
+    expect(boundPulse.params).toEqual({ id: record.id, verifyHash: hash });
+    expect(boundPulse.text.includes("record.verifyHash = $verifyHash")).toBe(true);
+    expect(boundPulse.text.includes('verifyHash <> ""')).toBe(false);
+    const promoteCall = calls.find((call) => call.query.includes("RETURN pulse.id"));
+    expect(promoteCall?.params.verifyHash).toBeNull();
     expect(Neo4jMemoryStore.fromEnv({})).toBeNull();
   });
 

@@ -158,3 +158,21 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - [x] Mark the three drifts resolved in `docs/decisions/003-ensembly-pulse-alignment-audit.md`. Link the Canon 1 pack from `docs/ARCHITECTURE-LAYERS.md`. Leave `001` and `002` untouched.
 - [x] Update `docs/CRITICAL-FLOWS.md`, `docs/TEST-SUITE.md`, `README.md`, and `.cursor/skills/verify-visualizer/` for the aux lesson and the sparse inject. Leave the formal sync commit in place; note that lessons no longer call `commitHuman`.
 - [x] Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`. Capture `ensembly-canon1-cockpit.png` and `ensembly-canon1-code-mode.png`.
+
+## Review repair for the Canon 1 slice
+
+- **Chosen:** Stay on the Zod checker, the aux lesson write, and `pendingTickStillApplies` already chosen above. No new package. Pack import reads admission fields from the payload and falls back to the trace envelope. A completed build tick keeps newer aux lessons and aux log lines. `promotePulse` takes the expected verify hash and matches it.
+- **Why:** The review found tagged traces losing admission on import, and an in-flight tick dropping a lesson because the aux write does not move `stateVersion`. The hash check in Cypher was looser than `canPromote`.
+- **Basis:** The review of `121e78b0` against the code in this repo, read on 2026-11-27 before the repair. The Canon 1 spec cited in the entry above is unchanged. No second checker was compared.
+- **Latest trends checked before choosing:** No new tool. The Canon 1 trend check above still holds: Zod stays, and no tokenizer package is added.
+
+### Head Plan
+
+- [x] Restore `traceKind`, `status`, `lock`, `verifyHash`, `prefetchKey`, `supersededBy`, and `coherenceMilli` on pack import, with a tagged round-trip test.
+- [x] Merge live aux lessons and aux log lines onto a completed build tick, with a mid-await regression.
+- [x] Align `promotePulse` with the `canPromote` verify-hash rule and cover the inject edges.
+
+### Tail Plan
+
+- [x] Update the stale sentences in `docs/ARCHITECTURE-LAYERS.md`, `docs/CRITICAL-FLOWS.md`, `docs/TEST-SUITE.md`, and the verification notes. Leave decisions 001 and 002 and the formal sync commit in place.
+- [x] Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`, then confirm CI `verify`.

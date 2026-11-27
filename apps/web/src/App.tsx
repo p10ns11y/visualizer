@@ -34,7 +34,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MemoryPanel, type EnsemblyDraft, type LessonDraft } from "./memory-panel.js";
 import { SketchPad } from "./sketch-pad.js";
-import { pendingTickStillApplies } from "./tick-guard.js";
+import { mergeAuxIntoTick, pendingTickStillApplies } from "./tick-guard.js";
 import { Button, Toggle } from "./ui/controls.js";
 import { WebMcpStrip, type WebMcpStripState } from "./ui/webmcp-strip.js";
 
@@ -106,7 +106,10 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
         if (token.current !== mine) return;
         continue;
       }
-      if (!apply(result)) return;
+      const next = result.ok
+        ? { ok: true as const, state: mergeAuxIntoTick(stateRef.current, result.state) }
+        : result;
+      if (!apply(next)) return;
     }
   }, [apply, router]);
 

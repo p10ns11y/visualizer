@@ -21,7 +21,7 @@ Synced with commit `58c593d6053d64b063fbab040bcb2402d76257e0`. Move that hash fo
 - `packages/core/src/formal/pilot.safe.checks.json`
 - `packages/core/src/formal/pilot.fail.checks.json`
 
-Ledger append and promotion call `commitHuman`. Workflow lessons write through the aux layer in `packages/core/src/memory/commit.ts` and do not call `commitHuman`, so they do not pause a working phase or change `stateVersion`. None of those callers change the functions above, so this sync commit stays.
+Ledger append and promotion call `commitHuman`. Workflow lessons write through the aux layer in `packages/core/src/memory/commit.ts` and do not call `commitHuman`, so they do not pause a working phase or change `stateVersion`. The page merges those aux lessons and aux log lines onto a completed build tick in `apps/web/src/tick-guard.ts`. `applyBuildTick` itself is unchanged, so this sync commit stays.
 
 ## How to run
 

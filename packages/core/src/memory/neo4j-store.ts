@@ -75,8 +75,8 @@ export class Neo4jMemoryStore implements MemoryGraphStore {
     await writeQuery(this.driver, this.database, mergeEnsemblyRecord(record));
   }
 
-  async promote(id: string): Promise<PulseMemory | null> {
-    const records = await writeQuery(this.driver, this.database, promotePulse(id));
+  async promote(id: string, expectedVerifyHash: string | null = null): Promise<PulseMemory | null> {
+    const records = await writeQuery(this.driver, this.database, promotePulse(id, expectedVerifyHash));
     const row = records[0];
     if (!row || row.get("id") == null) return null;
     return readPulseRow(row);

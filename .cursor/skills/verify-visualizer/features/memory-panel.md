@@ -32,7 +32,7 @@ Preconditions:
 ## Gotchas
 
 - Promotion is a human edit. During a working phase it pauses the run.
-- Recording a workflow lesson does not pause a working phase and does not change `stateVersion`.
+- Recording a workflow lesson does not pause a working phase and does not change `stateVersion`. A lesson recorded while a build tick is still awaiting stays after that tick lands.
 - A record with no confirmed outcome, and no `user-stated` or hash-backed `tool-verified` status, has no Promote button.
 - A superseded row stays off the sparse inject.
 - A workspace saved before these fields were added loads with empty memory arrays. The problem cards stay.
