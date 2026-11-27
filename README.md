@@ -37,7 +37,7 @@ Text-box-only SI workflows force a builder to describe, wait, and re-describe �
 **Ecosystem references** — useful around the cockpit, not a substitute for it:
 
 - **[Lopsi](https://github.com/frankievalentine/lopsi-bot-eve)** — third-party Apache-2.0 template on [Vercel Eve](https://github.com/vercel/eve). Its folder-per-agent layout is inspiration only; this repo does not fork Lopsi, and the cockpit is not built around Eve.
-- **[Vercel Board](https://github.com/vercel/board)** — a headless message and task board. Optional later as a local SQLite work log (`npx @vercel/board serve`, including `--tailscale`). It is not a visual canvas.
+- **[Vercel Board](https://github.com/vercel/board)** — a hosted experimental message and task board. It is not this cockpit's log and not a visual canvas. The shared log is Ensembly. See [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](docs/decisions/001-ensembly-vs-vercel-board-sync.md).
 
 ## Run
 
@@ -49,9 +49,9 @@ pnpm typecheck && pnpm test && pnpm test:critical-flows && pnpm test:mbt && pnpm
 
 `@visualizer/core` holds the shared workspace, collision guards, XState railway, 3-tier brain, and local tool contracts. `@visualizer/web` is the one app: Visual Cockpit and Code Mode read and write that same state. Button and toggle behavior comes from `@ui-sdk/react`, wrapped in `apps/web/src/ui/controls.tsx`.
 
-Step 1 opens with problem cards for Step 2 of Visualizer itself: freehand canvas sketching, a live WebMCP `document.modelContext` bridge, and a local `@vercel/board` SQLite log. Build runs the Tier 1 railway. Stop pauses it. A verified Step 2 brief then shows in both modes.
+Step 1 opens with problem cards for Step 2 of Visualizer itself: freehand canvas sketching, a live WebMCP `document.modelContext` bridge, and a card still titled "Local board SQLite log". That card is superseded by [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](docs/decisions/001-ensembly-vs-vercel-board-sync.md): the shared log is Ensembly, not a `@vercel/board` SQLite file. Build runs the Tier 1 railway. Stop pauses it. A verified Step 2 brief then shows in both modes.
 
-The canvas plate takes freehand ink. Each stroke is pinned to the freehand problem card, stored on the shared workspace, and kept in `localStorage` across a reload. Code Mode lists those strokes and can clear them. A stroke during a working phase pauses the run and keeps the ink. The bridge and the board log are still later steps.
+The canvas plate takes freehand ink. Each stroke is pinned to the freehand problem card, stored on the shared workspace, and kept in `localStorage` across a reload. Code Mode lists those strokes and can clear them. A stroke during a working phase pauses the run and keeps the ink. The WebMCP bridge is still a later step. Cross-machine Ensembly sync is the open design in that decision record.
 
 The Memory panel, in both modes, lists Pulse Memory and workflow lessons. Ensembly is the append-only ledger. A record promotes into Pulse Memory only after a confirmed outcome. A lesson names a railway phase and a problem card. Older workspaces that lack those fields still load. Neo4j is an optional projection; the commands and Cypher are in `docs/MEMORY-NEO4J.md`. CI uses the in-memory graph port.
 
@@ -74,7 +74,7 @@ Critical flows are listed in `docs/CRITICAL-FLOWS.md`. Test commands are listed 
 - [XState](https://xstate.js.org) 6 — statecharts and the railway backbone
 - [Chopin](https://githubnext.com/projects/chopin/) — GitHub Next's multiplayer MDX planning prototype
 - [Lopsi](https://github.com/frankievalentine/lopsi-bot-eve) — folder-per-agent layout inspiration
-- [Vercel Board](https://github.com/vercel/board) — optional local task and event log
+- [Vercel Board](https://vercel.com/docs/board) — hosted experimental log compared in [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](docs/decisions/001-ensembly-vs-vercel-board-sync.md). Not the shared store.
 - [ensembly](https://github.com/thecuriousts/ensembly) — append-only pulse pack (`ensembly-pulse-pack-v1`) that feeds the memory graph
 - [Neo4j JavaScript driver](https://neo4j.com/docs/javascript-manual/current/) — optional Bolt projection of Pulse Memory and workflow lessons
 - [Chris Tate, `@ctatedev`, 27 Nov 2026 fleet diagram](https://x.com/ctatedev/status/2126180726278353288) — independent local/remote fleet sketch compared in `docs/ARCHITECTURE-LAYERS.md`

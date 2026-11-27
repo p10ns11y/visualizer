@@ -62,6 +62,8 @@ Freehand strokes are fields on that same workspace: a `cardId` plus normalized p
 
 Pulse Memory and workflow lessons are fields on that same workspace. The Ensembly ledger is the append-only record. Pulse Memory holds a record only after a confirmed outcome. A workflow lesson points at a railway phase and, when present, a problem card. Neo4j is an optional projection of those fields through `MemoryGraphStore`. The cockpit does not require a running database. Setup and the Cypher constraints are in `docs/MEMORY-NEO4J.md`. A memory write during a working phase uses the same human-edit pause as a statement edit.
 
+Ensembly, adapted for this cockpit, is also the shared event and board log. A separate `@vercel/board` SQLite mirror is not that log. Cross-machine sync is an open design slice (Cloudflare Workers, hooks, and Cloudflare storage such as Durable Objects, D1, or R2). The record is [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md).
+
 ## What this step does not do
 
 No Rust or Zig toolchain is added here. No new package depends on `@adaptate/native`, `@adaptate/wasm`, or `@adaptate/accel`. Those integrations are a later step, after review of this foundation.
@@ -85,8 +87,8 @@ Spoken design on 27 Nov 2026 settled this shape before that post was used as a r
 - An XState 6 railway checked by model-based paths and `pnpm verify:formal`.
 - The four-layer portable core, with heavy payload work in [`adaptate`](https://github.com/p10ns11y/adaptate).
 - Freehand strokes pinned to a problem card.
-- Two-layer memory: an Ensembly ledger into Pulse Memory, plus workflow lessons on the Neo4j projection.
-- A shared `@vercel/board` log, and a WebMCP `document.modelContext` bridge.
+- Two-layer memory: an Ensembly ledger into Pulse Memory, plus workflow lessons on the Neo4j projection. That same Ensembly ledger is the shared board log. A separate `@vercel/board` SQLite mirror is not part of this shape. Cross-machine sync is the open slice in [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md).
+- A WebMCP `document.modelContext` bridge.
 
 The post went up the same day (27 Nov 2026, 05:06 UTC) and draws the same split: a person on the local side, a coordinator with memory, an orchestrator that scales work, and a shared board. It is an independent check of that shape, not the source of the cockpit.
 
@@ -116,7 +118,7 @@ Three parts of the diagram are worth taking as drawn.
 
 - **Local versus remote.** `Me` and `Approvals` stay on the local side of the line. An external write is approved there before it runs remotely. The diagram names GitHub, Slack, and Vercel on that list. The same local approval is the rule for any other remote write this cockpit will send, including Greenhouse, Workspace, and Ashby.
 - **Coordinator and Orchestrator.** Long-lived intent and memory stay with the Coordinator. Fleet scale and job scheduling stay with the Orchestrator. The two do not share one loop.
-- **Radial fleet and a central Board.** Sandboxed workers sit around one Board. Workers and the Coordinator both read that Board. Visualizer already names `@vercel/board` for this log. The fleet itself is not connected yet.
+- **Radial fleet and a central Board.** Sandboxed workers sit around one Board. Workers and the Coordinator both read that Board. In this repo the Board is the Ensembly log, not a `@vercel/board` SQLite file. Claim leases, `agent via human` attribution, scoped sandbox tokens, and a live tail are primitives that sync design may borrow. The fleet is not connected yet. See [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md).
 
 ### How Visualizer differs
 
@@ -144,4 +146,4 @@ flowchart TB
 
 The same cockpit can stay local while Approvals remains the local check on every remote write. A remote Orchestrator and a sandboxed fleet can attach later, without moving memory or the railway off the shared store.
 
-Cursor, Claude, Grok, and Grok Bot can share that portable statechart, the central Board, and the Ensembly plus Neo4j memory. Scheduled reviews of a functional area can then read several repositories from the same Board and the same confirmed Pulse Memory, instead of opening a fresh session with none of the prior lessons.
+Cursor, Claude, Grok, and Grok Bot can share that portable statechart, the Ensembly log, and the Neo4j projection. Scheduled reviews of a functional area can then read several repositories from that log and the same confirmed Pulse Memory, instead of opening a fresh session with none of the prior lessons. The sync that carries the log across machines is the open Cloudflare slice in [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md). `@vercel/board` stays an optional transport behind a port, not a second store.
