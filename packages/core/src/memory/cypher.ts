@@ -117,6 +117,7 @@ export function listLessonsQuery(filter: {
   return {
     text: `MATCH (lesson:VisualizerWorkflowLesson)-[:DURING]->(phase:VisualizerPhase)
 OPTIONAL MATCH (lesson)-[:ABOUT]->(card:VisualizerCard)
+WITH lesson, phase, card
 WHERE ($phase IS NULL OR phase.name = $phase)
   AND ($cardId IS NULL OR card.id = $cardId)
 RETURN lesson.id AS id, lesson.recordedAt AS recordedAt, phase.name AS phase,

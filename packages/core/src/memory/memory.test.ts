@@ -21,7 +21,7 @@ import {
 import { InMemoryGraphMemoryStore } from "./in-memory-store.js";
 import { Neo4jMemoryStore, type CypherRunner, type MemoryDriver } from "./neo4j-store.js";
 import { projectWorkspace } from "./port.js";
-import { schemaScript, mergeEnsemblyRecord } from "./cypher.js";
+import { schemaScript, listLessonsQuery, mergeEnsemblyRecord } from "./cypher.js";
 
 const confirmed: EnsemblyRecord = {
   id: "ens-test-rule",
@@ -274,5 +274,44 @@ describe("memory graph port", () => {
     expect(calls.filter((call) => call.query.startsWith("CREATE CONSTRAINT"))).toHaveLength(5);
     expect(calls.every((call) => !call.query.includes(hostile))).toBe(true);
     expect(Neo4jMemoryStore.fromEnv({})).toBeNull();
+  });
+
+  it("filters lessons after WITH so phase and cardId drop non-matching rows", () => {
+    const rows = [
+      { id: "lesson-planning-bridge", phase: "planning", cardId: "card-bridge" },
+      { id: "lesson-planning-open", phase: "planning", cardId: null },
+      { id: "lesson-running-canvas", phase: "running", cardId: "card-canvas" },
+    ] as const;
+    const cases = [
+      {
+        phase: null,
+        cardId: null,
+        ids: ["lesson-planning-bridge", "lesson-planning-open", "lesson-running-canvas"],
+      },
+      { phase: "planning" as const, cardId: null, ids: ["lesson-planning-bridge", "lesson-planning-open"] },
+      { phase: null, cardId: "card-bridge", ids: ["lesson-planning-bridge"] },
+      { phase: "running" as const, cardId: "card-canvas", ids: ["lesson-running-canvas"] },
+      { phase: "planning" as const, cardId: "card-canvas", ids: [] },
+    ];
+    for (const filter of cases) {
+      const query = listLessonsQuery(filter);
+      const optionalAt = query.text.indexOf("OPTIONAL MATCH");
+      const withAt = query.text.indexOf("WITH lesson, phase, card");
+      const whereAt = query.text.indexOf("WHERE");
+      expect(optionalAt).toBeGreaterThan(-1);
+      expect(withAt).toBeGreaterThan(optionalAt);
+      expect(whereAt).toBeGreaterThan(withAt);
+      expect(query.text.slice(optionalAt, withAt).includes("WHERE")).toBe(false);
+      const predicate = query.text.slice(whereAt);
+      expect(predicate.startsWith("WHERE ($phase IS NULL OR phase.name = $phase)")).toBe(true);
+      expect(predicate.includes("AND ($cardId IS NULL OR card.id = $cardId)")).toBe(true);
+      expect(query.params).toEqual({ phase: filter.phase, cardId: filter.cardId });
+      const kept = rows.filter((row) => {
+        const phaseOk = filter.phase == null || row.phase === filter.phase;
+        const cardOk = filter.cardId == null || row.cardId === filter.cardId;
+        return phaseOk && cardOk;
+      });
+      expect(kept.map((row) => row.id)).toEqual(filter.ids);
+    }
   });
 });
