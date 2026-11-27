@@ -62,6 +62,8 @@ When neither getter exists, the same calls run on an in-memory bridge and the st
 
 This surface is the page's tool producer. It is not the native core bridge in section 3. Payload checks stay in `adaptate`. Input schemas are Zod objects converted with `zodToOpenAPISchema` from `@adaptate/utils`.
 
+Chopin stays outside this core. A proposed adapter port, not a dependency, is recorded in [`docs/decisions/002-chopin-interop-via-mcp.md`](decisions/002-chopin-interop-via-mcp.md).
+
 ## 4. JS / WebView UI and state
 
 Visual Cockpit and Code Mode stay a JavaScript WebView. XState 6 owns the pilot railway. `stateVersion`, human pause, and the tool-call contracts stay in that state layer and drive the core through the bridge. A view change still does not pause a run. A human edit during a working phase still does. The WebMCP strip in both modes shows whether the browser getter was found and which tools are registered. The workspace is stored in `localStorage` under `visualizer.workspace`. A payload left under `visualizer.workspace.v1` is read only when the current key is empty. Missing strokes, ledger, Pulse Memory, and lesson arrays hydrate as empty lists, and a stored card statement is left as written.
