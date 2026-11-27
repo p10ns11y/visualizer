@@ -21,6 +21,8 @@ Synced with commit `58c593d6053d64b063fbab040bcb2402d76257e0`. Move that hash fo
 - `packages/core/src/formal/pilot.safe.checks.json`
 - `packages/core/src/formal/pilot.fail.checks.json`
 
+Memory append, promotion, and workflow lessons call `commitHuman`. They do not change the functions above, so this sync commit stays.
+
 ## How to run
 
 From the repo root:

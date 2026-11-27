@@ -42,6 +42,12 @@ A stroke drawn on the canvas plate is stored on the freehand problem card. The s
 
 Test: `CF-06` in `packages/core/src/critical-flows.test.ts`, plus the sketch render, reload, and slow-judgement pause in `apps/web/src/critical-flow.dom.test.tsx`.
 
+## CF-07 A confirmed Ensembly record becomes Pulse Memory
+
+A pre-memory workspace still loads: the ledger, Pulse Memory, and workflow lessons are empty, and the problem cards stay. Appending a record with no confirmed outcome leaves Pulse Memory empty. Appending one with a confirmed outcome promotes it. A workflow lesson stays attached to its phase and card after Code Mode opens. A stale `stateVersion` does not append. The promoted record is still there after serialize and read.
+
+Test: `CF-07` in `packages/core/src/critical-flows.test.ts`, plus the promote, code-mode, reload, and pre-memory hydration renders in `apps/web/src/critical-flow.dom.test.tsx`.
+
 ## Lockstep properties
 
 `pnpm verify:formal` checks the promise those flows rely on: monotonic `stateVersion`, stale-write rejection, no agent commit while paused or after a terminal phase, and a rest path from every railway phase. The bounds and the command live in `.cursor/skills/formal-verify-visualizer/SKILL.md`.

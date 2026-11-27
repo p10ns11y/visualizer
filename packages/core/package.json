@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./ensembly": "./src/memory/ensembly.ts",
+    "./neo4j": "./src/memory/neo4j-store.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -14,6 +16,7 @@
   "dependencies": {
     "@adaptate/core": "3.0.0",
     "@adaptate/utils": "3.0.0",
+    "neo4j-driver": "6.3.2",
     "xstate": "6.0.0-beta.5",
     "zod": "^4.1.12"
   },

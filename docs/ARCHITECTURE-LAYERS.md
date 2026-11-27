@@ -7,10 +7,14 @@ The diagram is the dependency direction: the UI talks to a thin bridge, the brid
 ```mermaid
 flowchart TB
   ui["UI and state: Visual Cockpit, Code Mode, XState 6"]
+  memory["Memory: Ensembly ledger, Pulse Memory, workflow lessons"]
+  graph["Optional Neo4j projection of that same memory"]
   bridge["Thin bridge: C ABI, native bindings, WASM to JS, or local JSON-RPC"]
   core["Thin core: CLI or native module, WASM when needed"]
   accel["adaptate-accel, packages/native, packages/wasm"]
   streams["@adaptate/core typed streams"]
+  ui --> memory
+  memory --> graph
   ui --> bridge
   bridge --> core
   core --> accel
@@ -56,6 +60,90 @@ Visual Cockpit and Code Mode stay a JavaScript WebView. XState 6 owns the pilot 
 
 Freehand strokes are fields on that same workspace: a `cardId` plus normalized pointer samples. The canvas plate paints them. Code Mode lists and clears them. They are not a bridge payload and not a board log. A stroke during a working phase uses the same human-edit pause as a statement edit.
 
+Pulse Memory and workflow lessons are fields on that same workspace. The Ensembly ledger is the append-only record. Pulse Memory holds a record only after a confirmed outcome. A workflow lesson points at a railway phase and, when present, a problem card. Neo4j is an optional projection of those fields through `MemoryGraphStore`. The cockpit does not require a running database. Setup and the Cypher constraints are in `docs/MEMORY-NEO4J.md`. A memory write during a working phase uses the same human-edit pause as a statement edit.
+
+Ensembly, adapted for this cockpit, is also the shared event and board log. A separate `@vercel/board` SQLite mirror is not that log. Cross-machine sync is an open design slice (Cloudflare Workers, hooks, and Cloudflare storage such as Durable Objects, D1, or R2). The record is [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md).
+
 ## What this step does not do
 
 No Rust or Zig toolchain is added here. No new package depends on `@adaptate/native`, `@adaptate/wasm`, or `@adaptate/accel`. Those integrations are a later step, after review of this foundation.
+
+## Origin, Pain Points, and Fleet Topology Comparison (`@ctatedev` Reference)
+
+This section is about Visualizer only. It records why the cockpit exists, what was already settled in spoken design on 27 Nov 2026, and how that shape sits next to Chris Tate's (`@ctatedev`) fleet diagram from the same day: [How I manage my agent fleet](https://x.com/ctatedev/status/2126180726278353288).
+
+### Original intent and the pain
+
+Multi-agent SI work loses the operator. A human edit mid-run can be overwritten with no trace. The live state is a black box. Costly mistakes repeat in the next session. Decisions scatter, with no verified path into memory. A single vendor or a single language then owns the run.
+
+Visualizer's intent is one calm cockpit. Human intent, freehand sketches, the typed workspace, and verified memory stay on one store. The XState 6 railway is the deterministic rule for when a write may land.
+
+### Independent arrival on 27 Nov 2026
+
+Spoken design on 27 Nov 2026 settled this shape before that post was used as a reference:
+
+- Visual Cockpit and Code Mode share one store.
+- `stateVersion` optimistic locking, and the human-pause collision guard.
+- An XState 6 railway checked by model-based paths and `pnpm verify:formal`.
+- The four-layer portable core, with heavy payload work in [`adaptate`](https://github.com/p10ns11y/adaptate).
+- Freehand strokes pinned to a problem card.
+- Two-layer memory: an Ensembly ledger into Pulse Memory, plus workflow lessons on the Neo4j projection. That same Ensembly ledger is the shared board log. A separate `@vercel/board` SQLite mirror is not part of this shape. Cross-machine sync is the open slice in [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md).
+- A WebMCP `document.modelContext` bridge.
+
+The post went up the same day (27 Nov 2026, 05:06 UTC) and draws the same split: a person on the local side, a coordinator with memory, an orchestrator that scales work, and a shared board. It is an independent check of that shape, not the source of the cockpit.
+
+```mermaid
+flowchart LR
+  subgraph localSide [Local]
+    me[Me]
+    approvals[Approvals]
+  end
+  subgraph remoteSide [Remote]
+    coordinator[Coordinator + Memory]
+    orchestrator[Orchestrator + Jobs]
+    board[Board]
+    fleet[Sandboxed agent fleet]
+  end
+  me --> coordinator
+  approvals -.-> coordinator
+  coordinator --> orchestrator
+  coordinator --> board
+  orchestrator --> fleet
+  fleet --> board
+```
+
+### What Visualizer borrows from that topology
+
+Three parts of the diagram are worth taking as drawn.
+
+- **Local versus remote.** `Me` and `Approvals` stay on the local side of the line. An external write is approved there before it runs remotely. The diagram names GitHub, Slack, and Vercel on that list. The same local approval is the rule for any other remote write this cockpit will send, including Greenhouse, Workspace, and Ashby.
+- **Coordinator and Orchestrator.** Long-lived intent and memory stay with the Coordinator. Fleet scale and job scheduling stay with the Orchestrator. The two do not share one loop.
+- **Radial fleet and a central Board.** Sandboxed workers sit around one Board. Workers and the Coordinator both read that Board. In this repo the Board is the Ensembly log, not a `@vercel/board` SQLite file. Claim leases, `agent via human` attribution, scoped sandbox tokens, and a live tail are primitives that sync design may borrow. The fleet is not connected yet. See [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md).
+
+### How Visualizer differs
+
+```mermaid
+flowchart TB
+  cockpit[Visual Cockpit and Code Mode]
+  railway[XState 6 railway]
+  store[Shared workspace and stateVersion]
+  pulse[Pulse Memory from a confirmed Ensembly record]
+  lessons[Workflow lessons on Neo4j]
+  tiers[Tier 3 to Tier 2 to Tier 1]
+  cockpit --> store
+  railway --> store
+  store --> pulse
+  store --> lessons
+  tiers --> railway
+```
+
+- **Cockpit, Code Mode, and ink, on a checked statechart.** The run is not a chat-only loop. Model-based paths and the formal check walk the XState 6 machine. A human edit during a working phase pauses the build. The statement, the stroke, and `stateVersion` stay. The formal check writes that machine with `machineToJSON`, so the chart is portable machine JSON.
+- **Two memory layers, not one flat store.** Ensembly is the append-only ledger. Pulse Memory receives a rule, a costly mistake, or a decision only after a confirmed outcome. Agentic workflow memory is the lesson graph: phase, card, friction, rework, and adjustment. Neo4j is the optional projection. CI uses the in-memory port.
+- **Four portable layers, local-first or hybrid.** The target is a thin Rust or Zig core, `adaptate` native and WASM acceleration, one thin bridge, and the JS/WebView. This file still does not pick Rust or Zig, and this repo does not add that crate. The post describes a deploymentless fleet on Vercel infrastructure. Visualizer is not tied to that deployment.
+- **Tiered brain and WebMCP.** Tier 3 falls through to Tier 2, then to Tier 1 deterministic code. The spoken design publishes the same workspace on `document.modelContext`. The problem card is in the cockpit. The publish step is still ahead.
+
+### How this can grow
+
+The same cockpit can stay local while Approvals remains the local check on every remote write. A remote Orchestrator and a sandboxed fleet can attach later, without moving memory or the railway off the shared store.
+
+Cursor, Claude, Grok, and Grok Bot can share that portable statechart, the Ensembly log, and the Neo4j projection. Scheduled reviews of a functional area can then read several repositories from that log and the same confirmed Pulse Memory, instead of opening a fresh session with none of the prior lessons. The sync that carries the log across machines is the open Cloudflare slice in [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md). `@vercel/board` stays an optional transport behind a port, not a second store.

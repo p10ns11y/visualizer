@@ -128,6 +128,10 @@ async function assertInvariants(state: WorkspaceState): Promise<string | null> {
   if (viewed.state.autopilot.phase !== state.autopilot.phase) return "view switch changed the railway";
   if (viewed.state.stateVersion !== state.stateVersion + 1) return "view switch did not raise stateVersion";
   if (viewed.state.strokes.length !== state.strokes.length) return "view switch dropped a stroke";
+  if (viewed.state.pulseMemory.length !== state.pulseMemory.length) return "view switch dropped pulse memory";
+  if (viewed.state.workflowLessons.length !== state.workflowLessons.length) {
+    return "view switch dropped a workflow lesson";
+  }
   if (state.autopilot.phase === "planning" && state.strokes.length === 0) {
     const drawn = appendSketchStroke(state, state.stateVersion, {
       cardId: canvasCardId,

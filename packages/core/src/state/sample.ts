@@ -39,6 +39,57 @@ export function createSampleWorkspace(): WorkspaceState {
       },
     ],
     strokes: [],
+    ensemblyLedger: [
+      {
+        id: "ens-rule-stateversion",
+        timestamp: "2026-11-27T00:00:00Z",
+        kind: "rule",
+        summary: "A stale stateVersion never overwrites the workspace.",
+        rationale: "Two writers otherwise drop a human edit.",
+        provenance: "packages/core/src/state/store.ts",
+        confirmedOutcome: "Stale writes return STATE_CONFLICT.",
+      },
+      {
+        id: "ens-mistake-stale-tick",
+        timestamp: "2026-11-27T00:00:01Z",
+        kind: "costly_mistake",
+        summary: "Applying a judge tick after a human edit restores the pre-edit workspace.",
+        rationale: "The tick awaits, then commits the snapshot it started with.",
+        provenance: "apps/web/src/tick-guard.ts",
+        confirmedOutcome: "The tick is dropped when stateVersion moved.",
+      },
+      {
+        id: "ens-decision-ledger",
+        timestamp: "2026-11-27T00:00:02Z",
+        kind: "decision",
+        summary: "Keep the Ensembly ledger append-only and rebuild the graph from it.",
+        rationale: "The graph is a projection. The ledger is the record that can be checked.",
+        provenance: "packages/core/src/memory/ensembly.ts",
+        confirmedOutcome: null,
+      },
+    ],
+    pulseMemory: [
+      {
+        id: "ens-rule-stateversion",
+        timestamp: "2026-11-27T00:00:00Z",
+        kind: "rule",
+        summary: "A stale stateVersion never overwrites the workspace.",
+        rationale: "Two writers otherwise drop a human edit.",
+        provenance: "packages/core/src/state/store.ts",
+        confirmedOutcome: "Stale writes return STATE_CONFLICT.",
+      },
+    ],
+    workflowLessons: [
+      {
+        id: "lesson-planning-bridge",
+        recordedAt: "2026-11-27T00:00:03Z",
+        phase: "planning",
+        cardId: "card-bridge",
+        signal: "friction",
+        lesson: "Publishing the bridge before the statement settles forces a rewrite.",
+        adjustment: "Read the card statement before the bridge publish.",
+      },
+    ],
     mockups: [
       {
         id: "plate-canvas",

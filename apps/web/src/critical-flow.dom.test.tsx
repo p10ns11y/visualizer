@@ -199,6 +199,76 @@ describe("shared cockpit and code mode", () => {
     expect(document.querySelector(".shell")?.getAttribute("data-stroke-count")).toBe("1");
     expect(document.querySelector(".sketch-pad path")).not.toBeNull();
   });
+
+  it("promotes a confirmed ledger record into both modes and reloads it", () => {
+    mount();
+    expect(document.querySelector(".shell")?.getAttribute("data-pulse-count")).toBe("1");
+    expect(document.body.textContent).toContain("A stale stateVersion never overwrites the workspace.");
+    expect(document.body.textContent).toContain("Outcome not confirmed");
+    const promote = [...document.querySelectorAll("button")].find(
+      (button) => button.textContent === "Promote ens-mistake-stale-tick",
+    );
+    if (!promote) throw new Error("Missing promote");
+    act(() => {
+      promote.click();
+    });
+    expect(document.querySelector(".shell")?.getAttribute("data-pulse-count")).toBe("2");
+    expect(document.querySelector(".version")?.textContent).toBe("v1");
+    expect(document.body.textContent).toContain(
+      "Applying a judge tick after a human edit restores the pre-edit workspace.",
+    );
+    const toggle = document.querySelector('button[aria-label="Code Mode"]');
+    if (!(toggle instanceof HTMLButtonElement)) throw new Error("Missing Code Mode toggle");
+    act(() => {
+      toggle.click();
+    });
+    expect(document.querySelector(".shell")?.getAttribute("data-mode")).toBe("code");
+    expect(document.querySelector(".shell")?.getAttribute("data-lesson-count")).toBe("1");
+    expect(document.body.textContent).toContain("Read the card statement before the bridge publish.");
+    const stored = localStorage.getItem(workspaceStorageKey);
+    act(() => {
+      root?.unmount();
+    });
+    root = null;
+    document.body.innerHTML = "";
+    expect(stored).toBeTruthy();
+    mount();
+    expect(document.querySelector(".shell")?.getAttribute("data-pulse-count")).toBe("2");
+    expect(document.body.textContent).toContain(
+      "Applying a judge tick after a human edit restores the pre-edit workspace.",
+    );
+  });
+
+  it("hydrates a pre-memory workspace without inventing pulse records", () => {
+    const raw = localStorage.getItem(workspaceStorageKey);
+    expect(raw).toBeNull();
+    mount();
+    const stored = localStorage.getItem(workspaceStorageKey);
+    if (!stored) throw new Error("Missing stored workspace");
+    const legacy = JSON.parse(stored) as Record<string, unknown>;
+    delete legacy.ensemblyLedger;
+    delete legacy.pulseMemory;
+    delete legacy.workflowLessons;
+    legacy.stateVersion = 4;
+    const cards = legacy.problemCards as Array<{ id: string; statement: string }>;
+    const canvas = cards.find((card) => card.id === "card-canvas");
+    if (!canvas) throw new Error("Missing canvas card");
+    canvas.statement = "Kept from main.";
+    localStorage.setItem(workspaceStorageKey, JSON.stringify(legacy));
+    act(() => {
+      root?.unmount();
+    });
+    root = null;
+    document.body.innerHTML = "";
+    mount();
+    expect(document.querySelector(".shell")?.getAttribute("data-pulse-count")).toBe("0");
+    expect(document.querySelector(".shell")?.getAttribute("data-lesson-count")).toBe("0");
+    expect(document.querySelector(".version")?.textContent).toBe("v4");
+    const field = document.querySelector('textarea[aria-label="Statement for Freehand canvas sketching"]');
+    expect(field).toBeInstanceOf(HTMLTextAreaElement);
+    if (field instanceof HTMLTextAreaElement) expect(field.value).toBe("Kept from main.");
+    expect(document.body.textContent).toContain("No promoted records yet.");
+  });
 });
 
 function drawOn(surface: SVGSVGElement) {

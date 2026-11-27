@@ -4,8 +4,8 @@ Commands, in the order CI `verify` runs the test steps:
 
 | Command | What it runs |
 | :--- | :--- |
-| `pnpm test` | `@visualizer/core` unit file `packages/core/src/foundation.test.ts` (Vitest). |
-| `pnpm test:critical-flows` | `packages/core/src/critical-flows.test.ts` and `apps/web/src/critical-flow.dom.test.tsx`. Flow names are in `docs/CRITICAL-FLOWS.md`. CF-06 (pinned strokes, reload, and a draw that pauses a working phase) runs on this same command. |
+| `pnpm test` | `@visualizer/core` Vitest files under `packages/core/src/**/*.test.ts` except `critical-flows.test.ts`. Memory coverage is `packages/core/src/memory/memory.test.ts`. |
+| `pnpm test:critical-flows` | `packages/core/src/critical-flows.test.ts` and `apps/web/src/critical-flow.dom.test.tsx`. Flow names are in `docs/CRITICAL-FLOWS.md`. CF-06 (pinned strokes) and CF-07 (Pulse Memory promotion, workflow lessons, and pre-memory hydration) run on this same command. |
 | `pnpm test:mbt` | `scripts/test-mbt.ts`. Regenerates simple paths with `getSimplePaths` from `xstate/graph` and checks each step. |
 | `pnpm verify:formal` | XState CLI checks plus `checkLockstep`. Bounds are in `.cursor/skills/formal-verify-visualizer/SKILL.md`. |
 | `pnpm test:local-model` | `scripts/local-model-smoke.ts`. CF-04 runs this. CI does not require a listening model. |

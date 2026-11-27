@@ -1,4 +1,5 @@
 import {
+  appendEnsemblyRecord,
   appendSketchStroke,
   applyBuildTick,
   bannerFor,
@@ -11,7 +12,9 @@ import {
   createSampleWorkspace,
   pauseRun,
   pilotPhases,
+  promoteEnsemblyRecord,
   readPersistedWorkspace,
+  recordWorkflowLesson,
   remainingTicks,
   resumeRun,
   serializeWorkspace,
@@ -25,6 +28,7 @@ import {
   type WorkspaceState,
 } from "@visualizer/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MemoryPanel, type EnsemblyDraft, type LessonDraft } from "./memory-panel.js";
 import { SketchPad } from "./sketch-pad.js";
 import { pendingTickStillApplies } from "./tick-guard.js";
 import { Button, Toggle } from "./ui/controls.js";
@@ -169,6 +173,33 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
     apply(pauseRun(current, current.stateVersion));
   }
 
+  function appendRecord(draft: EnsemblyDraft) {
+    const current = stateRef.current;
+    apply(
+      appendEnsemblyRecord(current, current.stateVersion, {
+        id: `ens-${current.logSeq + 1}`,
+        timestamp: new Date().toISOString(),
+        ...draft,
+      }),
+    );
+  }
+
+  function promoteRecord(id: string) {
+    const current = stateRef.current;
+    apply(promoteEnsemblyRecord(current, current.stateVersion, id));
+  }
+
+  function appendLesson(draft: LessonDraft) {
+    const current = stateRef.current;
+    apply(
+      recordWorkflowLesson(current, current.stateVersion, {
+        id: `lesson-${current.logSeq + 1}`,
+        recordedAt: new Date().toISOString(),
+        ...draft,
+      }),
+    );
+  }
+
   const banner = bannerFor(state.autopilot.phase);
   const ticksLeft = remainingTicks(state.autopilot.cursor);
 
@@ -178,6 +209,8 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
       data-mode={state.mode}
       data-phase={state.autopilot.phase}
       data-stroke-count={state.strokes.length}
+      data-pulse-count={state.pulseMemory.length}
+      data-lesson-count={state.workflowLessons.length}
     >
       <header className="top">
         <div className="brand">
@@ -277,6 +310,12 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
       ) : (
         <CodeMode state={state} onStatement={editStatement} onClearStrokes={clearStrokes} />
       )}
+      <MemoryPanel
+        state={state}
+        onAppend={appendRecord}
+        onPromote={promoteRecord}
+        onLesson={appendLesson}
+      />
     </div>
   );
 }
