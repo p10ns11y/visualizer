@@ -65,7 +65,7 @@ pnpm test:local-model
 
 - [`adaptate`](https://github.com/p10ns11y/adaptate) (`@adaptate/core`, `@adaptate/utils`) — typed contracts reused with Zod. The autopilot stream uses `transformSchema`, `makeConditionalSchemaTransformer`, `parse` / `parseStream` from `@adaptate/core/result`, and `fromAsyncIterableSteps` from `@adaptate/core/stream-incremental`. Connector schemas use `zodToOpenAPISchema`.
 - `@ui-sdk/react` — one-app, two-modes primitives and shared-state interaction
-- [XState](https://xstate.js.org) — statecharts and the railway backbone
+- [XState](https://xstate.js.org) 6 — statecharts and the railway backbone
 - [Chopin](https://githubnext.com/projects/chopin/) — GitHub Next's multiplayer MDX planning prototype
 - [Lopsi](https://github.com/frankievalentine/lopsi-bot-eve) — folder-per-agent layout inspiration
 - [Vercel Board](https://github.com/vercel/board) — optional local task and event log

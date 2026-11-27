@@ -13,7 +13,7 @@
   "dependencies": {
     "@adaptate/core": "3.0.0",
     "@adaptate/utils": "3.0.0",
-    "xstate": "^5.24.0",
+    "xstate": "6.0.0-beta.5",
     "zod": "^4.1.12"
   },
   "devDependencies": {

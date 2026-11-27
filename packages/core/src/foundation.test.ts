@@ -1,5 +1,5 @@
 import { transformSchema } from "@adaptate/core";
-import { createActor } from "xstate";
+import { createActor, isUnhandled, transition } from "xstate";
 import { describe, expect, it } from "vitest";
 import { createLocalDecisionClient, localModelConfigFromEnv } from "./brain/local-model.js";
 import { BrainRouter } from "./brain/router.js";
@@ -129,7 +129,23 @@ describe("XState pilot railway", () => {
       "completed",
     ]);
     expect(reducePhase(trace)).toBe("completed");
+    expect(actor.getSnapshot().status).toBe("done");
     actor.stop();
+  });
+
+  it("stops a running actor and ignores later events", () => {
+    const actor = createActor(pilotMachine);
+    actor.start();
+    actor.send({ type: "START" });
+    expect(actor.getSnapshot().value).toBe("planning");
+    actor.stop();
+    const stopped = actor.getSnapshot();
+    expect(stopped.status).toBe("stopped");
+    expect(stopped.value).toBe("planning");
+    const result = transition(pilotMachine, stopped, { type: "PLAN_READY" });
+    expect(isUnhandled(stopped, result)).toBe(true);
+    expect(result[0].value).toBe("planning");
+    expect(result[1]).toEqual([]);
   });
 
   it("pauses for a person, resumes, and can fail", () => {
