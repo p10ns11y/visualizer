@@ -1,4 +1,4 @@
-import type { LogEntry, WorkspaceState } from "./schema.js";
+import type { EnsemblyRecord, LogEntry, PulseMemory, WorkspaceState } from "./schema.js";
 
 function logKey(entry: LogEntry): string {
   return `${entry.id}\u0000${entry.kind}\u0000${entry.message}`;
@@ -7,6 +7,11 @@ function logKey(entry: LogEntry): string {
 function logNumber(id: string): number {
   const match = /^log-(\d+)$/.exec(id);
   return match ? Number(match[1]) : 0;
+}
+
+function mergeById<T extends { id: string }>(tickRows: readonly T[], liveRows: readonly T[]): T[] {
+  const ids = new Set(tickRows.map((row) => row.id));
+  return [...tickRows, ...liveRows.filter((row) => !ids.has(row.id))];
 }
 
 export function mergeAuxIntoTick(live: WorkspaceState, tick: WorkspaceState): WorkspaceState {
@@ -31,8 +36,12 @@ export function mergeAuxIntoTick(live: WorkspaceState, tick: WorkspaceState): Wo
     logSeq = Math.max(logSeq, logNumber(next.id));
     appended.push(next);
   }
+  const ensemblyLedger: EnsemblyRecord[] = mergeById(tick.ensemblyLedger, live.ensemblyLedger);
+  const pulseMemory: PulseMemory[] = mergeById(tick.pulseMemory, live.pulseMemory);
   return {
     ...tick,
+    ensemblyLedger,
+    pulseMemory,
     workflowLessons,
     eventLog: [...tick.eventLog, ...appended],
     logSeq,

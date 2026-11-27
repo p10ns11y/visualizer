@@ -1,4 +1,5 @@
 import { BrainRouter, type BrainInput } from "../brain/router.js";
+import { mergeAuxIntoTick } from "../state/merge-aux.js";
 import {
   applyPilotEvent,
   pauseRun,
@@ -227,7 +228,7 @@ export async function runSelfBootstrap(
     }
     const result = await applyBuildTick(current, current.stateVersion, tick, router);
     if (!result.ok) return result;
-    current = result.state;
+    current = mergeAuxIntoTick(current, result.state);
   }
   return { ok: true, state: current };
 }

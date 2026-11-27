@@ -1,16 +1,18 @@
 import { timingSafeEqual } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { resolve } from "node:path";
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { localhostHostValidation, localhostOriginValidation, toNodeHandler } from "@modelcontextprotocol/node";
 import {
   mountWorkspaceBridge,
+  serializeWorkspace,
   webMcpInputSchemas,
   webMcpToolNames,
   type WebMcpApproval,
   type WebMcpToolResult,
 } from "@visualizer/core";
-import { loadWorkspace, saveWorkspace, withFileLock } from "./workspace-file.js";
+import { landWorkspaceTick, loadWorkspace, saveWorkspace, statePathInsideRoot, withFileLock } from "./workspace-file.js";
 
 export type McpServerOptions = {
   statePath: string;
@@ -40,14 +42,18 @@ export function approvalForRequest(header: string | undefined, options: Pick<Mcp
   return options.allowWrites ? "local" : "read-only";
 }
 
+const guidedTools = new Set<string>(["start_build", "resume_build"]);
+
 async function callTool(
   statePath: string,
   name: string,
   input: unknown,
   approval: WebMcpApproval,
 ): Promise<WebMcpToolResult> {
+  if (guidedTools.has(name)) return callGuided(statePath, name, input, approval);
   return withFileLock(statePath, async () => {
     let state = await loadWorkspace(statePath);
+    const before = serializeWorkspace(state);
     const bridge = await mountWorkspaceBridge({
       globals: {},
       getState: () => state,
@@ -58,12 +64,42 @@ async function callTool(
     });
     try {
       const result = await bridge.execute(name, input);
-      await saveWorkspace(statePath, state);
+      const access = bridge.tools.find((tool) => tool.name === name)?.access;
+      if (access === "write" && result.ok && serializeWorkspace(state) !== before) {
+        await saveWorkspace(statePath, state);
+      }
       return result;
     } finally {
       await bridge.release();
     }
   });
+}
+
+async function callGuided(
+  statePath: string,
+  name: string,
+  input: unknown,
+  approval: WebMcpApproval,
+): Promise<WebMcpToolResult> {
+  let state = await withFileLock(statePath, () => loadWorkspace(statePath));
+  const bridge = await mountWorkspaceBridge({
+    globals: {},
+    getState: () => state,
+    getApproval: () => approval,
+    onCommit: (result) => {
+      if (result.ok) state = result.state;
+    },
+    landTick: async (tick, startedVersion) => {
+      const landed = await landWorkspaceTick(statePath, tick, startedVersion);
+      state = landed;
+      return landed;
+    },
+  });
+  try {
+    return await bridge.execute(name, input);
+  } finally {
+    await bridge.release();
+  }
 }
 
 export async function startMcpServer(options: McpServerOptions): Promise<{ url: string; close: () => Promise<void> }> {
@@ -146,11 +182,16 @@ export function readMcpEnv(env: NodeJS.ProcessEnv = process.env): McpServerOptio
   if (!Number.isInteger(port) || port < 0 || port > 65535) {
     throw new Error("VISUALIZER_MCP_PORT must be an integer from 0 to 65535.");
   }
-  const token = env.VISUALIZER_MCP_WRITE_TOKEN;
+  const token = env.VISUALIZER_MCP_WRITE_TOKEN ?? "";
+  const root = resolve(env.VISUALIZER_MCP_STATE_ROOT ?? process.cwd());
+  const statePath = resolve(root, env.VISUALIZER_MCP_STATE ?? ".visualizer/workspace.json");
+  if (env.VISUALIZER_MCP_ALLOW_STATE_PATH !== "1" && !statePathInsideRoot(root, statePath)) {
+    throw new Error("VISUALIZER_MCP_STATE must stay inside VISUALIZER_MCP_STATE_ROOT.");
+  }
   return {
-    statePath: env.VISUALIZER_MCP_STATE ?? ".visualizer/workspace.json",
+    statePath,
     port,
     allowWrites: env.VISUALIZER_MCP_ALLOW_WRITES === "1",
-    writeToken: token && token.length > 0 ? token : null,
+    writeToken: token.length > 0 ? token : null,
   };
 }

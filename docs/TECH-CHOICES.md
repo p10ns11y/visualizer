@@ -199,3 +199,11 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 
 - [x] Update `docs/ARCHITECTURE-LAYERS.md`, `README.md`, `docs/CRITICAL-FLOWS.md`, `docs/TEST-SUITE.md`, `docs/decisions/004-headless-mcp.md`, and this file. Credit `@adaptate/utils` on the tool schemas. Leave the formal sync commit in place and update the formal note so it matches the aux ledger writes.
 - [x] Update `.cursor/skills/verify-visualizer/` for the saved approval, the tool list, the promote behavior, and the headless server. Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`.
+- [x] After review: merge ledger and pulse rows in `mergeAuxIntoTick`, shorten the file lock, and record the file mode, host refusal, and concurrent append in `docs/CRITICAL-FLOWS.md`.
+
+## Headless MCP review fixes
+
+- **Chosen:** Keep the `node:fs` `wx` lock. The lock file stores pid and `/proc/<pid>/stat` start time, and a waiter removes it only when that owner is dead. The lock wraps load, `mergeAuxIntoTick`, and save, including ledger and pulse rows by id. The workspace file and lock are mode `0600`. The parent directory is mode `0700`. `VISUALIZER_MCP_STATE` must resolve inside `VISUALIZER_MCP_STATE_ROOT` unless `VISUALIZER_MCP_ALLOW_STATE_PATH=1`.
+- **Why:** A tick that landed from an older snapshot was dropping ledger appends, promotions, and pack imports. A lock held across the awaited tick blocked the other writer, and a 30 second age check could drop a live owner's lock. The workspace file is local state and should not be world-readable.
+- **Basis:** The review on pull request 6. No new package. `/proc/<pid>/stat` field 22 is the process start time on Linux, which is the CI host. This was not a fresh library lookup.
+- **Latest trends checked before choosing:** No new library was compared. The earlier entry already checked `proper-lockfile` and left the lock on `node:fs`. That choice stays.

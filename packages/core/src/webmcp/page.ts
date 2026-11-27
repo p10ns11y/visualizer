@@ -8,9 +8,7 @@ export function pageRows<T extends object>(
   limit: number | undefined,
   cursor: string | undefined,
 ): Page<T> | { error: string } {
-  if (rows.length === 0) return { items: [], nextCursor: null };
-  const size = limit ?? Math.min(rows.length, 100);
-  if (!Number.isInteger(size) || size < 1 || size > 100) {
+  if (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > 100)) {
     return { error: "limit must be an integer from 1 to 100." };
   }
   let start = 0;
@@ -19,6 +17,8 @@ export function pageRows<T extends object>(
     start = Number(cursor);
     if (start > rows.length) return { error: "cursor is past the end." };
   }
+  if (rows.length === 0) return { items: [], nextCursor: null };
+  const size = limit ?? Math.min(rows.length, 100);
   const items = rows.slice(start, start + size).map((row) => ({ ...row }));
   const next = start + items.length < rows.length ? String(start + items.length) : null;
   return { items, nextCursor: next };

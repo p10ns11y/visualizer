@@ -21,7 +21,7 @@ Preconditions:
 - Node can run `node --import tsx` inside `apps/mcp`.
 - Nothing else needs the chosen port. Port `0` asks the OS for a free port.
 
-- **Start closed.** Run `VISUALIZER_MCP_PORT=0 VISUALIZER_MCP_STATE=/tmp/visualizer-walkthrough.json VISUALIZER_MCP_ALLOW_WRITES=0 pnpm --filter @visualizer/mcp start`. The first line contains `http://127.0.0.1:` and `writes=off`.
+- **Start closed.** Run `VISUALIZER_MCP_PORT=0 VISUALIZER_MCP_STATE=/tmp/visualizer-walkthrough.json VISUALIZER_MCP_STATE_ROOT=/tmp VISUALIZER_MCP_ALLOW_WRITES=0 pnpm --filter @visualizer/mcp start`. The first line contains `http://127.0.0.1:` and `writes=off`. The state path has to stay inside `VISUALIZER_MCP_STATE_ROOT`.
 - **Read.** Run `node --import tsx src/client-once.ts <url> list_cards '{}'` from `apps/mcp`. The JSON text contains `"ok":true` and `Ensembly shared log`.
 - **Write denied.** Call `append_ensembly_record` with the current `stateVersion`. The text contains `READ_ONLY`.
 - **Write allowed.** Restart with `VISUALIZER_MCP_ALLOW_WRITES=1` and the same state path. Append one synthetic record, then run `read_ensembly_ledger` in a second terminal. The record id is in that output.

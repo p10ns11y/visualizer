@@ -42,7 +42,6 @@ export function pulseInjectPromptText(inject: Pick<PulseInject, "schema" | "trac
 }
 
 function promptTokens(traces: readonly PulseInjectTrace[]): number {
-  if (traces.length === 0) return 0;
   return estimateTokens(pulseInjectPromptText({ schema: pulsePackSchema, traces: [...traces] }));
 }
 

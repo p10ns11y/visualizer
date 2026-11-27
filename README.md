@@ -32,7 +32,7 @@ Text-box-only SI workflows force a builder to describe, wait, and re-describe â€
 | **Collaboration** | Human-in-the-loop solo flow | Real-time multiplayer (teammates + agents) |
 | **Anchored to** | Workflow, skills, and local tools | An existing GitHub repository |
 | **Maturity** | Early scaffold | Early open-source prototype |
-| **Bridge** | Can import or export via MCP later, if desired | Exposes an MCP server |
+| **Bridge** | Imports and exports a pulse pack on the headless MCP server | Exposes an MCP server |
 
 **Ecosystem references** â€” useful around the cockpit, not a substitute for it:
 
@@ -63,7 +63,7 @@ Outside SI agents can use the same tools without a browser tab:
 pnpm --filter @visualizer/mcp start
 ```
 
-The server binds to `127.0.0.1:8787` and writes `.visualizer/workspace.json`. `VISUALIZER_MCP_STATE` and `VISUALIZER_MCP_PORT` change those paths. Writes are off until `VISUALIZER_MCP_ALLOW_WRITES=1` or `VISUALIZER_MCP_WRITE_TOKEN` matches the bearer. A second process that points at the same file sees the same workspace. The decision is [`docs/decisions/004-headless-mcp.md`](docs/decisions/004-headless-mcp.md).
+The server binds to `127.0.0.1:8787` and writes `.visualizer/workspace.json` with mode `0600`. `VISUALIZER_MCP_STATE` must stay inside `VISUALIZER_MCP_STATE_ROOT` (the working directory unless you set it). `VISUALIZER_MCP_ALLOW_STATE_PATH=1` lifts that check. `VISUALIZER_MCP_PORT` changes the port. Writes are off until `VISUALIZER_MCP_ALLOW_WRITES=1` or `VISUALIZER_MCP_WRITE_TOKEN` matches the bearer. An empty token does not open writes. A second process that points at the same file sees the same workspace. The decision is [`docs/decisions/004-headless-mcp.md`](docs/decisions/004-headless-mcp.md).
 
 ### Local decision model
 

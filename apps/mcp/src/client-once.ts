@@ -9,8 +9,10 @@ if (!url || !tool) {
 }
 const args = JSON.parse(raw) as Record<string, unknown>;
 const headers: Record<string, string> = { Origin: new URL(url).origin };
+const authorization = process.env.VISUALIZER_MCP_AUTHORIZATION;
 const token = process.env.VISUALIZER_MCP_WRITE_TOKEN;
-if (token) headers.Authorization = `Bearer ${token}`;
+if (authorization !== undefined) headers.Authorization = authorization;
+else if (token) headers.Authorization = `Bearer ${token}`;
 
 const client = new Client({ name: "visualizer-external", version: "0.1.0" });
 const transport = new StreamableHTTPClientTransport(new URL(url), { requestInit: { headers } });

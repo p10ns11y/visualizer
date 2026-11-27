@@ -380,4 +380,68 @@ describe("workspace WebMCP tools", () => {
     ).rejects.toThrow("register failed");
     expect([...kept.keys()]).toEqual([]);
   });
+
+  it("resumes a human pause and finishes the build", async () => {
+    let state = assertCommit(applyPilotEvent(createSampleWorkspace(), 0, { type: "START" }));
+    const bridge = await mountWorkspaceBridge({
+      globals: {},
+      getState: () => state,
+      getApproval: () => "local",
+      onCommit: (result) => {
+        if (result.ok) state = result.state;
+      },
+    });
+    const paused = await bridge.execute("pause_build", { stateVersion: state.stateVersion });
+    expect(paused).toMatchObject({ ok: true, phase: "paused_by_human" });
+    const resumed = await bridge.execute("resume_build", { stateVersion: state.stateVersion });
+    expect(resumed).toMatchObject({ ok: true, phase: "completed" });
+    expect(state.autopilot.phase).toBe("completed");
+    expect(state.brief?.verified).toBe(true);
+  });
+
+  it("exports a pulse pack and imports it into another workspace", async () => {
+    let state = createSampleWorkspace();
+    const bridge = await mountWorkspaceBridge({
+      globals: {},
+      getState: () => state,
+      getApproval: () => "local",
+      onCommit: (result) => {
+        if (result.ok) state = result.state;
+      },
+    });
+    const appended = await bridge.execute("append_ensembly_record", {
+      stateVersion: state.stateVersion,
+      id: "ens-pack-roundtrip",
+      timestamp: "2026-11-27T12:08:00Z",
+      kind: "rule",
+      summary: "Round-trip this record through a pulse pack.",
+      rationale: "Export and import share the ledger.",
+      provenance: "packages/core/src/webmcp/bridge.test.ts",
+      confirmedOutcome: "The pack kept the record.",
+    });
+    expect(appended).toMatchObject({ ok: true });
+    const exported = await bridge.execute("export_pulse_pack", {});
+    expect(exported).toMatchObject({ ok: true });
+    if (!exported.ok) return;
+    const pack = exported.pack as { schema?: string; traces?: unknown[] };
+    expect(pack.schema).toBe("pulse-pack-v1");
+    expect(pack.traces?.length).toBeGreaterThan(0);
+
+    let fresh = createSampleWorkspace();
+    const other = await mountWorkspaceBridge({
+      globals: {},
+      getState: () => fresh,
+      getApproval: () => "local",
+      onCommit: (result) => {
+        if (result.ok) fresh = result.state;
+      },
+    });
+    const imported = await other.execute("import_pulse_pack", {
+      stateVersion: fresh.stateVersion,
+      pack,
+    });
+    expect(imported).toMatchObject({ ok: true, added: 1 });
+    expect(fresh.ensemblyLedger.some((row) => row.id === "ens-pack-roundtrip")).toBe(true);
+    expect(fresh.autopilot.phase).toBe("idle");
+  });
 });

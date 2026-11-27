@@ -309,9 +309,7 @@ describe("canon 1 admission and sparse inject", () => {
     expect(inject.traces.some((trace) => trace.nat_key === "ens-old")).toBe(false);
     expect(inject.traces.some((trace) => trace.nat_key === "ens-bad-hash")).toBe(false);
     expect(inject.traces.some((trace) => trace.status === "tool-verified" && trace.kind === "fact")).toBe(true);
-    expect(inject.tokens).toBe(
-      inject.traces.length === 0 ? 0 : estimateTokens(pulseInjectPromptText(inject)),
-    );
+    expect(inject.tokens).toBe(estimateTokens(pulseInjectPromptText(inject)));
     if (inject.traces.length > 0) {
       const snippetTokens = inject.traces.reduce((sum, trace) => sum + estimateTokens(trace.snippet), 0);
       expect(inject.tokens).toBeGreaterThan(snippetTokens);
@@ -397,13 +395,15 @@ describe("canon 1 admission and sparse inject", () => {
   });
 
   it("skips superseded chains and cycles and keeps a short row after a bulky one", () => {
-    expect(buildPulseInject([])).toEqual({
+    const empty = buildPulseInject([]);
+    expect(empty).toMatchObject({
       schema: "pulse-pack-v1",
       limit: 8,
       token_budget: 120,
-      tokens: 0,
       traces: [],
     });
+    expect(empty.tokens).toBe(estimateTokens(pulseInjectPromptText(empty)));
+    expect(empty.tokens).toBeGreaterThan(0);
     const chainC = { ...confirmed, id: "ens-chain-c", timestamp: "2026-11-27T18:00:00Z" };
     const chainB = {
       ...confirmed,
@@ -461,7 +461,7 @@ describe("canon 1 admission and sparse inject", () => {
     const after = { ...short, id: "ens-after", timestamp: "2026-11-27T22:30:00Z" };
     const both = buildPulseInject([roomy, after]);
     expect(both.tokens).toBeLessThanOrEqual(120);
-    expect(both.tokens).toBe(both.traces.length === 0 ? 0 : estimateTokens(pulseInjectPromptText(both)));
+    expect(both.tokens).toBe(estimateTokens(pulseInjectPromptText(both)));
     expect(both.traces.every((trace) => trace.nat_key === "ens-roomy" || trace.nat_key === "ens-after")).toBe(true);
   });
 

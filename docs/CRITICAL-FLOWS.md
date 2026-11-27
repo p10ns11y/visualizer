@@ -56,9 +56,9 @@ Test: `CF-08` in `packages/core/src/critical-flows.test.ts`, plus the bridge str
 
 ## CF-09 A separate MCP client uses the headless server
 
-`@visualizer/mcp` listens on `127.0.0.1` and persists the workspace to a JSON file. With writes off, `list_cards` succeeds and `append_ensembly_record` returns `READ_ONLY`. With `VISUALIZER_MCP_ALLOW_WRITES=1`, an append is visible to a second client process on the same file. With `VISUALIZER_MCP_WRITE_TOKEN` set, a promote without the bearer stays read only, and the same call with the bearer succeeds. The server refuses a host other than `127.0.0.1`.
+`@visualizer/mcp` listens on `127.0.0.1` and persists the workspace to a JSON file with mode `0600`. A read does not create that file. With writes off, `list_cards` succeeds and `append_ensembly_record` returns `READ_ONLY`. A `Host` or `Origin` outside localhost receives `403`. With `VISUALIZER_MCP_ALLOW_WRITES=1`, an append is visible to a second client process on the same file. With `VISUALIZER_MCP_WRITE_TOKEN` set, a promote without the bearer stays read only, an empty bearer stays read only, and the same call with the bearer succeeds. The server log does not contain the token. The process refuses a host other than `127.0.0.1` and a state path outside `VISUALIZER_MCP_STATE_ROOT`. A ledger append from a second process during a build tick is still in the file after the tick lands.
 
-Test: `external MCP client` in `apps/mcp/src/server.e2e.test.ts`, executed by `pnpm test`.
+Test: `external MCP client` in `apps/mcp/src/server.e2e.test.ts` and `keeps a ledger append from a second process` in `apps/mcp/src/workspace-file.test.ts`, both executed by `pnpm test`.
 
 ## Lockstep properties
 

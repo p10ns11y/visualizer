@@ -1,7 +1,8 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { request } from "node:http";
+import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -34,7 +35,28 @@ function spawnProcess(
   });
 }
 
-async function startServer(env: NodeJS.ProcessEnv): Promise<Stoppable & { url: string }> {
+function httpStatus(url: string, headers: Record<string, string>): Promise<number> {
+  const target = new URL(url);
+  return new Promise((resolve, reject) => {
+    const req = request(
+      {
+        hostname: "127.0.0.1",
+        port: target.port,
+        path: target.pathname,
+        method: "POST",
+        headers,
+      },
+      (response) => {
+        response.resume();
+        resolve(response.statusCode ?? 0);
+      },
+    );
+    req.on("error", reject);
+    req.end("{}");
+  });
+}
+
+async function startServer(env: NodeJS.ProcessEnv): Promise<Stoppable & { url: string; output: () => string }> {
   const child = spawn(process.execPath, ["--import", "tsx", "src/main.ts"], {
     cwd: mcpRoot,
     env: { ...process.env, ...env },
@@ -67,6 +89,7 @@ async function startServer(env: NodeJS.ProcessEnv): Promise<Stoppable & { url: s
   let stopped = false;
   return {
     url,
+    output: () => stdout + stderr,
     async stop() {
       if (stopped || child.exitCode !== null) return;
       stopped = true;
@@ -114,11 +137,20 @@ describe("external MCP client", () => {
     const closed = await startServer({
       VISUALIZER_MCP_PORT: "0",
       VISUALIZER_MCP_STATE: statePath,
+      VISUALIZER_MCP_STATE_ROOT: directory,
       VISUALIZER_MCP_ALLOW_WRITES: "0",
     });
     servers.push(closed);
     const cards = await callTool(closed.url, "list_cards", {});
     expect(cards).toMatchObject({ ok: true });
+    await expect(stat(statePath)).rejects.toMatchObject({ code: "ENOENT" });
+    const badHost = await httpStatus(closed.url, { host: "evil.example" });
+    const badOrigin = await httpStatus(closed.url, {
+      host: `127.0.0.1:${new URL(closed.url).port}`,
+      origin: "http://evil.example",
+    });
+    expect(badHost).toBe(403);
+    expect(badOrigin).toBe(403);
     const denied = await callTool(closed.url, "append_ensembly_record", {
       stateVersion: 0,
       id: "ens-denied",
@@ -135,6 +167,7 @@ describe("external MCP client", () => {
     const flagged = await startServer({
       VISUALIZER_MCP_PORT: "0",
       VISUALIZER_MCP_STATE: statePath,
+      VISUALIZER_MCP_STATE_ROOT: directory,
       VISUALIZER_MCP_ALLOW_WRITES: "1",
     });
     servers.push(flagged);
@@ -152,6 +185,10 @@ describe("external MCP client", () => {
       confirmedOutcome: "The external record is in Pulse Memory.",
     });
     expect(appended).toMatchObject({ ok: true, phase: "idle" });
+    const written = await stat(statePath);
+    const parent = await stat(dirname(statePath));
+    expect(written.mode & 0o777).toBe(0o600);
+    expect(parent.mode & 0o777).toBe(0o700);
     const second = await callTool(flagged.url, "read_ensembly_ledger", { limit: 20 });
     const records = (second as { records: Array<{ id: string }> }).records;
     expect(records.some((record) => record.id === "ens-external")).toBe(true);
@@ -161,6 +198,7 @@ describe("external MCP client", () => {
     const locked = await startServer({
       VISUALIZER_MCP_PORT: "0",
       VISUALIZER_MCP_STATE: statePath,
+      VISUALIZER_MCP_STATE_ROOT: directory,
       VISUALIZER_MCP_ALLOW_WRITES: "0",
       VISUALIZER_MCP_WRITE_TOKEN: token,
     });
@@ -170,6 +208,14 @@ describe("external MCP client", () => {
       id: "ens-external",
     });
     expect(noToken).toMatchObject({ ok: false, code: "READ_ONLY" });
+    const emptyBearer = await callTool(
+      locked.url,
+      "promote_record",
+      { stateVersion: version, id: "ens-external" },
+      { VISUALIZER_MCP_AUTHORIZATION: "Bearer " },
+    );
+    expect(emptyBearer).toMatchObject({ ok: false, code: "READ_ONLY" });
+    expect(locked.output()).not.toContain(token);
     const promoted = await callTool(
       locked.url,
       "promote_record",
@@ -177,5 +223,24 @@ describe("external MCP client", () => {
       { VISUALIZER_MCP_WRITE_TOKEN: token },
     );
     expect(promoted).toMatchObject({ ok: true, phase: "idle" });
+    expect(locked.output()).not.toContain(token);
+  });
+
+  it("refuses a non-loopback bind and a state path outside the allowed root", async () => {
+    const host = await spawnProcess(["--import", "tsx", "src/main.ts"], {
+      VISUALIZER_MCP_HOST: "0.0.0.0",
+      VISUALIZER_MCP_PORT: "0",
+    });
+    expect(host.code).not.toBe(0);
+    expect(`${host.stderr}\n${host.stdout}`).toContain("127.0.0.1");
+    expect(`${host.stderr}\n${host.stdout}`).not.toContain("VISUALIZER_MCP_WRITE_TOKEN");
+
+    const outside = await spawnProcess(["--import", "tsx", "src/main.ts"], {
+      VISUALIZER_MCP_PORT: "0",
+      VISUALIZER_MCP_STATE: "/tmp/visualizer-outside-root/workspace.json",
+      VISUALIZER_MCP_STATE_ROOT: mcpRoot,
+    });
+    expect(outside.code).not.toBe(0);
+    expect(`${outside.stderr}\n${outside.stdout}`).toContain("VISUALIZER_MCP_STATE");
   });
 });

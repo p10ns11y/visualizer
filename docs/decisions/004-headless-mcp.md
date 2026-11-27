@@ -11,7 +11,7 @@ Writes stay off unless `VISUALIZER_MCP_ALLOW_WRITES=1` or the bearer matches `VI
 
 ## Why
 
-A dogfood run on 27 Nov 2026 could not use the cockpit without a browser tab. The in-browser WebMCP bridge stays for the page. The HTTP server is the headless transport for outside SI agents. The same run showed five product blockers, fixed with this server: missing build and pack tools, box packs that omit `ext`, lessons dropped when a tick lands, ledger writes that paused the railway, and a token count that measured snippets instead of the serialized inject.
+A dogfood run on 27 Nov 2026 could not use the cockpit without a browser tab. The in-browser WebMCP bridge stays for the page. The HTTP server is the headless transport for outside SI agents. The same run showed seven blockers, fixed with this server: no headless transport, missing build and pack tools, box packs that omit `ext`, lessons and ledger rows dropped when a tick lands, ledger writes that paused the railway, a token count that measured snippets instead of the serialized inject, and a local write approval that did not survive reload.
 
 ## What stays closed
 

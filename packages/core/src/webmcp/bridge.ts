@@ -1,7 +1,7 @@
 import { zodToOpenAPISchema } from "@adaptate/utils";
 import { z } from "zod";
 import { BrainRouter } from "../brain/router.js";
-import { runGuidedBuild } from "../bootstrap/guided.js";
+import { runGuidedBuild, type GuidedLanding } from "../bootstrap/guided.js";
 import { appendEnsemblyRecord, importEnsemblyRecords, promoteEnsemblyRecord, recordWorkflowLesson } from "../memory/commit.js";
 import { exportPulsePack, readPulsePack, recordsFromPack } from "../memory/ensembly.js";
 import { buildPulseInject } from "../memory/pulse-inject.js";
@@ -139,6 +139,7 @@ type BridgeDeps = {
   getState: () => WorkspaceState;
   getApproval: () => WebMcpApproval;
   onCommit: (result: CommitResult) => void;
+  landTick?: GuidedLanding;
 };
 
 function jsonSchema(schema: z.ZodType): Record<string, unknown> {
@@ -457,9 +458,15 @@ function workspaceTools(deps: BridgeDeps): WebMcpTool[] {
           };
         }
         return fromCommit(
-          await runGuidedBuild(state, router, deps.getState, (next) => {
-            deps.onCommit({ ok: true, state: next });
-          }),
+          await runGuidedBuild(
+            state,
+            router,
+            deps.getState,
+            (next) => {
+              deps.onCommit({ ok: true, state: next });
+            },
+            deps.landTick,
+          ),
           deps.onCommit,
         );
       },
@@ -487,9 +494,15 @@ function workspaceTools(deps: BridgeDeps): WebMcpTool[] {
         if (!resumed.ok) return fromCommit(resumed, deps.onCommit);
         deps.onCommit(resumed);
         return fromCommit(
-          await runGuidedBuild(resumed.state, router, deps.getState, (next) => {
-            deps.onCommit({ ok: true, state: next });
-          }),
+          await runGuidedBuild(
+            resumed.state,
+            router,
+            deps.getState,
+            (next) => {
+              deps.onCommit({ ok: true, state: next });
+            },
+            deps.landTick,
+          ),
           deps.onCommit,
         );
       },

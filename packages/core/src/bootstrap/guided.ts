@@ -14,11 +14,17 @@ function resting(state: WorkspaceState): boolean {
   );
 }
 
+export type GuidedLanding = (
+  tick: WorkspaceState,
+  startedVersion: number,
+) => WorkspaceState | Promise<WorkspaceState>;
+
 export async function runGuidedBuild(
   start: WorkspaceState,
   router: BrainRouter,
   live: () => WorkspaceState,
   publish?: (state: WorkspaceState) => void,
+  land?: GuidedLanding,
 ): Promise<CommitResult> {
   let current = start;
   let guard = 0;
@@ -31,6 +37,10 @@ export async function runGuidedBuild(
     const startedVersion = current.stateVersion;
     const result = await applyBuildTick(current, startedVersion, tick, router);
     if (!result.ok) return result;
+    if (land) {
+      current = await land(result.state, startedVersion);
+      continue;
+    }
     const seen = live();
     if (seen.stateVersion > startedVersion) {
       current = seen;
