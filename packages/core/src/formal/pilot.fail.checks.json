@@ -1,0 +1,10 @@
+{
+  "events": [
+    { "type": "START" },
+    { "type": "PLAN_READY" },
+    { "type": "FAIL", "reason": "runner unavailable" }
+  ],
+  "never": ["#pilot.completed"],
+  "reachable": ["#pilot.failed"],
+  "limit": 1000
+}

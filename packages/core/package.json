@@ -1,0 +1,25 @@
+{
+  "name": "@visualizer/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:critical-flows": "vitest run --config vitest.critical.config.ts"
+  },
+  "dependencies": {
+    "@adaptate/core": "3.0.0",
+    "@adaptate/utils": "3.0.0",
+    "xstate": "6.0.0-beta.5",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.17.2",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
