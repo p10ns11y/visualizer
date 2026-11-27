@@ -14,4 +14,4 @@ Commands, in the order CI `verify` runs the test steps:
 
 Why these runners were chosen, and whether that choice was looked up or recalled, is in `docs/TECH-CHOICES.md`.
 
-A change that adds or replaces a test command updates this file and adds a provenance entry to `docs/TECH-CHOICES.md` in the same change. Record the tools, why they fit, whether the basis was training-data recall or a cited lookup, and whether wider trends were checked before the choice. Write "no" when they were not.
+A change that adds or replaces a test command updates this file and adds a provenance entry to `docs/TECH-CHOICES.md` in the same change. Follow the one-step loop in `AGENTS.md`: record the tools, why they fit, the cited current lookup, and the trend check done before the choice.

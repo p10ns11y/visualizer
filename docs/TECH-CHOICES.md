@@ -2,7 +2,7 @@
 
 Provenance for the steps on this branch. Each entry says what was chosen, why, whether that came from training-data recall or from a lookup, and whether wider trends were checked **before** the choice. A later lookup does not rewrite an earlier "no".
 
-Future steps append an entry here in the same change. The rule lives in `AGENTS.md`, `docs/CRITICAL-FLOWS.md`, and `docs/TEST-SUITE.md`.
+Entries dated before the build cadence record what actually happened, including training-data recall and skipped trend checks. From the one-step loop in `AGENTS.md` onward, a new entry cites a current lookup and a trend check completed before the choice. The rule also lives in `docs/CRITICAL-FLOWS.md` and `docs/TEST-SUITE.md`.
 
 ## XState v6 upgrade
 
@@ -45,3 +45,10 @@ Future steps append an entry here in the same change. The rule lives in `AGENTS.
 - **Why:** The installed model-based testing page says v6 `xstate/graph` only generates paths, and that `testPaths()` from `@xstate/test` is the stock runner. The invariants here are workspace version, human-pause safety, store parity, and tool-call I/O, so the runner calls those functions directly. Adaptate was already the locked contract library; the task asked to use its stream and validation tools on the tool-call layer.
 - **Basis:** Researched, from the installed package. Path generation: `node_modules/.pnpm/xstate@6.0.0-beta.5/node_modules/xstate/docs/model-based-testing.md` and the `xstate/graph` removal note in `xstate-v5-to-v6.md`. Adaptate: the `.d.ts` files under `packages/core/node_modules/@adaptate/core/build/` (`index`, `result`, `stream`, `stream-incremental`, `verify`) and `@adaptate/utils`. `verifyStream` compares `context.name` to the manifest; passing the name only on the manifest failed a real run, and the call was fixed from that failure.
 - **Latest trends checked before choosing:** No. fast-check, Hypothesis, and other model-based tools were not surveyed. The only runner alternative on record is the `@xstate/test` sentence in the installed XState doc. `@adaptate/core` and `@adaptate/utils` stayed on the pinned `3.0.0`; a newer release was not looked up.
+
+## Build cadence
+
+- **Chosen:** One product step per pass, then stop for review. The loop is: state the goal and both plans, choose tools from a current lookup after a trend check, implement that step, then run `pnpm test:mbt`, `pnpm test:critical-flows`, and `pnpm verify:formal` and wait for a green CI `verify` before the next step.
+- **Why:** Batching the next product step into the current one skips review. The verification commands are the ones that already cover the railway paths, the user-facing flows, and the lockstep properties.
+- **Basis:** The written instruction to lock this cadence into `AGENTS.md` on the foundation step. No delivery-process guide was opened.
+- **Latest trends checked before choosing:** No. The loop was specified. Iterative-delivery writeups were not compared before it was written down.
