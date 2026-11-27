@@ -138,7 +138,7 @@ export const WorkspaceStateSchema = z.object({
   stateVersion: z.number().int().nonnegative(),
   mode: z.enum(["cockpit", "code"]),
   problemCards: z.array(ProblemCardSchema),
-  strokes: z.array(SketchStrokeSchema),
+  strokes: z.array(SketchStrokeSchema).default(() => []),
   mockups: z.array(MockupNodeSchema),
   connections: z.array(ConnectionSchema),
   tokens: DesignTokensSchema,

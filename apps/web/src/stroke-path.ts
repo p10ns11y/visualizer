@@ -23,14 +23,19 @@ function outlinePath(points: ReadonlyArray<readonly [number, number]>): string {
 
 export function sketchPath(points: readonly SketchPoint[]): string {
   if (points.length === 0) return "";
+  const hasPressure = points.every((point) => point.pressure !== undefined);
   const outline = getStroke(
-    points.map((point) => [point.x * SKETCH_WIDTH, point.y * SKETCH_HEIGHT]),
+    points.map((point) =>
+      hasPressure
+        ? [point.x * SKETCH_WIDTH, point.y * SKETCH_HEIGHT, point.pressure ?? 0]
+        : [point.x * SKETCH_WIDTH, point.y * SKETCH_HEIGHT],
+    ),
     {
       size: 3.6,
       thinning: 0.55,
       smoothing: 0.55,
       streamline: 0.5,
-      simulatePressure: true,
+      simulatePressure: !hasPressure,
       start: { cap: true, taper: 0 },
       end: { cap: true, taper: 8 },
     },

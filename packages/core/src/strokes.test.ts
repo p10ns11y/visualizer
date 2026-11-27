@@ -80,6 +80,43 @@ describe("sketch strokes", () => {
     expect(cleared.stateVersion).toBe(drawn.stateVersion + 1);
   });
 
+  it("hydrates a pre-stroke workspace and keeps its cards, version, and log", () => {
+    const current = createSampleWorkspace();
+    const legacy = {
+      ...current,
+      stateVersion: 4,
+      logSeq: 2,
+      problemCards: current.problemCards.map((card) =>
+        card.id === canvasCardId ? { ...card, statement: "Kept from main." } : card,
+      ),
+      eventLog: [
+        ...current.eventLog,
+        {
+          id: "log-2",
+          stateVersion: 4,
+          kind: "human" as const,
+          message: "Human edit recorded",
+        },
+      ],
+    };
+    const withoutStrokes: Record<string, unknown> = { ...legacy };
+    delete withoutStrokes.strokes;
+    const raw = JSON.stringify(withoutStrokes);
+    expect(raw.includes("strokes")).toBe(false);
+    const restored = readPersistedWorkspace(raw);
+    const again = readPersistedWorkspace(raw);
+    expect(restored?.strokes).toEqual([]);
+    expect(again?.strokes).toEqual([]);
+    expect(restored?.strokes).not.toBe(again?.strokes);
+    expect(restored?.stateVersion).toBe(4);
+    expect(restored?.logSeq).toBe(2);
+    expect(restored?.problemCards.find((card) => card.id === canvasCardId)?.statement).toBe(
+      "Kept from main.",
+    );
+    expect(restored?.eventLog.map((entry) => entry.id)).toEqual(["log-1", "log-2"]);
+    expect(restored?.autopilot.phase).toBe(current.autopilot.phase);
+  });
+
   it("round-trips strokes through the workspace store and drops a corrupt payload", () => {
     const drawn = assertCommit(
       appendSketchStroke(createSampleWorkspace(), 0, { cardId: canvasCardId, points: ink }),
