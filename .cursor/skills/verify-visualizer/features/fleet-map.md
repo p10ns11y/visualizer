@@ -7,7 +7,7 @@ The cockpit shows a sample map of bots, routines, tasks, and shared stores. Find
 - `fleet-map` draws the sample nodes and edges, including the dashed dead edge.
 - `fleet-findings` names the cycle, the hotspots, the orphan nodes, and the dead edge.
 - `fleet-tokens` shows three counts: Snapshot, Accessibility tree, and DOM. Snapshot is the smaller count.
-- `fleet-ledger` reads `No pending proposals` until an approved `act` files one. Approve and Reject change that row's status. The graph stays.
+- `fleet-ledger` reads `No pending proposals` until an approved `act` files one. Approve and Reject change that row's status and leave a log line. Decided rows stay in the workspace ledger and drop off this list. The graph stays.
 
 ## How to get to it (user POV)
 
@@ -32,5 +32,5 @@ The text dump must include `Intake bot` and `Snapshot`. This file is the map for
 ## Gotchas
 
 - `act` is a tool, not a button on the map. With local writes off, it files nothing.
-- Approve and Reject appear only after a proposal exists. They do not move nodes.
+- Approve and Reject appear only after a proposal exists. They do not move nodes. A long decided ledger still shows the map. The list on screen is the pending rows that fit the catalog.
 - The token counts are `ceil(utf-8 bytes / 4)` for the compact snapshot, the role-and-name listing, and the HTML serialization of this surface. On the sample fleet they are 704, 853, and 1144.

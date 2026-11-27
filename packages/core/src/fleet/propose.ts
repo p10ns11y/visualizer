@@ -45,16 +45,26 @@ function commitAux(
   };
 }
 
+export type FleetWriteError =
+  | { ok: false; code: "UNKNOWN_ACTION"; actionId: string }
+  | { ok: false; code: "DUPLICATE_PROPOSAL"; actionId: string; proposalId: string }
+  | { ok: false; code: "UNKNOWN_PROPOSAL"; proposalId: string }
+  | { ok: false; code: "ALREADY_DECIDED"; proposalId: string; status: "approved" | "rejected" };
+
 export function proposeFleetAction(
   state: WorkspaceState,
   expectedVersion: number,
   actionId: string,
   createdAt: string,
-): CommitResult | { ok: false; code: "UNKNOWN_ACTION"; actionId: string } {
+): CommitResult | Extract<FleetWriteError, { code: "UNKNOWN_ACTION" | "DUPLICATE_PROPOSAL" }> {
   const action = fleetActionById(state.fleetGraph, actionId);
   if (!action) return { ok: false, code: "UNKNOWN_ACTION", actionId };
-  if (state.fleetProposals.some((proposal) => proposal.actionId === action.id && proposal.status === "pending")) {
-    return sameOrConflict(state, expectedVersion);
+  const pending = state.fleetProposals.find(
+    (proposal) => proposal.actionId === action.id && proposal.status === "pending",
+  );
+  if (pending) {
+    if (expectedVersion !== state.stateVersion) return sameOrConflict(state, expectedVersion);
+    return { ok: false, code: "DUPLICATE_PROPOSAL", actionId: action.id, proposalId: pending.id };
   }
   const proposal: FleetProposal = {
     id: `proposal-${state.logSeq + 1}`,
@@ -82,9 +92,13 @@ export function decideFleetProposal(
   expectedVersion: number,
   proposalId: string,
   status: "approved" | "rejected",
-): CommitResult {
+): CommitResult | Extract<FleetWriteError, { code: "UNKNOWN_PROPOSAL" | "ALREADY_DECIDED" }> {
+  if (expectedVersion !== state.stateVersion) return sameOrConflict(state, expectedVersion);
   const current = state.fleetProposals.find((proposal) => proposal.id === proposalId);
-  if (!current || current.status !== "pending") return sameOrConflict(state, expectedVersion);
+  if (!current) return { ok: false, code: "UNKNOWN_PROPOSAL", proposalId };
+  if (current.status !== "pending") {
+    return { ok: false, code: "ALREADY_DECIDED", proposalId, status: current.status };
+  }
   return commitAux(
     state,
     expectedVersion,

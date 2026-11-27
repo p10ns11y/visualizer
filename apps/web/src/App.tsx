@@ -255,7 +255,16 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
 
   function decideProposal(proposalId: string, status: "approved" | "rejected") {
     const current = stateRef.current;
-    apply(decideFleetProposal(current, current.stateVersion, proposalId, status));
+    const result = decideFleetProposal(current, current.stateVersion, proposalId, status);
+    if (!result.ok && !("error" in result)) {
+      setNotice(
+        result.code === "UNKNOWN_PROPOSAL"
+          ? `Unknown proposal ${result.proposalId}.`
+          : `Proposal ${result.proposalId} is already ${result.status}.`,
+      );
+      return;
+    }
+    apply(result);
   }
 
   function appendLesson(draft: LessonDraft) {

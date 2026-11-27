@@ -1,6 +1,7 @@
 import {
   BrainRouter,
   createLocalModelContext,
+  createSampleWorkspace,
   webMcpApprovalStorageKey,
   webMcpToolNames,
   workspaceStorageKey,
@@ -25,6 +26,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "./App.js";
 import { actOnUiControl } from "./ui/cockpit-agent.js";
+import { FleetMap } from "./ui/fleet-map.js";
 import { pendingTickStillApplies } from "./tick-guard.js";
 
 let root: Root | null = null;
@@ -350,6 +352,32 @@ describe("shared cockpit and code mode", () => {
     expect(document.body.innerHTML.includes("dangerouslySetInnerHTML")).toBe(false);
     const acted = await actOnUiControl("Build", "press");
     expect(acted.ok).toBe(false);
+  });
+
+  it("keeps the map mounted when the ledger holds more than 100 proposals", () => {
+    const state = createSampleWorkspace();
+    const proposals = Array.from({ length: 120 }, (_, index) => ({
+      id: `proposal-${index + 1}`,
+      actionId: `mark-dead:edge-${index}`,
+      kind: "mark_dead_edge" as const,
+      summary: index < 100 ? "Already decided row." : "Still waiting on a person.",
+      status: index < 100 ? ("rejected" as const) : ("pending" as const),
+      subjectIds: ["edge-stale"],
+      createdAt: "2026-11-27T23:00:00.000Z",
+    }));
+    const host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+    expect(() => {
+      act(() => {
+        root?.render(<FleetMap state={{ ...state, fleetProposals: proposals }} onDecide={() => undefined} />);
+      });
+    }).not.toThrow();
+    const map = document.querySelector("[aria-label='Interconnection map']");
+    expect(map?.textContent).toContain("Intake bot");
+    expect(map?.textContent).toContain("Still waiting on a person.");
+    expect(map?.textContent).not.toContain("Already decided row.");
+    expect(map?.textContent).not.toContain("Catalog rejected");
   });
 });
 

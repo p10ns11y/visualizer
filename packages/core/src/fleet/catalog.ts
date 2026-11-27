@@ -83,20 +83,37 @@ const bannedKeys = new Set([
   "__html",
   "innerHTML",
   "script",
-  "onClick",
-  "onError",
   "__proto__",
   "constructor",
   "prototype",
 ]);
 
+export const catalogElementLimit = 80;
+
 function asStandard<T>(schema: z.ZodType<T>): StandardSchemaV1<unknown, T> {
   return schema as unknown as StandardSchemaV1<unknown, T>;
 }
 
+function codePoint(raw: string, radix: number): string {
+  const code = Number.parseInt(raw, radix);
+  if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) return "";
+  return String.fromCodePoint(code);
+}
+
+export function normalizedCatalogText(value: string): string {
+  const decoded = value
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => codePoint(hex, 16))
+    .replace(/&#(\d+);/g, (_, dec: string) => codePoint(dec, 10))
+    .replace(/&colon;/gi, ":");
+  return decoded.replace(/[\u0000-\u001F\u007F\s]+/g, "").toLowerCase();
+}
+
 function banned(value: unknown): string | null {
   if (typeof value === "string") {
-    if (/javascript\s*:|<\/?\s*script/i.test(value)) return "Catalog text cannot carry executable markup.";
+    const text = normalizedCatalogText(value);
+    if (text.includes("javascript:") || text.includes("<script") || text.includes("</script")) {
+      return "Catalog text cannot carry executable markup.";
+    }
     return null;
   }
   if (typeof value === "function" || typeof value === "symbol") return "Catalog props cannot carry executable values.";
@@ -109,7 +126,7 @@ function banned(value: unknown): string | null {
   }
   if (!value || typeof value !== "object") return null;
   for (const [key, child] of Object.entries(value)) {
-    if (bannedKeys.has(key)) return `Catalog rejected the key ${key}.`;
+    if (bannedKeys.has(key) || /^on[A-Z]/.test(key)) return `Catalog rejected the key ${key}.`;
     const hit = banned(child);
     if (hit) return hit;
   }
@@ -168,7 +185,9 @@ export function buildFleetSpec(
       props: { code: finding.code, summary: finding.summary, subjectIds: finding.subjectIds },
     });
   }
-  for (const proposal of proposals) {
+  const room = Math.max(0, catalogElementLimit - elements.length);
+  const pending = proposals.filter((proposal) => proposal.status === "pending").slice(-room);
+  for (const proposal of pending) {
     elements.push({
       id: `proposal-${proposal.id}`,
       type: "Proposal",
@@ -180,8 +199,5 @@ export function buildFleetSpec(
       },
     });
   }
-  const spec = { root: "fleet-map", elements };
-  const read = readCatalogSpec(spec);
-  if (!read.ok) throw new Error(read.message);
-  return read.spec;
+  return { root: "fleet-map", elements };
 }

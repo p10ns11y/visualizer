@@ -38,7 +38,7 @@ export function mergeAuxIntoTick(live: WorkspaceState, tick: WorkspaceState): Wo
   }
   const ensemblyLedger: EnsemblyRecord[] = mergeById(tick.ensemblyLedger, live.ensemblyLedger);
   const pulseMemory: PulseMemory[] = mergeById(tick.pulseMemory, live.pulseMemory);
-  const fleetProposals: FleetProposal[] = mergeById(tick.fleetProposals, live.fleetProposals);
+  const fleetProposals: FleetProposal[] = live.fleetProposals.map((proposal) => ({ ...proposal }));
   return {
     ...tick,
     ensemblyLedger,

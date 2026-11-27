@@ -246,3 +246,10 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - [x] Update the architecture diagram, `README.md`, `docs/decisions/005-dynamic-ui-catalog.md`, `docs/CRITICAL-FLOWS.md`, `docs/TEST-SUITE.md`, and this file. Credit `@adaptate/core` and `@adaptate/utils`.
 - [x] Update `.cursor/skills/verify-visualizer/` for the map. Leave the formal sync commit in place and note that proposals are aux.
 - [x] Run `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`.
+
+## Review repair for the fleet catalog
+
+- **Chosen:** Stay on the in-repo Zod catalog and on `mergeAuxIntoTick`. The spec fed to the renderer contains pending proposals only, and only the newest rows that fit under 80 elements. `buildFleetSpec` returns that spec. `readCatalogSpec` is what rejects it. The page shows that rejection and stays mounted. Proposal rows on a finished tick come from the live ledger. `act` reports the pending row it just appended. A duplicate pending action, an unknown proposal id, and an already decided id are errors. Catalog text is checked after control characters, whitespace, and numeric or colon entities are folded. A key matching `/^on[A-Z]/` is refused. Approval still only appends a memory log entry and increments `logSeq`.
+- **Why:** Decided rows were still counted toward the 80-element cap, and a throw during render hid the rejection. A build tick never edits proposals, so the tick copy was restoring `pending` over a live approval. The first row with a given action id was an older rejection.
+- **Basis:** The review of `0263e96` and the current source in `packages/core/src/fleet/catalog.ts`, `propose.ts`, `state/merge-aux.ts`, and `webmcp/bridge.ts`. No new package.
+- **Latest trends checked before choosing:** No new library was in question. The catalog choice above already compared ui-sdk, json-render, and A2UI on 2026-11-27.

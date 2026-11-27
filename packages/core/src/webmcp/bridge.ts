@@ -547,14 +547,23 @@ function workspaceTools(deps: BridgeDeps): WebMcpTool[] {
           new Date().toISOString(),
         );
         if (!proposed.ok) {
-          if ("code" in proposed) {
+          if ("code" in proposed && proposed.code === "UNKNOWN_ACTION") {
             return { ok: false, code: "INVALID_INPUT", message: `Unknown action ${proposed.actionId}.` };
+          }
+          if ("code" in proposed && proposed.code === "DUPLICATE_PROPOSAL") {
+            return {
+              ok: false,
+              code: "INVALID_INPUT",
+              message: `Pending proposal ${proposed.proposalId} already covers ${proposed.actionId}.`,
+            };
           }
           return fromCommit(proposed, deps.onCommit);
         }
         const committed = fromCommit(proposed, deps.onCommit);
         if (!committed.ok) return committed;
-        const pending = proposed.state.fleetProposals.find((item) => item.actionId === parsed.data.actionId);
+        const pending = [...proposed.state.fleetProposals]
+          .reverse()
+          .find((item) => item.actionId === parsed.data.actionId && item.status === "pending");
         return { ...committed, proposalId: pending?.id ?? null, status: pending?.status ?? null };
       },
     },

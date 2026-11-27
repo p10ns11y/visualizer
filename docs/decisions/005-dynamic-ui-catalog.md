@@ -17,4 +17,6 @@ The sample names are generic. There is no personal data and no real host name. T
 
 ## What stays closed
 
-The catalog does not accept unknown components, extra props, or executable markup. The renderer does not use `dangerouslySetInnerHTML`. `act` does not apply a merge, delete an edge, or change `stateVersion`. A person marks the proposal approved or rejected, and the graph stays as written.
+The catalog does not accept unknown components, extra props, or executable markup. Text is checked after control characters, whitespace, and numeric or colon entities are folded, and a key matching `on` plus a capital letter is refused. The renderer does not use `dangerouslySetInnerHTML`. When the spec does not validate, the page shows the rejection and stays mounted. The catalog lists pending proposals only, and only as many as fit under the 80-element cap.
+
+`act` does not apply a merge, delete an edge, or change `stateVersion`. It returns the pending row it just filed. A second pending row for the same action is refused. Approving or rejecting a proposal appends a memory log entry and increments `logSeq`. That decision does not change `stateVersion` or the graph. An unknown id, or an id that is already approved or rejected, is an error. `mergeAuxIntoTick` takes the live proposal ledger, because a build tick does not edit those rows, so an approval during the tick stays approved.
