@@ -39,6 +39,8 @@ XState's bundled CLI checks the railway graph. `pilot.safe.checks.json` supplies
 
 This check is not a TLA+ model. If a later change adds a TLA+ model of the same promise, read that result with `/statechart`.
 
+`pnpm test:mbt` is a separate check. It calls `getSimplePaths` from `xstate/graph` and executes those paths on the workspace. A green model-based run does not replace this lockstep check, and a green lockstep run does not replace the path walk.
+
 ## Reading a failure
 
 A real bug names a property and a short counterexample in the code's words. The stale-write break, a version check that never fired inside `applyPilotEvent`, failed as:

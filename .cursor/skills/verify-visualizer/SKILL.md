@@ -62,6 +62,8 @@ Cleanup sends `SIGTERM` to the preview process group and the Chrome pid stored i
 
 ## Helpers
 
-The only helper is `scripts/verify-visualizer.mjs`. Invoke it as shown in Launch, Doctor, Drive, and Cleanup. Feature recipes live in `.cursor/skills/verify-visualizer/features/`.
+The only browser helper is `scripts/verify-visualizer.mjs`. Invoke it as shown in Launch, Doctor, Drive, and Cleanup. Feature recipes live in `.cursor/skills/verify-visualizer/features/`.
+
+`pnpm test:mbt` regenerates railway paths and is not a browser session. Do not treat a green model-based run as proof that a screen was driven.
 
 Keep the map honest with `/maintain-verification-skill` when screens or labels change.

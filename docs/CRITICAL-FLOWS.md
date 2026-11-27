@@ -37,3 +37,5 @@ Test: `CF-05` in `packages/core/src/critical-flows.test.ts`.
 ## Lockstep properties
 
 `pnpm verify:formal` checks the promise those flows rely on: monotonic `stateVersion`, stale-write rejection, no agent commit while paused or after a terminal phase, and a rest path from every railway phase. The bounds and the command live in `.cursor/skills/formal-verify-visualizer/SKILL.md`.
+
+`pnpm test:mbt` regenerates every simple path from the XState 6 pilot graph and runs each step through the workspace, the connector calls, and the local runner. It is a regression check for these flows, not a new screen.

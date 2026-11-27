@@ -20,5 +20,6 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm test:critical-flows
+      - run: pnpm test:mbt
       - run: pnpm verify:formal
       - run: pnpm build

@@ -44,7 +44,7 @@ Text-box-only SI workflows force a builder to describe, wait, and re-describe �
 ```sh
 pnpm install
 pnpm dev
-pnpm typecheck && pnpm test && pnpm test:critical-flows && pnpm verify:formal && pnpm build
+pnpm typecheck && pnpm test && pnpm test:critical-flows && pnpm test:mbt && pnpm verify:formal && pnpm build
 ```
 
 `@visualizer/core` holds the shared workspace, collision guards, XState railway, 3-tier brain, and local tool contracts. `@visualizer/web` is the one app: Visual Cockpit and Code Mode read and write that same state. Button and toggle behavior comes from `@ui-sdk/react`, wrapped in `apps/web/src/ui/controls.tsx`.
@@ -61,11 +61,11 @@ pnpm test:local-model
 
 `VISUALIZER_LOCAL_MODEL_STRICT=1` exits non-zero unless Tier 2 answers. The critical-flow smoke runs the same command and accepts a Tier 1 fallback, so a missing local server does not fail CI. The cockpit Build stays on Tier 1.
 
-Critical flows are listed in `docs/CRITICAL-FLOWS.md`. `pnpm verify:formal` checks `stateVersion` and the pilot railway. Browser steps for the cockpit live in `.cursor/skills/verify-visualizer/`.
+Critical flows are listed in `docs/CRITICAL-FLOWS.md`. `pnpm test:mbt` regenerates simple paths from the XState 6 railway and checks each step against the workspace and the connector calls. `pnpm verify:formal` checks `stateVersion` and the pilot railway. Browser steps for the cockpit live in `.cursor/skills/verify-visualizer/`.
 
 ## References
 
-- [`adaptate`](https://github.com/p10ns11y/adaptate) (`@adaptate/core`, `@adaptate/utils`) — typed contracts reused with Zod. The autopilot stream uses `transformSchema`, `makeConditionalSchemaTransformer`, `parse` / `parseStream` from `@adaptate/core/result`, and `fromAsyncIterableSteps` from `@adaptate/core/stream-incremental`. Connector schemas use `zodToOpenAPISchema`.
+- [`adaptate`](https://github.com/p10ns11y/adaptate) (`@adaptate/core`, `@adaptate/utils`) — typed contracts reused with Zod. The autopilot stream uses `transformSchema`, `makeConditionalSchemaTransformer`, `parse` / `parseStream` from `@adaptate/core/result`, and `fromAsyncIterableSteps` from `@adaptate/core/stream-incremental`. Connector calls use `createStreamValidator`, `isSettled`, and `verifyStream` from `@adaptate/core`, and connector schemas use `zodToOpenAPISchema` from `@adaptate/utils`.
 - `@ui-sdk/react` — one-app, two-modes primitives and shared-state interaction
 - [XState](https://xstate.js.org) 6 — statecharts and the railway backbone
 - [Chopin](https://githubnext.com/projects/chopin/) — GitHub Next's multiplayer MDX planning prototype
