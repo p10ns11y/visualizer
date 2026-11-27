@@ -108,3 +108,31 @@ Entries dated before the build cadence record what actually happened, including 
 - **Why:** Chopin is a self-hosted Bun and Postgres planning prototype. Its default Planner does not execute code. Coupling the railway to those APIs would import an upstream that can still move.
 - **Basis:** Researched on 2026-11-27 from [`githubnext/chopin` `docs/architecture.md`](https://github.com/githubnext/chopin/blob/main/docs/architecture.md) on `main`: one Bun process, Postgres, Streamable HTTP MCP at `/mcp`, `HARNESS=remote` on the `/api/v1/agent` WebSocket, and Decision records stored outside the MDX prose.
 - **Latest trends checked before choosing:** Yes, that architecture page, before the proposal was written. Other planning servers were not compared. No client library was added.
+
+## Ensembly pulse alignment audit
+
+- **Chosen:** A written audit only (`docs/decisions/003-ensembly-pulse-alignment-audit.md`). No change to `canPromote`, `recordWorkflowLesson`, or the pulse-pack alias in this slice.
+- **Why:** The cockpit ledger matches the sparse verified-decision idea and the "remembers and learns, never decides" line, and it still uses a shorter admission rule and a legacy pack alias. Writing the drift down keeps the next slice from re-litigating the comparison.
+- **Basis:** Read on 2026-11-27, before this note. [Pulse instead of dump](https://captain.kingsparrow.space/articles/memory-issue), [Archive is not memory](https://captain.kingsparrow.space/articles/memory-issue/archive-not-memory), [HITL and HOOTL](https://captain.kingsparrow.space/articles/hitl-hootl), and [`PULSE-PACK-SPEC.md`](https://github.com/thecuriousts/ensembly/blob/master/docs/spec/PULSE-PACK-SPEC.md) plus `crates/ensembly-memory` in `thecuriousts/ensembly`.
+- **Latest trends checked before choosing:** Yes, those pages, before the note was written. No second memory runtime was added.
+
+## Head Plan and Tail Plan for this slice
+
+Checked off after the rebase onto `9ffd45d` and the bridge alignment.
+
+### Head Plan
+
+- [x] Rebase onto `origin/main` (`9ffd45d`) and keep `SketchPad`, `strokes`, `pendingTickStillApplies`, `MemoryPanel`, `ensemblyLedger`, `pulseMemory`, `workflowLessons`, `recordWorkflowLesson`, `appendEnsemblyRecord`, and `workspaceStorageKey = "visualizer.workspace"`.
+- [x] Mount the WebMCP bridge and status strip beside `SketchPad` and `MemoryPanel` in `apps/web/src/App.tsx`.
+- [x] Keep the Zod records and add a regression that hydrates a PR #3 `visualizer.workspace` payload (`strokes`, `ensemblyLedger`, `pulseMemory`, `workflowLessons`) without discarding it. `visualizer.workspace.v1` is a read-only fallback.
+- [x] Point `read_pulse_memory`, `read_workflow_lessons`, `record_workflow_lesson`, and `append_ensembly_record` at those store helpers, return shallow copies, and unregister tools already registered if `registerTool` throws.
+- [x] Rename the sample `card-log` copy to the Ensembly shared log. Leave `docs/decisions/001-ensembly-vs-vercel-board-sync.md` as it is on `main`. Keep `docs/decisions/002-chopin-interop-via-mcp.md`.
+
+### Tail Plan
+
+- [x] `docs/CRITICAL-FLOWS.md` CF-08 and the critical-flow tests.
+- [x] `docs/TEST-SUITE.md` names the WebMCP tests and the persist regression.
+- [x] `docs/ARCHITECTURE-LAYERS.md` links 001, 002, and 003, and keeps the fleet comparison.
+- [x] This file keeps the PR #2 and PR #3 entries and appends the WebMCP, Chopin, and audit entries.
+- [x] `.cursor/skills/verify-visualizer/` describes the strip with the sketch pad and the memory panel. The formal sync commit stays put.
+- [x] `README.md` names the Ensembly shared log card. `@adaptate/core` and `@adaptate/utils` stay credited. The pull request body stays at or under 120 words.
