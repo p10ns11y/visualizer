@@ -150,7 +150,7 @@ flowchart TB
 - **Cockpit, Code Mode, and ink, on a checked statechart.** The run is not a chat-only loop. Model-based paths and the formal check walk the XState 6 machine. A human edit during a working phase pauses the build. The statement, the stroke, and `stateVersion` stay. The formal check writes that machine with `machineToJSON`, so the chart is portable machine JSON.
 - **Two memory layers, not one flat store.** Ensembly is the append-only ledger. Pulse Memory receives a rule, a costly mistake, or a decision only after a confirmed outcome. Agentic workflow memory is the lesson graph: phase, card, friction, rework, and adjustment. Neo4j is the optional projection. CI uses the in-memory port.
 - **Four portable layers, local-first or hybrid.** The target is a thin Rust or Zig core, `adaptate` native and WASM acceleration, one thin bridge, and the JS/WebView. This file still does not pick Rust or Zig, and this repo does not add that crate. The post describes a deploymentless fleet on Vercel infrastructure. Visualizer is not tied to that deployment.
-- **Tiered brain and WebMCP.** Tier 3 falls through to Tier 2, then to Tier 1 deterministic code. The spoken design publishes the same workspace on `document.modelContext`. The problem card is in the cockpit. The publish step is still ahead.
+- **Tiered brain and WebMCP.** Tier 3 falls through to Tier 2, then to Tier 1 deterministic code. The spoken design publishes the same workspace on `document.modelContext`. The problem card is in the cockpit. The page now publishes the tool list on `document.modelContext` (or the local bridge).
 
 ### How this can grow
 

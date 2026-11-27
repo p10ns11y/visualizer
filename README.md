@@ -51,7 +51,7 @@ pnpm typecheck && pnpm test && pnpm test:critical-flows && pnpm test:mbt && pnpm
 
 Step 1 opens with problem cards for Step 2 of Visualizer itself: freehand canvas sketching, a live WebMCP `document.modelContext` bridge, and a card titled "Ensembly shared log". [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](docs/decisions/001-ensembly-vs-vercel-board-sync.md) records why that log is Ensembly, not a `@vercel/board` SQLite file. Build runs the Tier 1 railway. Stop pauses it. A verified Step 2 brief then shows in both modes.
 
-The canvas plate takes freehand ink. Each stroke is pinned to the freehand problem card, stored on the shared workspace, and kept in `localStorage` across a reload. Code Mode lists those strokes and can clear them. A stroke during a working phase pauses the run and keeps the ink. The WebMCP bridge is still a later step. Cross-machine Ensembly sync is the open design in that decision record.
+The canvas plate takes freehand ink. Each stroke is pinned to the freehand problem card, stored on the shared workspace, and kept in `localStorage` across a reload. Code Mode lists those strokes and can clear them. A stroke during a working phase pauses the run and keeps the ink. The page now registers the WebMCP tools on native `modelContext` or the local bridge. Cross-machine Ensembly sync remains open.
 
 The Memory panel, in both modes, lists Pulse Memory and workflow lessons. Ensembly is the append-only ledger. A record promotes into Pulse Memory only after a confirmed outcome. A lesson names a railway phase and a problem card. Older workspaces that lack those fields still load. Neo4j is an optional projection; the commands and Cypher are in `docs/MEMORY-NEO4J.md`. CI uses the in-memory graph port.
 
