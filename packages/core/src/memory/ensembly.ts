@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { z } from "zod";
 import {
   CoherenceMilliSchema,
@@ -15,6 +14,7 @@ import {
   type PulseTraceKind,
 } from "../state/schema.js";
 import { admittedKind, admittedStatus, canPromote } from "./promote.js";
+import { sha256Hex } from "./sha256.js";
 
 export { canPromote };
 export { pulsePackSchema };
@@ -171,9 +171,7 @@ export function packHash(
   archive: readonly ArchiveEvent[],
   memoryHash: string | null,
 ): string {
-  return createHash("sha256")
-    .update(canonicalPackMaterial(traces, archive, memoryHash))
-    .digest("hex");
+  return sha256Hex(canonicalPackMaterial(traces, archive, memoryHash));
 }
 
 export function recordPayload(record: EnsemblyRecord): Record<string, unknown> {
@@ -316,7 +314,14 @@ export function traceFromRecord(record: EnsemblyRecord): MemoryTrace {
 }
 
 function compareUtf8(left: string, right: string): number {
-  return Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8"));
+  const encodedLeft = new TextEncoder().encode(left);
+  const encodedRight = new TextEncoder().encode(right);
+  const length = Math.min(encodedLeft.length, encodedRight.length);
+  for (let index = 0; index < length; index += 1) {
+    const diff = (encodedLeft[index] ?? 0) - (encodedRight[index] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return encodedLeft.length - encodedRight.length;
 }
 
 function canonicalJson(value: unknown): string {
@@ -358,8 +363,16 @@ export function contentSha256(
   archive: readonly CanonArchiveEvent[],
   traces: readonly CanonTrace[],
 ): string {
-  return createHash("sha256").update(canonContentMaterial(archive, traces)).digest("hex");
+  return sha256Hex(canonContentMaterial(archive, traces));
 }
+
+const CanonTraceExtSchema = z
+  .object({
+    coherence_milli: CoherenceMilliSchema.optional(),
+    content: z.record(z.string(), z.unknown()).optional(),
+    kind: z.string().min(1).optional(),
+  })
+  .strict();
 
 const CanonTraceSchema = z
   .object({
@@ -376,13 +389,7 @@ const CanonTraceSchema = z
     prefetch_key: z.string().nullable(),
     superseded_by: z.string().nullable().optional(),
     seen_count: z.number().int().min(1),
-    ext: z
-      .object({
-        coherence_milli: CoherenceMilliSchema,
-        content: z.record(z.string(), z.unknown()),
-        kind: z.string().min(1),
-      })
-      .strict(),
+    ext: CanonTraceExtSchema.optional(),
   })
   .strict();
 
@@ -401,12 +408,12 @@ const CanonPackSchema = z
             payload: z.string(),
             source: z.string(),
             ts: z.string().min(1),
-            ext: z.object({ kind: z.string().min(1) }).strict(),
+            ext: z.object({ kind: z.string().min(1) }).strict().optional(),
           })
           .strict(),
       )
       .optional(),
-    ext: z.object({ content_sha256: z.string() }).strict(),
+    ext: z.object({ content_sha256: z.string() }).strict().optional(),
   })
   .strict()
   .superRefine((pack, context) => {
@@ -463,7 +470,36 @@ function floatIssue(error: z.ZodError): boolean {
   });
 }
 
+function ensemblyKindText(value: unknown, fallback: string): string {
+  const parsed = EnsemblyKindSchema.safeParse(value);
+  if (parsed.success) return parsed.data;
+  const fallbackKind = EnsemblyKindSchema.safeParse(fallback);
+  return fallbackKind.success ? fallbackKind.data : "decision";
+}
+
+function envelopeContent(trace: z.infer<typeof CanonTraceSchema>): Record<string, unknown> {
+  const content: Record<string, unknown> = {
+    id: trace.nat_key,
+    timestamp: trace.time,
+    kind: ensemblyKindText(undefined, "decision"),
+    summary: trace.snippet,
+    rationale: trace.snippet.length > 0 ? trace.snippet : "Imported from a pulse pack envelope.",
+    provenance: trace.source.length > 0 ? trace.source : "pulse-pack",
+    confirmedOutcome: null,
+    traceKind: trace.kind,
+    status: trace.status,
+    lock: trace.lock,
+  };
+  if (trace.verify_hash !== null) content.verifyHash = trace.verify_hash;
+  if (trace.prefetch_key !== null) content.prefetchKey = trace.prefetch_key;
+  if (trace.superseded_by) content.supersededBy = trace.superseded_by;
+  return content;
+}
+
 function canonTrace(trace: z.infer<typeof CanonTraceSchema>): CanonTrace {
+  const provided = trace.ext?.content;
+  const content =
+    provided && Object.keys(provided).length > 0 ? provided : envelopeContent(trace);
   return {
     nat_key: trace.nat_key,
     snippet: trace.snippet,
@@ -479,9 +515,9 @@ function canonTrace(trace: z.infer<typeof CanonTraceSchema>): CanonTrace {
     superseded_by: trace.superseded_by ?? null,
     seen_count: trace.seen_count,
     ext: {
-      coherence_milli: trace.ext.coherence_milli,
-      content: trace.ext.content,
-      kind: trace.ext.kind,
+      coherence_milli: trace.ext?.coherence_milli ?? 1000,
+      content,
+      kind: ensemblyKindText(trace.ext?.kind ?? content.kind, "decision"),
     },
   };
 }
@@ -491,14 +527,14 @@ function canonArchive(event: {
   payload: string;
   source: string;
   ts: string;
-  ext: { kind: string };
+  ext?: { kind: string };
 }): CanonArchiveEvent {
   return {
     correlation_id: event.correlation_id,
     payload: event.payload,
     source: event.source,
     ts: event.ts,
-    ext: { kind: event.ext.kind },
+    ext: { kind: ensemblyKindText(event.ext?.kind, "decision") },
   };
 }
 
@@ -613,7 +649,8 @@ function readCanonPack(raw: unknown): CanonPulsePack {
   const traces = sortTraces(parsed.data.traces.map((trace) => canonTrace(trace)));
   const archive = sortArchive((parsed.data.archive ?? []).map((event) => canonArchive(event)));
   const expected = contentSha256(archive, traces);
-  if (parsed.data.ext.content_sha256 !== expected) {
+  const provided = parsed.data.ext?.content_sha256;
+  if (provided !== undefined && provided !== expected) {
     throw new Error("Ensembly pulse pack hash does not match its traces and archive.");
   }
   return {

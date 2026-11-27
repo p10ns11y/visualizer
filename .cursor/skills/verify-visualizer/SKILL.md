@@ -5,7 +5,7 @@ description: "Drive the Visualizer web cockpit and Code Mode in a browser, plus 
 
 # Verify Visualizer
 
-The surface is the Vite preview of `@visualizer/web` at `http://127.0.0.1:4183/`. Visual Cockpit and Code Mode are one page and one in-memory workspace. The local-model harness is `pnpm test:local-model` and does not need the page. Chrome is launched through `puppeteer-core` from `CHROME_PATH` or `/usr/bin/google-chrome`. Two copies on port `4183` cannot run together; refuse to drive a preview this skill did not start.
+The surface is the Vite preview of `@visualizer/web` at `http://127.0.0.1:4183/`. Visual Cockpit and Code Mode are one page and one in-memory workspace. The local-model harness is `pnpm test:local-model` and does not need the page. The headless MCP server is `pnpm --filter @visualizer/mcp start` and is not this preview. Chrome is launched through `puppeteer-core` from `CHROME_PATH` or `/usr/bin/google-chrome`. Two copies on port `4183` cannot run together; refuse to drive a preview this skill did not start.
 
 ## Launch
 

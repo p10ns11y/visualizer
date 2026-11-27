@@ -176,3 +176,50 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 
 - [x] Update the stale sentences in `docs/ARCHITECTURE-LAYERS.md`, `docs/CRITICAL-FLOWS.md`, `docs/TEST-SUITE.md`, and the verification notes. Leave decisions 001 and 002 and the formal sync commit in place.
 - [x] Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`, then confirm CI `verify`.
+
+## Headless MCP for outside SI agents
+
+- **Chosen:** `@modelcontextprotocol/server@2.4.0`, `@modelcontextprotocol/client@2.4.0`, and `@modelcontextprotocol/node@2.1.2` in `apps/mcp`. `createMcpHandler` plus `toNodeHandler`, with `localhostHostValidation` and `localhostOriginValidation`, listening only on `127.0.0.1`. The tool list is the WebMCP bridge in `@visualizer/core`. State is a JSON file locked with `open(..., "wx")`. Writes require `VISUALIZER_MCP_ALLOW_WRITES=1` or a matching bearer. `@modelcontextprotocol/sdk` `1.32.2` was not added. No tokenizer package. Ledger, lesson, promotion, and pack import stay on the aux commit. `buildPulseInject` counts `JSON.stringify({ schema, traces })`. Pack hashing uses the in-repo `sha256Hex` so those helpers can sit on the main entry without `node:crypto` in the browser bundle.
+- **Why:** Outside SI agents need the workspace tools without a browser tab, and a second process has to see the same records. v1 of the SDK is the maintenance line for the 2025-11-25 spec. v2 is the stable line for the 2026-07-28 spec and already ships the Streamable HTTP handler this server needs. The file lock stays in `node:fs` so the server does not take a second locking library. The token count has to describe the payload that enters a prompt and still fit in 120. A snippet count reported a smaller number than that JSON.
+- **Basis:** Live research on 2026-11-27, before the package was added. `npm view` reported `@modelcontextprotocol/server` `2.4.0`, `@modelcontextprotocol/client` `2.4.0`, `@modelcontextprotocol/node` `2.1.2`, and `@modelcontextprotocol/sdk` `1.32.2`. The [sdk readme](https://www.npmjs.com/package/@modelcontextprotocol/sdk) says v1 is maintenance and v2 ships as `@modelcontextprotocol/server` and `@modelcontextprotocol/client`. The [HTTP serving guide](https://ts.sdk.modelcontextprotocol.io/v2/serving/http) shows `createMcpHandler`, `toNodeHandler`, and the localhost host and origin guards. The dogfood note in the task is the source of the missing tools, the box-pack shape, the lesson loss, the pause, and the 97-versus-366 token gap. The byte/4 estimator stays the one already recorded in the Canon 1 entry.
+- **Latest trends checked before choosing:** Yes, on 2026-11-27, before the install. Compared the v1 SDK `1.32.2` (maintenance, spec 2025-11-25, `StreamableHTTPServerTransport`) with the v2 server and client `2.4.0` (stable, spec 2026-07-28, `createMcpHandler`). v2 is the current line. A file lock from `node:fs` was compared with adding `proper-lockfile`; no lock package was added. `js-tiktoken` and `gpt-tokenizer` were not added; the Canon 1 entry already recorded that check.
+
+## Head Plan and Tail Plan for the headless MCP slice
+
+### Head Plan
+
+- [x] Add `@visualizer/mcp` Streamable HTTP on `127.0.0.1`, with writes off by default, a JSON workspace file, and an end-to-end test that calls tools from a separate client process.
+- [x] Register `start_build`, `resume_build`, `export_pulse_pack`, `import_pulse_pack`, and `promote_record`, and export `exportPulsePack`, `readPulsePack`, `recordsFromPack`, and `mergeLedger` from `@visualizer/core`.
+- [x] Accept a `pulse-pack-v1` object that omits `ext`, compute a missing content hash, fall back to trace envelope fields, and keep the `tool-verified` hash check. Add a synthetic fixture.
+- [x] Move `mergeAuxIntoTick` into core and call it from the page and from `runGuidedBuild`.
+- [x] Keep ledger and lesson writes off the human-pause path. Count the serialized inject, drop duplicate entries when `inject` is set, and paginate ledger, lesson, and event-log reads.
+- [x] Persist the local-write approval under `visualizer.webmcp.approval` and clear it when the toggle is off.
+
+### Tail Plan
+
+- [x] Update `docs/ARCHITECTURE-LAYERS.md`, `README.md`, `docs/CRITICAL-FLOWS.md`, `docs/TEST-SUITE.md`, `docs/decisions/004-headless-mcp.md`, and this file. Credit `@adaptate/utils` on the tool schemas. Leave the formal sync commit in place and update the formal note so it matches the aux ledger writes.
+- [x] Update `.cursor/skills/verify-visualizer/` for the saved approval, the tool list, the promote behavior, and the headless server. Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`.
+- [x] After review: merge ledger and pulse rows in `mergeAuxIntoTick`, shorten the file lock, and record the file mode, host refusal, and concurrent append in `docs/CRITICAL-FLOWS.md`.
+
+## Headless MCP review fixes
+
+- **Chosen:** Keep the `node:fs` `wx` lock. The lock file stores pid and `/proc/<pid>/stat` start time, and a waiter removes it only when that owner is dead. The lock wraps load, `mergeAuxIntoTick`, and save, including ledger and pulse rows by id. The workspace file and lock are mode `0600`. The parent directory is mode `0700`. `VISUALIZER_MCP_STATE` must resolve inside `VISUALIZER_MCP_STATE_ROOT` unless `VISUALIZER_MCP_ALLOW_STATE_PATH=1`.
+- **Why:** A tick that landed from an older snapshot was dropping ledger appends, promotions, and pack imports. A lock held across the awaited tick blocked the other writer, and a 30 second age check could drop a live owner's lock. The workspace file is local state and should not be world-readable.
+- **Basis:** The review on pull request 6. No new package. `/proc/<pid>/stat` field 22 is the process start time on Linux, which is the CI host. This was not a fresh library lookup.
+- **Latest trends checked before choosing:** No new library was compared. The earlier entry already checked `proper-lockfile` and left the lock on `node:fs`. That choice stays.
+
+## Mermaid diagram check
+
+### Head Plan
+
+- [x] Rename the reserved flowchart id `graph` to `neo4jGraph` and point the memory edge at that id.
+- [x] Parse every Mermaid fence in `README.md` and `docs/**` with `mermaid.parse`, and fail CI `verify` when a diagram does not parse.
+
+### Tail Plan
+
+- [x] Add `pnpm docs:mermaid`, record it in `docs/TEST-SUITE.md` and this file, and run the local suite before pushing.
+
+- **Chosen:** `mermaid@12.4.0` via `mermaid.parse`, with `jsdom@31.0.1` so DOMPurify has a window in Node. The script is `scripts/verify-mermaid.ts`, exposed as `pnpm docs:mermaid`. `@mermaid-js/mermaid-cli@12.2.0` was not added.
+- **Why:** GitHub rejected the architecture diagram because a node id was the reserved word `graph`. `mermaid.parse` is the library's parser entry and reports that same error. In Node, DOMPurify's default export has no `addHook` until a document exists, so the script creates a jsdom window before importing mermaid. A browser render would also parse the diagram, and it would download Chromium on every CI run.
+- **Basis:** Live research on 2026-11-27, before the packages were added. `npm view mermaid version` returned `12.4.0` (published 2026-11-27). `npm view @mermaid-js/mermaid-cli version` returned `12.2.0`. `npm view jsdom version` returned `31.0.1`. A local `mermaid.parse` call on the old diagram threw `Parse error on line 3` with `got 'GRAPH'`. The renamed diagram, and the other two fences in `docs/ARCHITECTURE-LAYERS.md`, parse.
+- **Latest trends checked before choosing:** Yes, on 2026-11-27, before the install. Compared `mermaid` `12.4.0` (`mermaid.parse`) with `@mermaid-js/mermaid-cli` `12.2.0` (Puppeteer render). The library line is newer than the CLI line. The check uses the library parser.

@@ -13,6 +13,8 @@ import {
   pauseRun,
   pilotPhases,
   promoteEnsemblyRecord,
+  approvalFromStorage,
+  mergeAuxIntoTick,
   mountWorkspaceBridge,
   readModelContextGlobals,
   readWorkspaceStorage,
@@ -21,6 +23,7 @@ import {
   resumeRun,
   serializeWorkspace,
   themePresets,
+  webMcpApprovalStorageKey,
   workspaceStorageKey,
   type BuildBrief,
   type CommitResult,
@@ -34,12 +37,23 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MemoryPanel, type EnsemblyDraft, type LessonDraft } from "./memory-panel.js";
 import { SketchPad } from "./sketch-pad.js";
-import { mergeAuxIntoTick, pendingTickStillApplies } from "./tick-guard.js";
+import { pendingTickStillApplies } from "./tick-guard.js";
 import { Button, Toggle } from "./ui/controls.js";
 import { WebMcpStrip, type WebMcpStripState } from "./ui/webmcp-strip.js";
 
 const defaultRouter = new BrainRouter({ prefer: 1 });
 const connectors = connectorCatalog();
+
+function readInitialApproval(): WebMcpApproval {
+  if (typeof window === "undefined") return "read-only";
+  return approvalFromStorage(window.localStorage.getItem(webMcpApprovalStorageKey));
+}
+
+function writeApproval(next: WebMcpApproval) {
+  if (typeof window === "undefined") return;
+  if (next === "local") window.localStorage.setItem(webMcpApprovalStorageKey, "local");
+  else window.localStorage.removeItem(webMcpApprovalStorageKey);
+}
 
 function readInitialState(): WorkspaceState {
   const seeded = createSampleWorkspace();
@@ -54,7 +68,7 @@ function readInitialState(): WorkspaceState {
 export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
   const [state, setState] = useState<WorkspaceState>(readInitialState);
   const [notice, setNotice] = useState<string | null>(null);
-  const [approval, setApproval] = useState<WebMcpApproval>("read-only");
+  const [approval, setApprovalState] = useState<WebMcpApproval>(readInitialApproval);
   const [bridgeView, setBridgeView] = useState<WebMcpStripState>({ source: "pending", tools: [] });
   const stateRef = useRef(state);
   const approvalRef = useRef(approval);
@@ -201,6 +215,11 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
         tokens: themePresets[themeId],
       })),
     );
+  }
+
+  function setApproval(next: WebMcpApproval) {
+    setApprovalState(next);
+    writeApproval(next);
   }
 
   function stop() {

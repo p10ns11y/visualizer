@@ -8,7 +8,8 @@ import {
   type PilotPhase,
   type WorkspaceState,
 } from "../state/schema.js";
-import { commitHuman, type CommitResult } from "../state/store.js";
+import type { CommitResult } from "../state/store.js";
+import { mergeLedger } from "./ensembly.js";
 import { canPromote, verifyHashFor } from "./promote.js";
 
 function sameOrConflict(state: WorkspaceState, expectedVersion: number): CommitResult {
@@ -54,20 +55,6 @@ function commitAux(
   };
 }
 
-function withMemoryLog(result: CommitResult, detail: string, before: WorkspaceState): CommitResult {
-  if (!result.ok || result.state === before) return result;
-  const paused =
-    result.state.autopilot.phase === "paused_by_human" && before.autopilot.phase !== "paused_by_human";
-  const message = paused ? `Human edit paused the run. ${detail}` : detail;
-  const eventLog = result.state.eventLog.map((entry, index, all) =>
-    index === all.length - 1 ? { ...entry, kind: "memory" as const, message } : entry,
-  );
-  return {
-    ok: true,
-    state: WorkspaceStateSchema.parse({ ...result.state, eventLog }),
-  };
-}
-
 export function appendEnsemblyRecord(
   state: WorkspaceState,
   expectedVersion: number,
@@ -81,15 +68,19 @@ export function appendEnsemblyRecord(
   const existing = state.ensemblyLedger.find((item) => item.id === record.id);
   if (existing) return sameOrConflict(state, expectedVersion);
   const promoted = canPromote(record);
-  const result = commitHuman(state, expectedVersion, (draft) => ({
-    ...draft,
-    ensemblyLedger: [...draft.ensemblyLedger, record],
-    pulseMemory: promoted ? [...draft.pulseMemory, PulseMemorySchema.parse(record)] : draft.pulseMemory,
-  }));
   const detail = promoted
     ? `Promoted Ensembly record ${record.id} into Pulse Memory.`
     : `Appended Ensembly record ${record.id} without a confirmed outcome.`;
-  return withMemoryLog(result, detail, state);
+  return commitAux(
+    state,
+    expectedVersion,
+    (draft) => ({
+      ...draft,
+      ensemblyLedger: [...draft.ensemblyLedger, record],
+      pulseMemory: promoted ? [...draft.pulseMemory, PulseMemorySchema.parse(record)] : draft.pulseMemory,
+    }),
+    detail,
+  );
 }
 
 export function promoteEnsemblyRecord(
@@ -102,11 +93,43 @@ export function promoteEnsemblyRecord(
     return sameOrConflict(state, expectedVersion);
   }
   const pulse = PulseMemorySchema.parse(record);
-  const result = commitHuman(state, expectedVersion, (draft) => ({
-    ...draft,
-    pulseMemory: [...draft.pulseMemory, pulse],
-  }));
-  return withMemoryLog(result, `Promoted Ensembly record ${id} into Pulse Memory.`, state);
+  return commitAux(
+    state,
+    expectedVersion,
+    (draft) => ({
+      ...draft,
+      pulseMemory: [...draft.pulseMemory, pulse],
+    }),
+    `Promoted Ensembly record ${id} into Pulse Memory.`,
+  );
+}
+
+export function importEnsemblyRecords(
+  state: WorkspaceState,
+  expectedVersion: number,
+  incoming: readonly EnsemblyRecord[],
+): CommitResult & { added?: number; skipped?: number; conflicts?: number } {
+  const report = mergeLedger(state.ensemblyLedger, incoming);
+  if (report.added === 0) {
+    const same = sameOrConflict(state, expectedVersion);
+    return { ...same, added: report.added, skipped: report.skipped, conflicts: report.conflicts };
+  }
+  const known = new Set(state.pulseMemory.map((pulse) => pulse.id));
+  const result = commitAux(
+    state,
+    expectedVersion,
+    (draft) => {
+      const pulseMemory = [...draft.pulseMemory];
+      for (const record of report.records) {
+        if (!canPromote(record) || known.has(record.id)) continue;
+        pulseMemory.push(PulseMemorySchema.parse(record));
+        known.add(record.id);
+      }
+      return { ...draft, ensemblyLedger: report.records, pulseMemory };
+    },
+    `Imported ${report.added} Ensembly records.`,
+  );
+  return { ...result, added: report.added, skipped: report.skipped, conflicts: report.conflicts };
 }
 
 export function recordWorkflowLesson(

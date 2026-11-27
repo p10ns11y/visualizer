@@ -7,14 +7,18 @@ The diagram is the dependency direction: the UI talks to a thin bridge, the brid
 ```mermaid
 flowchart TB
   ui["UI and state: Visual Cockpit, Code Mode, XState 6"]
+  mcp["Headless MCP: Streamable HTTP on 127.0.0.1"]
+  file["Workspace JSON file"]
   memory["Memory: Ensembly ledger, Pulse Memory, workflow lessons"]
-  graph["Optional Neo4j projection of that same memory"]
+  neo4jGraph["Optional Neo4j projection of that same memory"]
   bridge["Thin bridge: C ABI, native bindings, WASM to JS, or local JSON-RPC"]
   core["Thin core: CLI or native module, WASM when needed"]
   accel["adaptate-accel, packages/native, packages/wasm"]
   streams["@adaptate/core typed streams"]
   ui --> memory
-  memory --> graph
+  mcp --> memory
+  mcp --> file
+  memory --> neo4jGraph
   ui --> bridge
   bridge --> core
   core --> accel
@@ -58,7 +62,9 @@ The bridge transports typed calls and results. It does not host UI state, and it
 
 Visual Cockpit and Code Mode register a WebMCP tool list from `@visualizer/core` (`packages/core/src/webmcp/`). The page reads `document.modelContext` first and `navigator.modelContext` only when the document getter is missing. Registration uses `registerTool` and an `AbortSignal`. Cleanup aborts that signal and, when the host still exposes it, calls `unregisterTool`. `provideContext` is not used.
 
-When neither getter exists, the same calls run on an in-memory bridge and the strip says `Local bridge`. Read tools list cards, the railway phase, Pulse Memory, the sparse pulse inject, and workflow lessons. Write tools pause a build, record a lesson, or append an Ensembly record. Append and pause use the same `stateVersion` check as a cockpit edit. A lesson write checks `stateVersion` and does not pause the railway. Those writes stay read only until the page grants local approval.
+When neither getter exists, the same calls run on an in-memory bridge and the strip says `Local bridge`. Read tools list cards, the railway phase, Pulse Memory, the sparse pulse inject, the ledger, workflow lessons, and the event log. Ledger, lesson, and event-log reads take `limit` and `cursor`. Write tools pause a build, resume a build, start a build, record a lesson, append or promote an Ensembly record, or import a pulse pack. Those writes check `stateVersion`. A lesson, a ledger append, a promotion, and a pack import do not pause the railway and do not change `stateVersion`. Only an explicit pause does. Writes stay read only until local approval is on. The page stores that choice under `visualizer.webmcp.approval` and removes the key when the toggle is turned off.
+
+`@visualizer/mcp` serves that same tool list over Streamable HTTP from `@modelcontextprotocol/server` `2.4.0` and `@modelcontextprotocol/node` `2.1.2`. The process binds to `127.0.0.1`. The workspace is a JSON file (`VISUALIZER_MCP_STATE`, default `.visualizer/workspace.json`, mode `0600`) inside `VISUALIZER_MCP_STATE_ROOT`, so a second process sees the same records. The file lock is held only around load, aux merge, and save. A lock file names the owner pid and start time, and it is removed only when that owner is dead. Writes stay off unless `VISUALIZER_MCP_ALLOW_WRITES=1` or the `Authorization` bearer matches `VISUALIZER_MCP_WRITE_TOKEN`. A configured token is required even when the flag is also set. XState 6 remains the only state owner. The file is the persisted workspace, not a second machine. The record is [`docs/decisions/004-headless-mcp.md`](decisions/004-headless-mcp.md).
 
 This surface is the page's tool producer. It is not the native core bridge in section 3. Payload checks stay in `adaptate`. Input schemas are Zod objects converted with `zodToOpenAPISchema` from `@adaptate/utils`.
 
@@ -70,9 +76,9 @@ Visual Cockpit and Code Mode stay a JavaScript WebView. XState 6 owns the pilot 
 
 Freehand strokes are fields on that same workspace: a `cardId` plus normalized pointer samples. The canvas plate paints them. Code Mode lists and clears them. They are not a bridge payload and not a board log. A stroke during a working phase uses the same human-edit pause as a statement edit.
 
-Pulse Memory and workflow lessons are fields on that same workspace. The Ensembly ledger is the append-only record. A row enters Pulse Memory when `canPromote` admits it: a confirmed outcome, `status: user-stated`, or `status: tool-verified` whose `verifyHash` is `sha256:` plus the SHA-256 of the summary. `supersededBy` keeps that row out of the active pulse. `buildPulseInject` returns at most 8 active traces and stays inside a 120-token budget (`ceil(utf-8 bytes / 4)`). The exchange format is Canon 1 `pulse-pack-v1` (`schema` and `format`): integer `coherence_milli`, `traces`, `archive`, `host`, `kind` (`data`, `context`, `fact`, `memory`), `status` (`user-stated`, `tool-verified`, `inferred`, `unknown`), `lock`, `verify_hash`, `prefetch_key`, and optional `superseded_by`. Packs labeled `ensembly-pulse-pack-v1` or `peram-pulse-pack-v1` are read only. A payload saved before those fields existed still hydrates. A fractional `coherence_milli` does not.
+Pulse Memory and workflow lessons are fields on that same workspace. The Ensembly ledger is the append-only record. A row enters Pulse Memory when `canPromote` admits it: a confirmed outcome, `status: user-stated`, or `status: tool-verified` whose `verifyHash` is `sha256:` plus the SHA-256 of the summary. `supersededBy` keeps that row out of the active pulse. `buildPulseInject` returns at most 8 active traces and stays inside a 120-token budget. The count is `ceil(utf-8 bytes / 4)` of the serialized `{ schema, traces }` payload. The exchange format is Canon 1 `pulse-pack-v1` (`schema` and `format`): integer `coherence_milli`, `traces`, `archive`, `host`, `kind` (`data`, `context`, `fact`, `memory`), `status` (`user-stated`, `tool-verified`, `inferred`, `unknown`), `lock`, `verify_hash`, `prefetch_key`, and optional `superseded_by`. Top-level `ext.content_sha256` and per-trace `ext` may be absent. A missing pack hash is computed. A present pack hash must match. A missing trace `ext` falls back to the envelope fields. Packs labeled `ensembly-pulse-pack-v1` or `peram-pulse-pack-v1` are read only. A payload saved before those fields existed still hydrates. A fractional `coherence_milli` does not.
 
-A workflow lesson points at a railway phase and, when present, a problem card. That write is the SI-maintained aux layer: it stays on `visualizer.workspace` and in the Memory panel, and it does not pause a working phase or change `stateVersion`. Appending or promoting an Ensembly record still uses the human-edit pause. Neo4j is an optional projection of those fields through `MemoryGraphStore`. The cockpit does not require a running database. Setup and the Cypher constraints are in `docs/MEMORY-NEO4J.md`. The projection's promote query and the in-memory port both require a tool-verified row to carry the verify hash of its summary.
+A workflow lesson points at a railway phase and, when present, a problem card. That write, a ledger append, a promotion, and a pulse-pack import are the SI-maintained aux layer: they stay on `visualizer.workspace` and in the Memory panel, and they do not pause a working phase or change `stateVersion`. `mergeAuxIntoTick` keeps a lesson that landed while a build tick was awaiting. Neo4j is an optional projection of those fields through `MemoryGraphStore`. The cockpit does not require a running database. Setup and the Cypher constraints are in `docs/MEMORY-NEO4J.md`. The projection's promote query and the in-memory port both require a tool-verified row to carry the verify hash of its summary.
 
 Ensembly, adapted for this cockpit, is also the shared event and board log. A separate `@vercel/board` SQLite mirror is not that log. Cross-machine sync is an open design slice (Cloudflare Workers, hooks, and Cloudflare storage such as Durable Objects, D1, or R2). The record is [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](decisions/001-ensembly-vs-vercel-board-sync.md). How this two-layer memory lines up with Ensembly pulse admissions is recorded in [`docs/decisions/003-ensembly-pulse-alignment-audit.md`](decisions/003-ensembly-pulse-alignment-audit.md). That note marks the three drifts resolved.
 

@@ -22,7 +22,7 @@ import {
   recordsToJsonl,
 } from "./ensembly.js";
 import { canPromote, verifyHashFor } from "./promote.js";
-import { buildPulseInject, estimateTokens } from "./pulse-inject.js";
+import { buildPulseInject, estimateTokens, pulseInjectPromptText } from "./pulse-inject.js";
 import { InMemoryGraphMemoryStore } from "./in-memory-store.js";
 import { Neo4jMemoryStore, type CypherRunner, type MemoryDriver } from "./neo4j-store.js";
 import { projectWorkspace } from "./port.js";
@@ -167,7 +167,7 @@ describe("workspace memory commits", () => {
       appendEnsemblyRecord(appended, appended.stateVersion, confirmed),
     );
     expect(promoted.pulseMemory.some((pulse) => pulse.id === confirmed.id)).toBe(true);
-    const stale = promoteEnsemblyRecord(promoted, seeded.stateVersion, "ens-mistake-stale-tick");
+    const stale = promoteEnsemblyRecord(promoted, promoted.stateVersion + 3, "ens-mistake-stale-tick");
     expect(stale.ok).toBe(false);
     if (stale.ok) return;
     expect(stale.error).toMatchObject({ code: "STATE_CONFLICT", actualVersion: promoted.stateVersion });
@@ -206,6 +206,21 @@ describe("workspace memory commits", () => {
     const stored = readPersistedWorkspace(serializeWorkspace(lesson));
     expect(stored?.autopilot.phase).toBe("running");
     expect(stored?.workflowLessons.some((item) => item.id === "lesson-running-canvas")).toBe(true);
+    const ledgered = assertCommit(
+      appendEnsemblyRecord(running, running.stateVersion, {
+        ...openDecision,
+        id: "ens-while-running",
+        timestamp: "2026-11-27T12:05:01Z",
+      }),
+    );
+    expect(ledgered.autopilot.phase).toBe("running");
+    expect(ledgered.stateVersion).toBe(version);
+    expect(ledgered.ensemblyLedger.some((record) => record.id === "ens-while-running")).toBe(true);
+    const promotedRunning = assertCommit(
+      promoteEnsemblyRecord(ledgered, ledgered.stateVersion, "ens-mistake-stale-tick"),
+    );
+    expect(promotedRunning.autopilot.phase).toBe("running");
+    expect(promotedRunning.stateVersion).toBe(version);
     const unknown = recordWorkflowLesson(lesson, lesson.stateVersion, {
       id: "lesson-missing-card",
       recordedAt: "2026-11-27T12:06:00Z",
@@ -294,7 +309,11 @@ describe("canon 1 admission and sparse inject", () => {
     expect(inject.traces.some((trace) => trace.nat_key === "ens-old")).toBe(false);
     expect(inject.traces.some((trace) => trace.nat_key === "ens-bad-hash")).toBe(false);
     expect(inject.traces.some((trace) => trace.status === "tool-verified" && trace.kind === "fact")).toBe(true);
-    expect(inject.tokens).toBe(inject.traces.reduce((sum, trace) => sum + estimateTokens(trace.snippet), 0));
+    expect(inject.tokens).toBe(estimateTokens(pulseInjectPromptText(inject)));
+    if (inject.traces.length > 0) {
+      const snippetTokens = inject.traces.reduce((sum, trace) => sum + estimateTokens(trace.snippet), 0);
+      expect(inject.tokens).toBeGreaterThan(snippetTokens);
+    }
   });
 
   it("round-trips tagged traces through a pulse pack", () => {
@@ -376,13 +395,15 @@ describe("canon 1 admission and sparse inject", () => {
   });
 
   it("skips superseded chains and cycles and keeps a short row after a bulky one", () => {
-    expect(buildPulseInject([])).toEqual({
+    const empty = buildPulseInject([]);
+    expect(empty).toMatchObject({
       schema: "pulse-pack-v1",
       limit: 8,
       token_budget: 120,
-      tokens: 0,
       traces: [],
     });
+    expect(empty.tokens).toBe(estimateTokens(pulseInjectPromptText(empty)));
+    expect(empty.tokens).toBeGreaterThan(0);
     const chainC = { ...confirmed, id: "ens-chain-c", timestamp: "2026-11-27T18:00:00Z" };
     const chainB = {
       ...confirmed,
@@ -428,7 +449,8 @@ describe("canon 1 admission and sparse inject", () => {
     const fitted = buildPulseInject([bulky, short]);
     expect(fitted.traces.map((trace) => trace.nat_key)).toEqual(["ens-short"]);
     expect(fitted.tokens).toBeLessThanOrEqual(120);
-    expect(fitted.tokens).toBe(estimateTokens(short.summary));
+    expect(fitted.tokens).toBe(estimateTokens(pulseInjectPromptText(fitted)));
+    expect(fitted.tokens).toBeGreaterThan(estimateTokens(short.summary));
 
     const roomy = {
       ...confirmed,
@@ -437,8 +459,62 @@ describe("canon 1 admission and sparse inject", () => {
       summary: "word ".repeat(40).trim(),
     };
     const after = { ...short, id: "ens-after", timestamp: "2026-11-27T22:30:00Z" };
-    expect(estimateTokens(roomy.summary) + estimateTokens(after.summary)).toBeLessThanOrEqual(120);
-    expect(buildPulseInject([roomy, after]).traces.map((trace) => trace.nat_key)).toEqual(["ens-roomy", "ens-after"]);
+    const both = buildPulseInject([roomy, after]);
+    expect(both.tokens).toBeLessThanOrEqual(120);
+    expect(both.tokens).toBe(estimateTokens(pulseInjectPromptText(both)));
+    expect(both.traces.every((trace) => trace.nat_key === "ens-roomy" || trace.nat_key === "ens-after")).toBe(true);
+  });
+
+  it("reads a box pack that omits ext and still checks tool-verified hashes", () => {
+    const fixturePath = fileURLToPath(new URL("./fixtures/box-pulse-pack.json", import.meta.url));
+    const raw = JSON.parse(readFileSync(fixturePath, "utf8")) as unknown;
+    const pack = readPulsePack(raw);
+    expect(pack.format).toBe("pulse-pack-v1");
+    if (pack.format !== "pulse-pack-v1" || !("ext" in pack)) throw new Error("expected a Canon pack");
+    expect(pack.ext.content_sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(pack.traces).toHaveLength(2);
+    expect(pack.traces.every((trace) => trace.ext.content.summary)).toBe(true);
+    const records = recordsFromPack(pack);
+    const stated = records.find((record) => record.id === "box-stated");
+    const bad = records.find((record) => record.id === "box-bad-hash");
+    expect(stated?.status).toBe("user-stated");
+    expect(canPromote(stated!)).toBe(true);
+    expect(bad?.status).toBe("tool-verified");
+    expect(canPromote(bad!)).toBe(false);
+
+    const hashedSnippet = "A tool-verified envelope hash matches the snippet.";
+    const admitted = {
+      nat_key: "box-good-hash",
+      snippet: hashedSnippet,
+      source: "synthetic",
+      time: "2026-11-27T21:00:02Z",
+      first_seen: "2026-11-27T21:00:02Z",
+      last_seen: "2026-11-27T21:00:02Z",
+      status: "tool-verified",
+      kind: "fact",
+      lock: "open",
+      verify_hash: verifyHashFor(hashedSnippet),
+      prefetch_key: null,
+      superseded_by: null,
+      seen_count: 1,
+    };
+    const loose = readPulsePack({
+      format: "pulse-pack-v1",
+      exported_at: "2026-11-27T21:00:02Z",
+      host: "synthetic-box",
+      traces: [admitted],
+    });
+    const good = recordsFromPack(loose).find((record) => record.id === "box-good-hash");
+    expect(canPromote(good!)).toBe(true);
+    expect(() =>
+      readPulsePack({
+        format: "pulse-pack-v1",
+        exported_at: "2026-11-27T21:00:02Z",
+        host: "synthetic-box",
+        traces: [admitted],
+        ext: { content_sha256: "deadbeef" },
+      }),
+    ).toThrow(/hash/);
   });
 });
 

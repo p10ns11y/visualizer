@@ -1,8 +1,11 @@
 import { zodToOpenAPISchema } from "@adaptate/utils";
 import { z } from "zod";
-import { appendEnsemblyRecord, recordWorkflowLesson } from "../memory/commit.js";
+import { BrainRouter } from "../brain/router.js";
+import { runGuidedBuild, type GuidedLanding } from "../bootstrap/guided.js";
+import { appendEnsemblyRecord, importEnsemblyRecords, promoteEnsemblyRecord, recordWorkflowLesson } from "../memory/commit.js";
+import { exportPulsePack, readPulsePack, recordsFromPack } from "../memory/ensembly.js";
 import { buildPulseInject } from "../memory/pulse-inject.js";
-import { pauseRun, type CommitResult } from "../state/store.js";
+import { pauseRun, resumeRun, type CommitResult } from "../state/store.js";
 import {
   EnsemblyRecordSchema,
   WorkflowLessonSchema,
@@ -16,17 +19,31 @@ import {
   type WebMcpSource,
   type WebMcpTool,
 } from "./model-context.js";
+import { pageRows } from "./page.js";
 
 export const webMcpToolNames = [
   "list_cards",
   "read_workspace",
   "read_pulse_memory",
   "read_pulse_inject",
+  "read_ensembly_ledger",
   "read_workflow_lessons",
+  "read_event_log",
   "pause_build",
   "record_workflow_lesson",
   "append_ensembly_record",
+  "promote_record",
+  "export_pulse_pack",
+  "import_pulse_pack",
+  "start_build",
+  "resume_build",
 ] as const;
+
+export const webMcpApprovalStorageKey = "visualizer.webmcp.approval";
+
+export function approvalFromStorage(value: string | null): WebMcpApproval {
+  return value === "local" ? "local" : "read-only";
+}
 
 export type WebMcpToolName = (typeof webMcpToolNames)[number];
 
@@ -39,11 +56,21 @@ export type WebMcpToolSummary = {
 };
 
 const EmptyInput = z.object({});
-const PulseReadInput = z.object({
+const PageInput = z.object({
+  limit: z.number().int().min(1).max(100).optional(),
+  cursor: z.string().optional(),
+});
+const PulseReadInput = PageInput.extend({
   inject: z.boolean().optional(),
 });
 const VersionInput = z.object({
   stateVersion: z.number().int().nonnegative(),
+});
+const PromoteInput = VersionInput.extend({
+  id: z.string().min(1),
+});
+const ImportInput = VersionInput.extend({
+  pack: z.unknown(),
 });
 const LessonInput = WorkflowLessonSchema.extend({
   stateVersion: z.number().int().nonnegative(),
@@ -52,9 +79,23 @@ const EnsemblyInput = EnsemblyRecordSchema.extend({
   stateVersion: z.number().int().nonnegative(),
 });
 
-function copyRows<T extends object>(rows: readonly T[]): T[] {
-  return rows.map((row) => ({ ...row }));
-}
+export const webMcpInputSchemas: Record<WebMcpToolName, z.ZodType> = {
+  list_cards: EmptyInput,
+  read_workspace: EmptyInput,
+  read_pulse_memory: PulseReadInput,
+  read_pulse_inject: EmptyInput,
+  read_ensembly_ledger: PageInput,
+  read_workflow_lessons: PageInput,
+  read_event_log: PageInput,
+  pause_build: VersionInput,
+  record_workflow_lesson: LessonInput,
+  append_ensembly_record: EnsemblyInput,
+  promote_record: PromoteInput,
+  export_pulse_pack: EmptyInput,
+  import_pulse_pack: ImportInput,
+  start_build: VersionInput,
+  resume_build: VersionInput,
+};
 
 export type WebMcpToolResult =
   | { ok: true; [key: string]: unknown }
@@ -98,6 +139,7 @@ type BridgeDeps = {
   getState: () => WorkspaceState;
   getApproval: () => WebMcpApproval;
   onCommit: (result: CommitResult) => void;
+  landTick?: GuidedLanding;
 };
 
 function jsonSchema(schema: z.ZodType): Record<string, unknown> {
@@ -116,7 +158,7 @@ function readOnly(): WebMcpToolResult {
   return {
     ok: false,
     code: "READ_ONLY",
-    message: "External writes stay read only until this page grants local approval.",
+    message: "External writes stay read only until local approval is on.",
   };
 }
 
@@ -172,6 +214,7 @@ function guardWrite(
 }
 
 function workspaceTools(deps: BridgeDeps): WebMcpTool[] {
+  const router = new BrainRouter({ prefer: 1 });
   return [
     {
       name: "list_cards",
@@ -219,9 +262,13 @@ function workspaceTools(deps: BridgeDeps): WebMcpTool[] {
       execute(input) {
         const parsed = PulseReadInput.safeParse(input ?? {});
         if (!parsed.success) return invalid(parsed.error);
-        const entries = copyRows(deps.getState().pulseMemory);
-        if (parsed.data.inject) return { ok: true, entries, inject: buildPulseInject(entries) };
-        return { ok: true, entries };
+        const state = deps.getState();
+        if (parsed.data.inject) {
+          return { ok: true, inject: buildPulseInject(state.pulseMemory) };
+        }
+        const page = pageRows(state.pulseMemory, parsed.data.limit, parsed.data.cursor);
+        if ("error" in page) return { ok: false, code: "INVALID_INPUT", message: page.error };
+        return { ok: true, entries: page.items, nextCursor: page.nextCursor };
       },
     },
     {
@@ -236,14 +283,42 @@ function workspaceTools(deps: BridgeDeps): WebMcpTool[] {
       },
     },
     {
-      name: "read_workflow_lessons",
-      description: "Reads workflow lessons recorded on this workspace.",
-      inputSchema: jsonSchema(EmptyInput),
+      name: "read_ensembly_ledger",
+      description: "Reads the Ensembly ledger one page at a time.",
+      inputSchema: jsonSchema(PageInput),
       annotations: { readOnlyHint: true },
       execute(input) {
-        const parsed = EmptyInput.safeParse(input ?? {});
+        const parsed = PageInput.safeParse(input ?? {});
         if (!parsed.success) return invalid(parsed.error);
-        return { ok: true, lessons: copyRows(deps.getState().workflowLessons) };
+        const page = pageRows(deps.getState().ensemblyLedger, parsed.data.limit, parsed.data.cursor);
+        if ("error" in page) return { ok: false, code: "INVALID_INPUT", message: page.error };
+        return { ok: true, records: page.items, nextCursor: page.nextCursor };
+      },
+    },
+    {
+      name: "read_workflow_lessons",
+      description: "Reads workflow lessons recorded on this workspace.",
+      inputSchema: jsonSchema(PageInput),
+      annotations: { readOnlyHint: true },
+      execute(input) {
+        const parsed = PageInput.safeParse(input ?? {});
+        if (!parsed.success) return invalid(parsed.error);
+        const page = pageRows(deps.getState().workflowLessons, parsed.data.limit, parsed.data.cursor);
+        if ("error" in page) return { ok: false, code: "INVALID_INPUT", message: page.error };
+        return { ok: true, lessons: page.items, nextCursor: page.nextCursor };
+      },
+    },
+    {
+      name: "read_event_log",
+      description: "Reads the workspace event log one page at a time.",
+      inputSchema: jsonSchema(PageInput),
+      annotations: { readOnlyHint: true },
+      execute(input) {
+        const parsed = PageInput.safeParse(input ?? {});
+        if (!parsed.success) return invalid(parsed.error);
+        const page = pageRows(deps.getState().eventLog, parsed.data.limit, parsed.data.cursor);
+        if ("error" in page) return { ok: false, code: "INVALID_INPUT", message: page.error };
+        return { ok: true, events: page.items, nextCursor: page.nextCursor };
       },
     },
     {
@@ -293,6 +368,141 @@ function workspaceTools(deps: BridgeDeps): WebMcpTool[] {
         const { stateVersion, ...record } = parsed.data;
         return fromCommit(
           appendEnsemblyRecord(deps.getState(), stateVersion, record),
+          deps.onCommit,
+        );
+      },
+    },
+    {
+      name: "promote_record",
+      description: "Promotes one ledger record into Pulse Memory when local approval is on. Does not pause the railway.",
+      inputSchema: jsonSchema(PromoteInput),
+      annotations: { readOnlyHint: false },
+      execute(input) {
+        const parsed = PromoteInput.safeParse(input ?? {});
+        if (!parsed.success) return invalid(parsed.error);
+        const denied = guardWrite(deps, parsed.data.stateVersion);
+        if (denied) return denied;
+        return fromCommit(
+          promoteEnsemblyRecord(deps.getState(), parsed.data.stateVersion, parsed.data.id),
+          deps.onCommit,
+        );
+      },
+    },
+    {
+      name: "export_pulse_pack",
+      description: "Exports the ledger as a Canon 1 pulse-pack-v1 object.",
+      inputSchema: jsonSchema(EmptyInput),
+      annotations: { readOnlyHint: true },
+      execute(input) {
+        const parsed = EmptyInput.safeParse(input ?? {});
+        if (!parsed.success) return invalid(parsed.error);
+        const state = deps.getState();
+        return {
+          ok: true,
+          pack: exportPulsePack(state.ensemblyLedger, {
+            exportedAt: new Date().toISOString(),
+            sourceHost: "visualizer",
+          }),
+        };
+      },
+    },
+    {
+      name: "import_pulse_pack",
+      description: "Merges a pulse pack into the ledger when local approval is on. Does not pause the railway.",
+      inputSchema: jsonSchema(ImportInput),
+      annotations: { readOnlyHint: false },
+      execute(input) {
+        const parsed = ImportInput.safeParse(input ?? {});
+        if (!parsed.success) return invalid(parsed.error);
+        const denied = guardWrite(deps, parsed.data.stateVersion);
+        if (denied) return denied;
+        let pack;
+        try {
+          pack = readPulsePack(parsed.data.pack);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Ensembly pulse pack is not readable.";
+          return { ok: false, code: "INVALID_INPUT", message };
+        }
+        const imported = importEnsemblyRecords(
+          deps.getState(),
+          parsed.data.stateVersion,
+          recordsFromPack(pack),
+        );
+        const committed = fromCommit(imported, deps.onCommit);
+        if (!committed.ok) return committed;
+        return {
+          ...committed,
+          added: imported.added ?? 0,
+          skipped: imported.skipped ?? 0,
+          conflicts: imported.conflicts ?? 0,
+        };
+      },
+    },
+    {
+      name: "start_build",
+      description: "Starts the railway from idle and runs the build ticks when local approval is on.",
+      inputSchema: jsonSchema(VersionInput),
+      annotations: { readOnlyHint: false },
+      async execute(input) {
+        const parsed = VersionInput.safeParse(input ?? {});
+        if (!parsed.success) return invalid(parsed.error);
+        const denied = guardWrite(deps, parsed.data.stateVersion);
+        if (denied) return denied;
+        const state = deps.getState();
+        if (state.autopilot.phase !== "idle") {
+          return {
+            ok: true,
+            stateVersion: state.stateVersion,
+            phase: state.autopilot.phase,
+            started: false,
+          };
+        }
+        return fromCommit(
+          await runGuidedBuild(
+            state,
+            router,
+            deps.getState,
+            (next) => {
+              deps.onCommit({ ok: true, state: next });
+            },
+            deps.landTick,
+          ),
+          deps.onCommit,
+        );
+      },
+    },
+    {
+      name: "resume_build",
+      description: "Resumes a human pause and continues the build ticks when local approval is on.",
+      inputSchema: jsonSchema(VersionInput),
+      annotations: { readOnlyHint: false },
+      async execute(input) {
+        const parsed = VersionInput.safeParse(input ?? {});
+        if (!parsed.success) return invalid(parsed.error);
+        const denied = guardWrite(deps, parsed.data.stateVersion);
+        if (denied) return denied;
+        const state = deps.getState();
+        if (state.autopilot.phase !== "paused_by_human") {
+          return {
+            ok: true,
+            stateVersion: state.stateVersion,
+            phase: state.autopilot.phase,
+            resumed: false,
+          };
+        }
+        const resumed = resumeRun(state, parsed.data.stateVersion);
+        if (!resumed.ok) return fromCommit(resumed, deps.onCommit);
+        deps.onCommit(resumed);
+        return fromCommit(
+          await runGuidedBuild(
+            resumed.state,
+            router,
+            deps.getState,
+            (next) => {
+              deps.onCommit({ ok: true, state: next });
+            },
+            deps.landTick,
+          ),
           deps.onCommit,
         );
       },

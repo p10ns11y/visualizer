@@ -108,6 +108,7 @@ export {
   remainingTicks,
   runSelfBootstrap,
 } from "./bootstrap/run.js";
+export { runGuidedBuild } from "./bootstrap/guided.js";
 export type { BuildTick } from "./bootstrap/run.js";
 
 export {
@@ -139,13 +140,21 @@ export type {
 } from "./state/schema.js";
 export {
   appendEnsemblyRecord,
+  importEnsemblyRecords,
   promoteEnsemblyRecord,
   recordWorkflowLesson,
 } from "./memory/commit.js";
 export { admittedKind, admittedStatus, canPromote, verifyHashFor } from "./memory/promote.js";
 export {
+  exportPulsePack,
+  mergeLedger,
+  readPulsePack,
+  recordsFromPack,
+} from "./memory/ensembly.js";
+export {
   buildPulseInject,
   estimateTokens,
+  pulseInjectPromptText,
   pulseInjectTokenBudget,
   pulseInjectTraceLimit,
 } from "./memory/pulse-inject.js";
@@ -154,9 +163,13 @@ export { InMemoryGraphMemoryStore } from "./memory/in-memory-store.js";
 export { projectWorkspace } from "./memory/port.js";
 export type { LessonFilter, MemoryGraphStore } from "./memory/port.js";
 
+export { mergeAuxIntoTick } from "./state/merge-aux.js";
 export {
+  approvalFromStorage,
   describeWebMcpBridge,
   mountWorkspaceBridge,
+  webMcpApprovalStorageKey,
+  webMcpInputSchemas,
   webMcpToolNames,
 } from "./webmcp/bridge.js";
 export type {

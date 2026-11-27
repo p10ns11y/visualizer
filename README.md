@@ -32,7 +32,7 @@ Text-box-only SI workflows force a builder to describe, wait, and re-describe �
 | **Collaboration** | Human-in-the-loop solo flow | Real-time multiplayer (teammates + agents) |
 | **Anchored to** | Workflow, skills, and local tools | An existing GitHub repository |
 | **Maturity** | Early scaffold | Early open-source prototype |
-| **Bridge** | Can import or export via MCP later, if desired | Exposes an MCP server |
+| **Bridge** | Imports and exports a pulse pack on the headless MCP server | Exposes an MCP server |
 
 **Ecosystem references** — useful around the cockpit, not a substitute for it:
 
@@ -53,7 +53,17 @@ Step 1 opens with problem cards for Step 2 of Visualizer itself: freehand canvas
 
 The canvas plate takes freehand ink. Each stroke is pinned to the freehand problem card, stored on the shared workspace, and kept in `localStorage` across a reload. Code Mode lists those strokes and can clear them. A stroke during a working phase pauses the run and keeps the ink. The page now registers the WebMCP tools on native `modelContext` or the local bridge. Cross-machine Ensembly sync remains open.
 
-The Memory panel, in both modes, lists Pulse Memory, the Canon 1 `pulse-pack-v1` sparse inject, and workflow lessons. Ensembly is the append-only ledger. A record promotes into Pulse Memory after a confirmed outcome, a user-stated trace, or a tool-verified trace with a matching verify hash. Superseded traces stay out of the active inject. A lesson names a railway phase and a problem card, and recording it does not pause a working phase. Older workspaces that lack those fields still load. Neo4j is an optional projection; the commands and Cypher are in `docs/MEMORY-NEO4J.md`. CI uses the in-memory graph port.
+The Memory panel, in both modes, lists Pulse Memory, the Canon 1 `pulse-pack-v1` sparse inject, and workflow lessons. Ensembly is the append-only ledger. A record promotes into Pulse Memory after a confirmed outcome, a user-stated trace, or a tool-verified trace with a matching verify hash. Superseded traces stay out of the active inject. The inject token count is the serialized `{ schema, traces }` payload and stays inside 120. A lesson, a ledger append, and a promotion name the current railway phase and do not pause it. Older workspaces that lack those fields still load. A `pulse-pack-v1` file that omits `ext` still imports. Neo4j is an optional projection; the commands and Cypher are in `docs/MEMORY-NEO4J.md`. CI uses the in-memory graph port.
+
+### Headless MCP
+
+Outside SI agents can use the same tools without a browser tab:
+
+```sh
+pnpm --filter @visualizer/mcp start
+```
+
+The server binds to `127.0.0.1:8787` and writes `.visualizer/workspace.json` with mode `0600`. `VISUALIZER_MCP_STATE` must stay inside `VISUALIZER_MCP_STATE_ROOT` (the working directory unless you set it). `VISUALIZER_MCP_ALLOW_STATE_PATH=1` lifts that check. `VISUALIZER_MCP_PORT` changes the port. Writes are off until `VISUALIZER_MCP_ALLOW_WRITES=1` or `VISUALIZER_MCP_WRITE_TOKEN` matches the bearer. An empty token does not open writes. A second process that points at the same file sees the same workspace. The decision is [`docs/decisions/004-headless-mcp.md`](docs/decisions/004-headless-mcp.md).
 
 ### Local decision model
 
@@ -75,6 +85,7 @@ Critical flows are listed in `docs/CRITICAL-FLOWS.md`. Test commands are listed 
 - [Chopin](https://githubnext.com/projects/chopin/) — GitHub Next's multiplayer MDX planning prototype
 - [Lopsi](https://github.com/frankievalentine/lopsi-bot-eve) — folder-per-agent layout inspiration
 - [Vercel Board](https://vercel.com/docs/board) — hosted experimental log compared in [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](docs/decisions/001-ensembly-vs-vercel-board-sync.md). Not the shared store.
-- [ensembly](https://github.com/thecuriousts/ensembly) — Canon 1 pulse pack (`pulse-pack-v1`) that feeds the memory graph. Older `ensembly-pulse-pack-v1` packs still import.
+- [ensembly](https://github.com/thecuriousts/ensembly) — Canon 1 pulse pack (`pulse-pack-v1`) that feeds the memory graph. Older `ensembly-pulse-pack-v1` packs still import. Packs that omit `ext` import as well.
+- [`@modelcontextprotocol/server`](https://github.com/modelcontextprotocol/typescript-sdk) `2.4.0` — Streamable HTTP server for the headless tool surface. `@adaptate/utils` still converts the tool inputs.
 - [Neo4j JavaScript driver](https://neo4j.com/docs/javascript-manual/current/) — optional Bolt projection of Pulse Memory and workflow lessons
 - [Chris Tate, `@ctatedev`, 27 Nov 2026 fleet diagram](https://x.com/ctatedev/status/2126180726278353288) — independent local/remote fleet sketch compared in `docs/ARCHITECTURE-LAYERS.md`

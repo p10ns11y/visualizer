@@ -5,7 +5,7 @@ The Memory panel lists Pulse Memory, the Canon 1 sparse inject, the Ensembly led
 ## Sub-features
 
 - `memory-seed` shows the seeded rule in Pulse Memory and the unconfirmed decision on the ledger.
-- `memory-promote` promotes `ens-mistake-stale-tick` and raises `stateVersion` once.
+- `memory-promote` promotes `ens-mistake-stale-tick` and leaves `stateVersion` and the railway phase where they were.
 - `memory-code` shows the promoted row and the planning lesson after Code Mode opens.
 - `memory-reload` reads the promoted row back from `localStorage`.
 
@@ -25,14 +25,14 @@ Preconditions:
 - A fresh page is Visual Cockpit at `v0`. `data-pulse-count` is `1` and `data-lesson-count` is `1`.
 
 - **Read the seed.** The page text includes `A stale stateVersion never overwrites the workspace.` and `Outcome not confirmed`.
-- **Promote.** Run `node scripts/verify-visualizer.mjs browser click --role button --name "Promote ens-mistake-stale-tick"`. `data-pulse-count` becomes `2` and the version label becomes `v1`.
+- **Promote.** Run `node scripts/verify-visualizer.mjs browser click --role button --name "Promote ens-mistake-stale-tick"`. `data-pulse-count` becomes `2` and the version label stays `v0`.
 - **Open Code Mode.** Run `node scripts/verify-visualizer.mjs browser click --role button --name "Code Mode"`. The shell `data-mode` is `code` and the page text includes `Read the card statement before the bridge publish.`
-- **Proof.** Run `node scripts/verify-visualizer.mjs browser text --path /opt/cursor/artifacts/verify-visualizer/memory-panel.txt` and `node scripts/verify-visualizer.mjs browser screenshot --path /opt/cursor/artifacts/verify-visualizer/memory-panel.png`. The text file contains the promoted mistake and `v2` after the mode switch.
+- **Proof.** Run `node scripts/verify-visualizer.mjs browser text --path /opt/cursor/artifacts/verify-visualizer/memory-panel.txt` and `node scripts/verify-visualizer.mjs browser screenshot --path /opt/cursor/artifacts/verify-visualizer/memory-panel.png`. The text file contains the promoted mistake and `v1` after the mode switch.
 
 ## Gotchas
 
-- Promotion is a human edit. During a working phase it pauses the run.
-- Recording a workflow lesson does not pause a working phase and does not change `stateVersion`. A lesson recorded while a build tick is still awaiting stays after that tick lands.
+- Promoting a ledger row does not pause a working phase and does not change `stateVersion`. A statement edit still does.
+- Recording a workflow lesson does not pause a working phase and does not change `stateVersion`. A lesson recorded while a build tick is still awaiting stays after that tick lands. The merge lives in `@visualizer/core`.
 - A record with no confirmed outcome, and no `user-stated` or hash-backed `tool-verified` status, has no Promote button.
 - A superseded row stays off the sparse inject.
 - A workspace saved before these fields were added loads with empty memory arrays. The problem cards stay.
