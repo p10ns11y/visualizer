@@ -8,7 +8,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:critical-flows": "vitest run --config vitest.critical.config.ts"
   },
   "dependencies": {
     "@adaptate/core": "3.0.0",

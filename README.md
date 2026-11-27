@@ -44,7 +44,7 @@ Text-box-only SI workflows force a builder to describe, wait, and re-describe â€
 ```sh
 pnpm install
 pnpm dev
-pnpm typecheck && pnpm test && pnpm build
+pnpm typecheck && pnpm test && pnpm test:critical-flows && pnpm verify:formal && pnpm build
 ```
 
 `@visualizer/core` holds the shared workspace, collision guards, XState railway, 3-tier brain, and local tool contracts. `@visualizer/web` is the one app: Visual Cockpit and Code Mode read and write that same state. Button and toggle behavior comes from `@ui-sdk/react`, wrapped in `apps/web/src/ui/controls.tsx`.
@@ -59,7 +59,9 @@ Tier 2 calls an OpenAI-compatible server. `VISUALIZER_LOCAL_MODEL_URL` defaults 
 pnpm test:local-model
 ```
 
-`VISUALIZER_LOCAL_MODEL_STRICT=1` exits non-zero unless Tier 2 answers. CI does not run this script. Tests and the cockpit stay on mocked clients and Tier 1, so a missing local server never blocks them.
+`VISUALIZER_LOCAL_MODEL_STRICT=1` exits non-zero unless Tier 2 answers. The critical-flow smoke runs the same command and accepts a Tier 1 fallback, so a missing local server does not fail CI. The cockpit Build stays on Tier 1.
+
+Critical flows are listed in `docs/CRITICAL-FLOWS.md`. `pnpm verify:formal` checks `stateVersion` and the pilot railway. Browser steps for the cockpit live in `.cursor/skills/verify-visualizer/`.
 
 ## References
 

@@ -6,6 +6,8 @@
   "scripts": {
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
+    "test:critical-flows": "pnpm --filter @visualizer/core test:critical-flows && pnpm --filter @visualizer/web test:critical-flows",
+    "verify:formal": "tsx scripts/verify-formal.ts",
     "build": "pnpm --filter @visualizer/web build",
     "dev": "pnpm --filter @visualizer/web dev",
     "test:local-model": "tsx scripts/local-model-smoke.ts"

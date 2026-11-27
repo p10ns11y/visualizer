@@ -39,6 +39,33 @@ function withCursor(state: WorkspaceState, cursor: BuildCursor): WorkspaceState 
   };
 }
 
+function commitCursor(
+  state: WorkspaceState,
+  cursor: BuildCursor,
+  message: string,
+): CommitResult {
+  const stateVersion = state.stateVersion + 1;
+  const logSeq = state.logSeq + 1;
+  return {
+    ok: true,
+    state: WorkspaceStateSchema.parse({
+      ...state,
+      stateVersion,
+      logSeq,
+      autopilot: { ...state.autopilot, cursor },
+      eventLog: [
+        ...state.eventLog,
+        {
+          id: `log-${logSeq}`,
+          stateVersion,
+          kind: "transition",
+          message,
+        },
+      ],
+    }),
+  };
+}
+
 export async function applyBuildTick(
   state: WorkspaceState,
   expectedVersion: number,
@@ -60,7 +87,7 @@ export async function applyBuildTick(
 
   if (tick === "start") {
     if (state.autopilot.phase === "resuming") {
-      return { ok: true, state: withCursor(state, "judge") };
+      return commitCursor(state, "judge", "Resume moves the cursor to judge");
     }
     if (state.autopilot.phase !== "idle") return { ok: true, state };
     return applyPilotEvent(state, expectedVersion, { type: "START" }, (next) =>

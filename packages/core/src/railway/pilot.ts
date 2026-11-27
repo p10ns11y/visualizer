@@ -1,4 +1,4 @@
-import { createActor, setup } from "xstate";
+import { initialTransition, setup, transition } from "xstate";
 import { z } from "zod";
 import {
   pilotPhases,
@@ -71,11 +71,12 @@ function isPilotPhase(value: string): value is PilotPhase {
 }
 
 export function reducePhase(trace: readonly PilotEvent[]): PilotPhase {
-  const actor = createActor(pilotMachine);
-  actor.start();
-  for (const event of trace) actor.send(event);
-  const value = actor.getSnapshot().value;
-  actor.stop();
+  let [snapshot] = initialTransition(pilotMachine);
+  for (const event of trace) {
+    const [next] = transition(pilotMachine, snapshot, event);
+    snapshot = next;
+  }
+  const value = snapshot.value;
   if (typeof value !== "string" || !isPilotPhase(value)) {
     throw new Error("Pilot railway left the finite state set");
   }

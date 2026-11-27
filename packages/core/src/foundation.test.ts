@@ -5,6 +5,7 @@ import { createLocalDecisionClient, localModelConfigFromEnv } from "./brain/loca
 import { BrainRouter } from "./brain/router.js";
 import {
   chunkText,
+  collectParsedSteps,
   collectTrackedSteps,
   readJudgementStream,
   requireDriftNote,
@@ -23,7 +24,14 @@ import {
   resumeRun,
 } from "./state/store.js";
 import { connectorCatalog, createInProcessRunner } from "./tools/delegation.js";
-import type { BuildBrief, PilotEvent } from "./state/schema.js";
+import {
+  PilotEventSchema,
+  WorkspaceStateSchema,
+  pilotPhases,
+  type BuildBrief,
+  type PilotEvent,
+  type PilotPhase,
+} from "./state/schema.js";
 
 const router = new BrainRouter({ prefer: 1 });
 
@@ -395,6 +403,180 @@ describe("self-bootstrap brief", () => {
     expect(stale.ok).toBe(false);
     if (stale.ok) return;
     expect(stale.error.code).toBe("STATE_CONFLICT");
+  });
+});
+
+describe("illegal railway events", () => {
+  const events: PilotEvent[] = [
+    { type: "START" },
+    { type: "PLAN_READY" },
+    { type: "DRIFT" },
+    { type: "CLEAR" },
+    { type: "HUMAN_PAUSE" },
+    { type: "RESUME" },
+    { type: "COMPLETE" },
+    { type: "FAIL", reason: "runner unavailable" },
+  ];
+
+  function at(phase: PilotPhase) {
+    const traces: Record<PilotPhase, PilotEvent[]> = {
+      idle: [],
+      planning: [{ type: "START" }],
+      running: [{ type: "START" }, { type: "PLAN_READY" }],
+      drift_detected: [{ type: "START" }, { type: "PLAN_READY" }, { type: "DRIFT" }],
+      paused_by_human: [{ type: "START" }, { type: "HUMAN_PAUSE" }],
+      resuming: [{ type: "START" }, { type: "HUMAN_PAUSE" }, { type: "RESUME" }],
+      completed: [{ type: "START" }, { type: "PLAN_READY" }, { type: "COMPLETE" }],
+      failed: [{ type: "START" }, { type: "FAIL", reason: "runner unavailable" }],
+    };
+    let state = createSampleWorkspace();
+    for (const event of traces[phase]) {
+      state = assertCommit(applyPilotEvent(state, state.stateVersion, event));
+    }
+    return state;
+  }
+
+  it("rejects every event that the railway does not enable", () => {
+    const enabled: Record<PilotPhase, ReadonlySet<PilotEvent["type"]>> = {
+      idle: new Set(["START"]),
+      planning: new Set(["PLAN_READY", "HUMAN_PAUSE", "FAIL"]),
+      running: new Set(["DRIFT", "HUMAN_PAUSE", "COMPLETE", "FAIL"]),
+      drift_detected: new Set(["CLEAR", "HUMAN_PAUSE", "FAIL"]),
+      paused_by_human: new Set(["RESUME"]),
+      resuming: new Set(["PLAN_READY", "COMPLETE", "HUMAN_PAUSE", "FAIL"]),
+      completed: new Set(),
+      failed: new Set(),
+    };
+    for (const phase of pilotPhases) {
+      const state = at(phase);
+      expect(state.autopilot.phase).toBe(phase);
+      for (const event of events) {
+        const result = applyPilotEvent(state, state.stateVersion, event);
+        if (enabled[phase].has(event.type)) {
+          expect(result.ok, `${phase} ${event.type}`).toBe(true);
+        } else {
+          expect(result.ok, `${phase} ${event.type}`).toBe(false);
+          if (!result.ok) {
+            expect(result.error).toMatchObject({
+              code: "ILLEGAL_TRANSITION",
+              from: phase,
+              event: event.type,
+            });
+          }
+          expect(state.stateVersion).toBe(at(phase).stateVersion);
+          expect(state.autopilot.phase).toBe(phase);
+        }
+      }
+    }
+  });
+
+  it("rejects a pilot event that fails the zod contract", () => {
+    expect(PilotEventSchema.safeParse({ type: "FAIL" }).success).toBe(false);
+    expect(PilotEventSchema.safeParse({ type: "OTHER" }).success).toBe(false);
+    const extra = PilotEventSchema.safeParse({ type: "START", reason: "no" });
+    expect(extra.success).toBe(true);
+    if (extra.success) expect(extra.data).toEqual({ type: "START" });
+  });
+});
+
+describe("workspace schema and concurrent writers", () => {
+  it("rejects an empty statement, a negative version, and an unknown phase", () => {
+    const seeded = createSampleWorkspace();
+    expect(
+      WorkspaceStateSchema.safeParse({
+        ...seeded,
+        problemCards: [{ ...seeded.problemCards[0], statement: "" }],
+      }).success,
+    ).toBe(false);
+    expect(WorkspaceStateSchema.safeParse({ ...seeded, stateVersion: -1 }).success).toBe(false);
+    expect(
+      WorkspaceStateSchema.safeParse({
+        ...seeded,
+        autopilot: { ...seeded.autopilot, phase: "sleeping" },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("keeps versions strictly increasing and drops the stale writer", () => {
+    const base = createSampleWorkspace();
+    const versions = [base.stateVersion];
+    let state = base;
+    const steps: PilotEvent[] = [
+      { type: "START" },
+      { type: "PLAN_READY" },
+      { type: "HUMAN_PAUSE" },
+      { type: "RESUME" },
+    ];
+    for (const event of steps) {
+      state = assertCommit(applyPilotEvent(state, state.stateVersion, event));
+      versions.push(state.stateVersion);
+    }
+    expect(versions).toEqual([0, 1, 2, 3, 4]);
+    const human = assertCommit(
+      commitHuman(base, base.stateVersion, (draft) => ({
+        ...draft,
+        problemCards: draft.problemCards.map((card) =>
+          card.id === "card-canvas"
+            ? { ...card, statement: `${card.statement} Human kept.` }
+            : card,
+        ),
+      })),
+    );
+    const agent = applyPilotEvent(human, base.stateVersion, { type: "START" });
+    expect(agent.ok).toBe(false);
+    expect(human.problemCards[0]?.statement).toContain("Human kept.");
+    expect(human.stateVersion).toBe(1);
+    const viewed = assertCommit(commitView(human, human.stateVersion, "code"));
+    expect(viewed.mode).toBe("code");
+    expect(viewed.problemCards[0]?.statement).toBe(human.problemCards[0]?.statement);
+    expect(viewed.stateVersion).toBe(human.stateVersion + 1);
+  });
+});
+
+describe("judgement stream edges", () => {
+  it("rejects a malformed chunk and a partial frame", async () => {
+    await expect(readJudgementStream(chunkText("<<<not-json", 3))).rejects.toThrow(
+      /JSON object/,
+    );
+    await expect(
+      readJudgementStream(chunkText('{"route":"freehand-canvas","rank":0.2', 7)),
+    ).rejects.toThrow(/JSON object/);
+    const partial = await collectParsedSteps(
+      chunkText('{"route":"freehand-canvas"', 4),
+      BrainEventSchema,
+    );
+    expect(partial.some((step) => step.done && step.result.ok)).toBe(false);
+  });
+
+  it("stops when the source aborts", async () => {
+    async function* aborted(): AsyncGenerator<string> {
+      yield '{"route":';
+      throw new DOMException("The operation was aborted.", "AbortError");
+    }
+    await expect(readJudgementStream(aborted())).rejects.toThrow(/aborted/i);
+  });
+});
+
+describe("shared store across modes", () => {
+  it("shows one statement and one version after a cockpit edit and a code view", () => {
+    const cockpit = createSampleWorkspace();
+    const edited = assertCommit(
+      commitHuman(cockpit, cockpit.stateVersion, (draft) => ({
+        ...draft,
+        problemCards: draft.problemCards.map((card) =>
+          card.id === "card-canvas"
+            ? { ...card, statement: "Pinned stroke from the cockpit." }
+            : card,
+        ),
+      })),
+    );
+    const code = assertCommit(commitView(edited, edited.stateVersion, "code"));
+    expect(code.mode).toBe("code");
+    expect(code.stateVersion).toBe(edited.stateVersion + 1);
+    expect(code.problemCards.find((card) => card.id === "card-canvas")?.statement).toBe(
+      "Pinned stroke from the cockpit.",
+    );
+    expect(code.autopilot).toEqual(edited.autopilot);
   });
 });
 
