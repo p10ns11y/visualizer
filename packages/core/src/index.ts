@@ -64,7 +64,6 @@ export {
   applyPilotEvent,
   assertCommit,
   commitHuman,
-  commitView,
   pauseRun,
   resumeRun,
 } from "./state/store.js";

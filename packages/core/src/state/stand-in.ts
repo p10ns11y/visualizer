@@ -3,7 +3,6 @@ import { WorkspaceStateSchema, type WorkspaceState } from "./schema.js";
 export function createStandIn(): WorkspaceState {
   return WorkspaceStateSchema.parse({
     stateVersion: 0,
-    mode: "cockpit",
     logSeq: 0,
     brief: null,
     problemCards: [

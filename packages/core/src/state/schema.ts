@@ -90,7 +90,6 @@ export type BuildBrief = z.infer<typeof BuildBriefSchema>;
 
 export const WorkspaceStateSchema = z.object({
   stateVersion: z.number().int().nonnegative(),
-  mode: z.enum(["cockpit", "code"]),
   problemCards: z.array(ProblemCardSchema).min(1),
   autopilot: AutopilotSchema,
   eventLog: z.array(LogEntrySchema),

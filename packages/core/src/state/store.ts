@@ -151,25 +151,6 @@ export function commitHuman(
   return { ok: true, state: next };
 }
 
-export function commitView(
-  state: WorkspaceState,
-  expectedVersion: number,
-  mode: WorkspaceState["mode"],
-): CommitResult {
-  if (expectedVersion !== state.stateVersion) return conflict(state, expectedVersion);
-  if (state.mode === mode) return { ok: true, state };
-  return {
-    ok: true,
-    state: withLog(
-      { ...state, mode },
-      {
-        kind: "view",
-        message: mode === "code" ? "Opened Code Mode" : "Opened Visual Cockpit",
-      },
-    ),
-  };
-}
-
 export function pauseRun(
   state: WorkspaceState,
   expectedVersion: number,
