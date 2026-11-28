@@ -291,3 +291,22 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 
 - [x] Relative link check over `README.md`, `docs/**`, `AGENTS.md`, and `agent-patterns/**` (37 links, all resolved). `pnpm docs:mermaid` reports four diagrams.
 - [x] Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`. Pull request body at or under 120 words.
+
+## Restored SVG diagrams
+
+- **Chosen:** Restore the three SVG files from `966ce02` with `git checkout 966ce02d50849a76014ba09723475266798b67fc -- docs/diagrams/`. Embed `architecture-cockpit.svg` and `pilot-flow.svg` in `README.md` with relative image paths. Embed `fallback-tiers.svg` in `docs/ARCHITECTURE-LAYERS.md` beside the three-tier lock. Keep `pnpm docs:mermaid` (`mermaid@12.4.0`) for the Mermaid fences that remain in `docs/`. No new package. No Mermaid CLI render step.
+- **Why:** The owner asked to bring those drawings back. They are hand-drawn SVG, not Mermaid source, so a renderer would replace the picture. GitHub shows a committed SVG from a path relative to the Markdown file. The README stays a short front page: title, one line, the cockpit shot, two diagrams, then the run steps, docs links, and references.
+- **Basis:** Live lookup on 2026-11-28, before the files were embedded. [GitHub Docs, basic writing and formatting syntax](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) says a relative image path is resolved from the current file, and a path that starts with `/` is from the repository root. [GitHub Docs, working with non-code files](https://docs.github.com/en/repositories/working-with-files/using-files/working-with-non-code-files) lists SVG among displayed image formats and says SVGs do not support inline scripting or animation. The restored files use an inlined system font stack and contain no script.
+- **Latest trends checked before choosing:** Yes, on 2026-11-28, before the checkout was embedded. Compared three options. A Mermaid fence stays easy to edit and is what `pnpm docs:mermaid` parses, and it is the drawing PR #9 put on the README. [Boring Utils, 22 Oct 2026](https://boringutils.com/guides/charts-in-github-readme) says to commit an SVG or PNG and link it with a relative path when the picture must look the same in every viewer, and to keep Mermaid for a simple chart you edit as text. [MermaidViewer](https://mermaidviewer.net/guides/mermaid-in-github-markdown) describes exporting Mermaid to SVG when GitHub's Mermaid build lags. That export path was not used: these three files are the authored drawings named in the request, not a Mermaid export. Mermaid stays on the three fences in `docs/ARCHITECTURE-LAYERS.md`.
+
+### Head Plan
+
+- [x] Restore `docs/diagrams/architecture-cockpit.svg`, `docs/diagrams/pilot-flow.svg`, and `docs/diagrams/fallback-tiers.svg` from `966ce02`.
+- [x] In `README.md`, replace the Mermaid flowchart with `architecture-cockpit.svg`, then `pilot-flow.svg`. Keep the title, the one-liner, `docs/hero-cockpit.png`, the run section, the docs links, and the `adaptate` credit.
+- [x] Place `fallback-tiers.svg` beside the three-tier lock in `docs/ARCHITECTURE-LAYERS.md`.
+- [x] Point the `laptop-1` sentence in `.cursor/skills/verify-visualizer/features/tier-fallback-local-model.md` at `docs/TECH-CHOICES.md`, where that host alias is written. Use the alias only.
+
+### Tail Plan
+
+- [x] Append this entry. Relative link and image check over `README.md`, `docs/**`, `AGENTS.md`, `agent-patterns/**`, and `.cursor/skills/**` (27 files, 50 relative links, 4 images, all resolved). `pnpm docs:mermaid` reports three diagrams.
+- [x] Run `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`. Pull request body at or under 120 words. Do not edit `repos/`.
