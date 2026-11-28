@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "esnext",
+    "moduleResolution": "Bundler",
+    "rootDir": "./",
+    "moduleDetection": "force",
+    "noEmit": true,
+    "allowImportingTsExtensions": true /* Allow imports to include TypeScript file extensions. Requires '--moduleResolution bundler' and either '--noEmit' or '--emitDeclarationOnly' to be set. */,
+    "resolvePackageJsonExports": true /* Use the package.json 'exports' field when resolving package imports. */,
+    "resolvePackageJsonImports": true /* Use the package.json 'imports' field when resolving imports. */,
+    "resolveJsonModule": true /* Enable importing .json files. */,
+    // "verbatimModuleSyntax": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "outDir": "./dist",
+    "types": ["node"],
+    "paths": {
+      "@adaptate/core": ["./packages/core/src"],
+      "@adaptate/utils": ["./packages/utils/src"],
+      "@adaptate/utils/*": ["./packages/utils/src/*"],
+      "#utils/*": ["./packages/utils/src/*"]
+    }
+  },
+  "include": ["packages", "packages/core/src/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["node_modules"]
+}

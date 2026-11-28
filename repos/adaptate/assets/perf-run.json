@@ -1,0 +1,60 @@
+{
+  "commit": "1a51df50ff0842213e015b18c5d4240a2e994c0a",
+  "runId": "local",
+  "runtimeVersion": "v24.22.3",
+  "runner": "local",
+  "esbuildVersion": "0.28.2",
+  "fullDocument": {
+    "zod": 2425499.502772602,
+    "adaptate": 2256119.4472507355,
+    "valibot": 472694.76128914556
+  },
+  "importMedianMs": {
+    "zod": 39.744395,
+    "adaptate": 41.683517,
+    "valibot": 6.042117
+  },
+  "heapAfterBytes": {
+    "zod": 8322872,
+    "adaptate": 8510312,
+    "valibot": 5217008
+  },
+  "parsedPartialMicros": {
+    "zod": 0.6062874386909417,
+    "adaptate": 0.8350510141030887,
+    "valibot": 1.4086809829345768
+  },
+  "agUiMicros": {
+    "zod": 0.6062874386909417,
+    "adaptate": 3.023147217940581,
+    "valibot": 1.4086809829345768
+  },
+  "repairMicros": 24.075885618166524,
+  "bundleOwn": [
+    {
+      "id": ".",
+      "minBytes": 2490,
+      "gzipBytes": 1207
+    },
+    {
+      "id": "./stream",
+      "minBytes": 4278,
+      "gzipBytes": 1926
+    },
+    {
+      "id": "./standard",
+      "minBytes": 589,
+      "gzipBytes": 328
+    },
+    {
+      "id": "./stream-incremental",
+      "minBytes": 7056,
+      "gzipBytes": 3094
+    },
+    {
+      "id": "./effect",
+      "minBytes": 4221,
+      "gzipBytes": 1713
+    }
+  ]
+}
