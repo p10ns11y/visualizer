@@ -310,3 +310,22 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 
 - [x] Append this entry. Relative link and image check over `README.md`, `docs/**`, `AGENTS.md`, `agent-patterns/**`, and `.cursor/skills/**` (27 files, 50 relative links, 4 images, all resolved). `pnpm docs:mermaid` reports three diagrams.
 - [x] Run `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`. Pull request body at or under 120 words. Do not edit `repos/`.
+
+## Local library refs
+
+- **Chosen:** Keep `repos/.gitkeep` as the only tracked path under `repos/`. Ignore `repos/*` except that file. `scripts/fetch-ref.sh` is bash with `set -euo pipefail`. One case table pins `xstate` to `https://github.com/statelyai/xstate` at tag `xstate@6.0.0-beta.5` and `adaptate` to `https://github.com/p10ns11y/adaptate` at branch `main`. The script runs `git clone --depth 1 --branch <ref>` into `${XDG_CACHE_HOME:-$HOME/.cache}/visualizer-refs/<lib>` and symlinks `repos/<lib>` to that directory. A second run exits 0 without cloning when that checkout is already on the pin and the symlink already points at it. No new package.
+- **Why:** The tracked trees were 2,798 files and 15,875,756 bytes. The app imports `xstate`, `@adaptate/core`, and `@adaptate/utils`. CI never reads `repos/`. A cache clone exists only when a reader asks for it.
+- **Basis:** Live lookup on 2026-11-28, before the script was written. [git-clone](https://git-scm.com/docs/git-clone) (manual text unchanged from 2.54.1 through 2.56.1; the command used here was git 2.43.0) says `--branch` accepts a tag and detaches HEAD, and `--depth` truncates history. [XDG Base Directory Specification 0.8](https://specifications.freedesktop.org/basedir/latest/) says `$XDG_CACHE_HOME` holds non-essential cached data, and an unset or empty value means `$HOME/.cache`. [ShellCheck 0.11.0](https://github.com/koalaman/shellcheck/releases/tag/v0.11.0) (2025-08-03) is the current release. This change ran that binary and the distro 0.9.0 binary; both exited 0.
+- **Latest trends checked before choosing:** Yes, on 2026-11-28, before the script. Compared leaving the trees in git, a submodule, and a depth-1 clone in the XDG cache. The cache clone fits because a normal checkout and CI do not need the files. ShellCheck 0.11.0 over `bash -n` alone, because the script has to pass a current linter. pnpm stayed on the pinned `10.33.4`; the installer printed an upgrade notice to `12.23.0` and this step did not take it. No second state-machine library was added.
+
+### Head Plan
+
+- [x] Remove `repos/xstate` and `repos/adaptate` from the index. Track `repos/.gitkeep` only. Ignore every other `repos/` path.
+- [x] Add executable `scripts/fetch-ref.sh` with the pin table, the depth-1 clone, and the symlink. An unknown lib or no argument prints usage on stderr and exits non-zero.
+- [x] Point `AGENTS.md` at that script. Update the other docs that told readers to keep the trees in git. The CI workflow does not call the script.
+
+### Tail Plan
+
+- [x] Update `README.md` references, `docs/ARCHITECTURE-LAYERS.md`, `docs/TEST-SUITE.md`, `agent-patterns/xstate-v6.md`, `agent-patterns/adaptate.md`, and decisions 006 and 007. README and docs already name the host alias `laptop-1` or the loopback `127.0.0.1`.
+- [x] Append this entry.
+- [x] Run `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build` on a tree whose `repos/` holds only `.gitkeep`. Each exited 0.

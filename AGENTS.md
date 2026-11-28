@@ -15,7 +15,7 @@ README stays a short visual front page.
 
 ## Library notes
 
-Read `agent-patterns/<lib>.md` first. Open `repos/` only if the note does not answer. Do not run a broad search in `repos/`.
+Read `agent-patterns/<lib>.md` first. Only if that note does not answer, run `scripts/fetch-ref.sh <lib>`. Never edit files under `repos/`. Never import from `repos/`.
 
 ## One step at a time
 
@@ -43,13 +43,8 @@ Run `pnpm test:critical-flows` and `pnpm verify:formal` before pushing that pull
 
 Use `/maintain-verification-skill` when the verification map drifts from the screens. Use `/maintain-formal-verification-skill` when covered transition code changes without a fresh formal run.
 
-## Vendored repositories
+## Library checkouts
 
-`repos/xstate` and `repos/adaptate` are read-only reference. When work touches XState or adaptate, read `agent-patterns/<lib>.md` first. Open `repos/` only if the note does not answer. Do not run a broad search in `repos/`. Prefer those notes over a guess or a web search. Never edit files under `repos/`. Never import from `repos/`. Application code keeps importing `xstate`, `@adaptate/core`, and `@adaptate/utils`.
+Read `agent-patterns/<lib>.md` first. Only if that note does not answer, run `scripts/fetch-ref.sh <lib>`. Never edit files under `repos/`. Never import from `repos/`. Application code keeps importing `xstate`, `@adaptate/core`, and `@adaptate/utils`.
 
-`repos/xstate` is tag `xstate@6.0.0-beta.5`. Upstream `main` is XState 5. A newer v6 tag replaces the ref in the pull command. Do not pull `main` into `repos/xstate`.
-
-```sh
-git subtree pull --prefix=repos/xstate https://github.com/statelyai/xstate.git xstate@6.0.0-beta.5 --squash
-git subtree pull --prefix=repos/adaptate https://github.com/p10ns11y/adaptate.git main --squash
-```
+`scripts/fetch-ref.sh` pins `xstate` to tag `xstate@6.0.0-beta.5` and `adaptate` to branch `main`. The clones live under `${XDG_CACHE_HOME:-$HOME/.cache}/visualizer-refs/` and are linked from `repos/<lib>`. Upstream XState `main` is XState 5. A newer v6 tag is a pin change in that script. CI does not run the script and does not need `repos/`.

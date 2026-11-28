@@ -1,8 +1,0 @@
-{
-  "main": "../dist/xstate-durable.cjs.js",
-  "module": "../dist/xstate-durable.esm.js",
-  "umd:main": "../dist/xstate-durable.umd.min.js",
-  "preconstruct": {
-    "umdName": "XStateDurable"
-  }
-}
