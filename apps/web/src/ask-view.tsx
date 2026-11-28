@@ -59,7 +59,7 @@ function FrameNodeView({ node }: { node: FrameNode }) {
     case "meter":
       return (
         <Meter value={node.value}>
-          <MeterLabel>{node.label}</MeterLabel>
+          <MeterLabel>{node.label}</MeterLabel>{" "}
           <MeterValue />
           <MeterTrack>
             <MeterIndicator />

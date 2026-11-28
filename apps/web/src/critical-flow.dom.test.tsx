@@ -68,6 +68,9 @@ describe("flow screen", () => {
     expect(document.querySelector("[data-view]")?.getAttribute("data-mode")).toBe("simple");
     expect(document.querySelector("[data-view]")?.getAttribute("data-panel")).toBeNull();
     expect(document.querySelector("[data-stage-mark]")?.getAttribute("data-stage-mark")).toBe("asking");
+    expect(document.querySelector("[data-stage-mark]")?.textContent).toBe("");
+    expect(document.querySelector("[data-stage]")?.textContent).toBe("asking · simple");
+    expect(document.querySelector("[data-view]")?.textContent).not.toContain("asking");
     expect(document.querySelector("[data-ask]")?.textContent).toContain("What are you making?");
     expect(document.querySelector("[data-preview]")?.getAttribute("data-preview")).toBe("empty");
     expect(document.querySelectorAll("[data-gap]")).toHaveLength(0);
@@ -162,5 +165,7 @@ describe("flow screen", () => {
     expect(gapIds()).toEqual(["dataSource", "auth", "hosting"]);
     expect(document.querySelectorAll("[data-log] li")).toHaveLength(0);
     expect(document.querySelector("[data-stage]")?.getAttribute("data-stage")).toBe("asking");
+    choose("Game");
+    expect(document.querySelector("[data-wire]")?.textContent).toMatch(/Score\s+40/);
   });
 });

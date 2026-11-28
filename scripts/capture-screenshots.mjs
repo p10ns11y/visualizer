@@ -44,8 +44,11 @@ try {
     const ready = await page.evaluate(() => {
       const main = document.querySelector("main");
       const stage = document.querySelector("[data-stage]");
+      const viewBox = document.querySelector(".view")?.getBoundingClientRect();
       const questions = document.querySelector(".questions")?.getBoundingClientRect();
       const preview = document.querySelector(".preview")?.getBoundingClientRect();
+      const wire = document.querySelector(".wire")?.getBoundingClientRect();
+      const log = document.querySelector(".log")?.getBoundingClientRect();
       const sideBySide = Boolean(
         questions &&
           preview &&
@@ -53,6 +56,21 @@ try {
           questions.bottom > preview.top &&
           preview.bottom > questions.top,
       );
+      const previewGrows = Boolean(
+        viewBox &&
+          preview &&
+          wire &&
+          log &&
+          preview.height > viewBox.height * 0.9 &&
+          wire.height > preview.height * 0.55 &&
+          log.top - preview.bottom < 48,
+      );
+      const logStrip = Boolean(log && log.height > 20 && log.height < 70);
+      const mark = document.querySelector("[data-stage-mark]");
+      const stageShown =
+        mark instanceof HTMLElement &&
+        mark.textContent === "" &&
+        mark.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true });
       return {
         title: document.querySelector("h1")?.textContent ?? "",
         screen: main?.getAttribute("data-screen") ?? "",
@@ -70,6 +88,9 @@ try {
         pageOverflow: document.documentElement.scrollHeight > document.documentElement.clientHeight + 1,
         mainOverflow: main !== null && main.scrollHeight > main.clientHeight + 1,
         sideBySide,
+        previewGrows,
+        logStrip,
+        stageShown,
         text: document.body.innerText.trim(),
       };
     });
@@ -88,6 +109,9 @@ try {
       ready.pageOverflow ||
       ready.mainOverflow ||
       !ready.sideBySide ||
+      !ready.previewGrows ||
+      !ready.logStrip ||
+      !ready.stageShown ||
       !ready.text.includes("Event log") ||
       !ready.text.includes("asking · simple") ||
       !ready.text.includes("What are you making?") ||

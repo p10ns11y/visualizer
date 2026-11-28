@@ -3,7 +3,6 @@ import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "@ui-sdk/react
 import {
   emptyDesign,
   openGaps,
-  stageLabel,
   viewFor,
   type Answers,
   type Design,
@@ -29,7 +28,7 @@ function ViewNodeView({
 }) {
   switch (node.kind) {
     case "stage-mark":
-      return <StageMark stage={stage}>{stageLabel(stage)}</StageMark>;
+      return <StageMark stage={stage} />;
     case "ask":
       return <AskView answers={answers} gaps={openGaps(answers, design)} onAnswer={onAnswer} />;
     case "button":

@@ -1,6 +1,6 @@
 # Flow screen
 
-The page is one screen. Asking puts questions on the left and a preview on the right. It also shows the stage line and the event log. It does not scroll. The log starts empty. Settings holds the mode toggle and sits along the bottom on a narrow screen. Advanced mode adds one later panel.
+The page is one screen. Asking fills the height: questions on the left, a preview that grows on the right, and a short event log. It does not scroll. The log starts empty. The stage line is the one place the stage is written. Settings holds the mode toggle and sits along the bottom on a narrow screen. Advanced mode adds one later panel.
 
 ## Sub-features
 

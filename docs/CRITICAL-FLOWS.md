@@ -16,7 +16,7 @@ Test: `CF-01` in `packages/core/src/critical-flows.test.ts`, and the render in `
 
 ## CF-02 Questions, preview, and gap cards
 
-The asking view puts questions on the left and a preview on the right. Each what answer has one wireframe. Gap cards are the decisions still open, and they change when an answer changes. An answer does not add a log line.
+The asking view fills the height. Questions sit on the left and the preview on the right, and the preview grows. The event log is a short strip. Each what answer has one wireframe. Gap cards are the decisions still open, and they change when an answer changes. An answer does not add a log line. The stage line is the one place the stage is written.
 
 Test: `CF-02` in `packages/core/src/critical-flows.test.ts` and `apps/web/src/critical-flow.dom.test.tsx`. Templates and rules are `packages/core/src/ask/templates.test.ts` and `packages/core/src/ask/gaps.test.ts`.
 
