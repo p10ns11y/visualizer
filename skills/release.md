@@ -1,0 +1,61 @@
+# Skill: Release
+
+## Overview
+Prepare a version bump and ensure the package is ready for publishing to npm.
+
+Develop and install in this repo with **pnpm** only (`pnpm install`, `pnpm build`). Do **not** run **`npm install`** at the repository root — that bypasses the repo’s **supply-chain controls** (`.npmrc`, `pnpm-workspace.yaml`); see `package.json` `packageManager`.
+
+## When to use
+- New features or fixes are ready for consumers
+- Breaking changes require a major version bump
+- The CI release workflow needs to be triggered
+
+## Steps
+
+1. **Verify everything passes**:
+   ```
+   npx turbo run check-types
+   npx vitest run --coverage
+   pnpm build
+   ```
+   All gates must pass before any version change.
+
+2. **Determine version bump** (semver):
+   - **Patch** (`x.y.Z`): Bug fixes, documentation, non-breaking improvements
+   - **Minor** (`x.Y.0`): New features, backward-compatible additions
+   - **Major** (`X.0.0`): Breaking API changes, removed features, changed behavior
+
+3. **Update version** in relevant `package.json` files:
+   - Root `package.json` (the meta-package that points to core)
+   - `packages/core/package.json` if core changed
+   - `packages/utils/package.json` if utils changed
+   - Keep versions in sync across the monorepo
+
+4. **Update CHANGELOG** (if one exists) or add release notes to the commit message.
+
+5. **Commit the version bump**:
+   ```
+   git add package.json packages/*/package.json
+   git commit -m "chore: release vX.Y.Z"
+   ```
+
+6. **Push to main**: The GitHub Actions workflow (`.github/workflows/release.yml`) triggers on version changes in `package.json` paths and publishes to npm automatically.
+
+7. **After publish (supply chain hygiene)**:
+   - Open [Socket.dev](https://socket.dev/) for each published artifact and version: [`adaptate`](https://socket.dev/npm/package/adaptate/overview), [`@adaptate/core`](https://socket.dev/npm/package/@adaptate/core/overview), [`@adaptate/utils`](https://socket.dev/npm/package/@adaptate/utils/overview).
+   - Confirm **Package Alerts** and **Dependency Alerts** are still clean (new transitive deps or advisories are what move scores sharply down; see [Package Scores](https://docs.socket.dev/docs/package-scores) for how the headline score relates to categories).
+
+## Validation
+- [ ] All quality gates pass
+- [ ] Version follows semver correctly
+- [ ] All affected package.json files are updated
+- [ ] Commit message follows convention
+- [ ] CI workflow will be triggered by the paths changed
+- [ ] Post-publish: Socket.dev alerts checked for `adaptate`, `@adaptate/core`, and `@adaptate/utils` at the new version
+
+## Rules
+- Never publish manually — use the CI workflow
+- Version bump commits should contain only version changes (no code changes)
+- Breaking changes must be documented in README
+- Coordinate version bumps across packages when they depend on each other
+- The `packageManager` field in root `package.json` should remain pinned to `pnpm@11.1.1` 
