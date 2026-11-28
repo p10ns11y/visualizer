@@ -40,4 +40,5 @@ Each feature file has an H1, one opening paragraph, and these H2 sections in ord
 - [Pilot railway Build and human pause](./pilot-railway-build-pause.md) starts Build and pauses it from the banner.
 - [Tier fallback and the local-model harness](./tier-fallback-local-model.md) runs the offline judgement harness.
 - [WebMCP bridge](./webmcp-bridge.md) reads the bridge strip beside the sketch pad and the memory panel, in Visual Cockpit and Code Mode.
+- [Fleet interconnection map](./fleet-map.md) reads the sample fleet, its findings, and the snapshot token comparison.
 - [Headless MCP](./headless-mcp.md) starts the Streamable HTTP server and calls a tool from a separate client process.

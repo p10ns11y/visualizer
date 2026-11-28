@@ -226,6 +226,51 @@ describe("external MCP client", () => {
     expect(locked.output()).not.toContain(token);
   });
 
+  it("round-trips snapshot and act with writes off until the flag is set", async () => {
+    directory = await mkdtemp(join(tmpdir(), "visualizer-mcp-"));
+    const statePath = join(directory, "workspace.json");
+    const actionId = "merge-routines:routine-dawn:routine-morning";
+    const closed = await startServer({
+      VISUALIZER_MCP_PORT: "0",
+      VISUALIZER_MCP_STATE: statePath,
+      VISUALIZER_MCP_STATE_ROOT: directory,
+      VISUALIZER_MCP_ALLOW_WRITES: "0",
+    });
+    servers.push(closed);
+    const shot = (await callTool(closed.url, "snapshot", {})) as {
+      ok: boolean;
+      snapshot: { stateVersion: number; actions: Array<{ id: string }> };
+    };
+    expect(shot.ok).toBe(true);
+    expect(shot.snapshot.actions.some((action) => action.id === actionId)).toBe(true);
+    const denied = await callTool(closed.url, "act", {
+      stateVersion: shot.snapshot.stateVersion,
+      actionId,
+    });
+    expect(denied).toMatchObject({ ok: false, code: "READ_ONLY" });
+    await closed.stop();
+
+    const open = await startServer({
+      VISUALIZER_MCP_PORT: "0",
+      VISUALIZER_MCP_STATE: statePath,
+      VISUALIZER_MCP_STATE_ROOT: directory,
+      VISUALIZER_MCP_ALLOW_WRITES: "1",
+    });
+    servers.push(open);
+    const acted = await callTool(open.url, "act", {
+      stateVersion: shot.snapshot.stateVersion,
+      actionId,
+    });
+    expect(acted).toMatchObject({ ok: true, status: "pending" });
+    const after = (await callTool(open.url, "snapshot", {})) as {
+      snapshot: { stateVersion: number; proposals: Array<{ status: string; actionId: string }> };
+    };
+    expect(after.snapshot.stateVersion).toBe(shot.snapshot.stateVersion);
+    expect(after.snapshot.proposals).toEqual([
+      expect.objectContaining({ actionId, status: "pending" }),
+    ]);
+  });
+
   it("refuses a non-loopback bind and a state path outside the allowed root", async () => {
     const host = await spawnProcess(["--import", "tsx", "src/main.ts"], {
       VISUALIZER_MCP_HOST: "0.0.0.0",

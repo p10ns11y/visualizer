@@ -5,7 +5,11 @@ import { describe, expect, it } from "vitest";
 import { BrainRouter } from "./brain/router.js";
 import { applyBuildTick, runSelfBootstrap } from "./bootstrap/run.js";
 import { checkLockstep } from "./formal/lockstep.js";
+import { analyzeFleet } from "./fleet/analyze.js";
+import { readCatalogSpec } from "./fleet/catalog.js";
+import { proposeFleetAction } from "./fleet/propose.js";
 import { appendEnsemblyRecord, promoteEnsemblyRecord, recordWorkflowLesson } from "./memory/commit.js";
+import { mergeAuxIntoTick } from "./state/merge-aux.js";
 import { canvasCardId, createSampleWorkspace } from "./state/sample.js";
 import { readPersistedWorkspace, serializeWorkspace } from "./state/persist.js";
 import { appendSketchStroke } from "./state/strokes.js";
@@ -343,6 +347,43 @@ describe("critical flows", () => {
     expect(state.ensemblyLedger.some((record) => record.id === "ens-cf08")).toBe(false);
     await bridge.release();
     expect(host.listNames()).toHaveLength(0);
+  });
+
+  it("CF-10 files a fleet proposal by action id and keeps it across a tick merge", () => {
+    const state = createSampleWorkspace();
+    const unknown = readCatalogSpec({
+      root: "x",
+      elements: [{ id: "x", type: "Widget", props: {} }],
+    });
+    expect(unknown.ok).toBe(false);
+    const findings = analyzeFleet(state.fleetGraph);
+    expect(findings.some((item) => item.code === "cycle")).toBe(true);
+    const denied = mountWorkspaceBridge({
+      globals: {},
+      getState: () => state,
+      getApproval: () => "read-only",
+      onCommit: () => undefined,
+    });
+    return denied.then(async (bridge) => {
+      const blocked = await bridge.execute("act", {
+        stateVersion: state.stateVersion,
+        actionId: "merge-routines:routine-dawn:routine-morning",
+      });
+      expect(blocked).toMatchObject({ ok: false, code: "READ_ONLY" });
+      await bridge.release();
+      const filed = proposeFleetAction(
+        state,
+        state.stateVersion,
+        "merge-routines:routine-dawn:routine-morning",
+        "2026-11-27T23:30:00Z",
+      );
+      if (!("state" in filed)) throw new Error("expected a proposal");
+      const tick = assertCommit(applyPilotEvent(state, state.stateVersion, { type: "START" }));
+      const merged = mergeAuxIntoTick(filed.state, tick);
+      expect(merged.autopilot.phase).toBe("planning");
+      expect(merged.fleetProposals.some((item) => item.status === "pending")).toBe(true);
+      expect(merged.fleetGraph).toEqual(state.fleetGraph);
+    });
   });
 
   it("holds the lockstep properties on the real transition functions", async () => {

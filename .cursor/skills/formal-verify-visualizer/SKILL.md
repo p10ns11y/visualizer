@@ -21,7 +21,7 @@ Synced with commit `58c593d6053d64b063fbab040bcb2402d76257e0`. Move that hash fo
 - `packages/core/src/formal/pilot.safe.checks.json`
 - `packages/core/src/formal/pilot.fail.checks.json`
 
-Ledger append, promotion, pack import, and workflow lessons write through the aux layer in `packages/core/src/memory/commit.ts`. They do not call `commitHuman`, so they do not pause a working phase or change `stateVersion`. Only `pauseRun` and a human edit or stroke do. `mergeAuxIntoTick` in `packages/core/src/state/merge-aux.ts` copies those aux lessons and aux log lines onto a completed build tick. The page and `runGuidedBuild` both call it. `applyBuildTick` itself is unchanged, so this sync commit stays.
+Ledger append, promotion, pack import, and workflow lessons write through the aux layer in `packages/core/src/memory/commit.ts`. They do not call `commitHuman`, so they do not pause a working phase or change `stateVersion`. Only `pauseRun` and a human edit or stroke do. Fleet proposals in `packages/core/src/fleet/propose.ts` use the same aux rule: `act` files a pending row and does not change `stateVersion` or the railway. Approving or rejecting a proposal appends a memory log entry and increments `logSeq`. `mergeAuxIntoTick` in `packages/core/src/state/merge-aux.ts` copies the live proposal ledger onto a completed build tick, because a build does not edit those rows, and it also copies ledger rows, pulse rows, lessons, and aux log lines. The page and `runGuidedBuild` both call it. `applyBuildTick` itself is unchanged, so this sync commit stays.
 
 ## How to run
 

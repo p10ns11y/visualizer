@@ -644,12 +644,115 @@ textarea {
 }
 .log-panel p { margin: 0; }
 
+.fleet {
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.fleet-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.8fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.fleet-edges {
+  width: 100%;
+  height: auto;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border-radius: 16px;
+}
+
+.fleet-edges line {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+}
+
+.fleet-edges line[data-live="no"] {
+  stroke: var(--muted);
+  stroke-dasharray: 4 4;
+}
+
+.fleet-edges rect {
+  fill: var(--panel);
+  stroke: var(--line);
+}
+
+.fleet-edges text {
+  fill: var(--ink);
+  font-size: 11px;
+  font-family: var(--body);
+}
+
+.fleet-edges .fleet-kind {
+  fill: var(--muted);
+  font-size: 9px;
+  font-family: var(--mono);
+}
+
+.fleet-side h3 {
+  margin: 14px 0 6px;
+  font-size: 15px;
+}
+
+.fleet-side ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.fleet-side li { font-size: 13px; }
+
+.fleet-decide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.fleet-decide button {
+  border: 1px solid var(--line);
+  background: var(--soft);
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.token-compare {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.token-compare div {
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--soft);
+}
+
+.token-compare dt {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.token-compare dd {
+  margin: 4px 0 0;
+  font-family: var(--mono);
+  font-size: 18px;
+}
+
 @media (max-width: 860px) {
   .shell { width: min(100% - 24px, 420px); padding-top: 16px; }
   .top { align-items: stretch; flex-direction: column; }
   .top-actions { justify-content: flex-start; }
   h1 { font-size: 30px; }
-  .split, .code-layout, .memory-grid { grid-template-columns: 1fr; }
+  .split, .code-layout, .memory-grid, .fleet-layout { grid-template-columns: 1fr; }
   .code-layout { grid-template-areas: "rail" "spec" "tools" "log"; }
   .stage { min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 12px; overflow: visible; }
   .plate { position: relative; left: auto !important; top: auto !important; width: auto; }

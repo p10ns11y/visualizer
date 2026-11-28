@@ -112,6 +112,8 @@ describe("workspace WebMCP tools", () => {
       "import_pulse_pack",
       "start_build",
       "resume_build",
+      "snapshot",
+      "act",
     ]);
     const cards = await bridge.execute("list_cards", {});
     expect(cards).toMatchObject({ ok: true });

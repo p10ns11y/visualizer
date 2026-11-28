@@ -14,6 +14,7 @@ import {
   pilotPhases,
   promoteEnsemblyRecord,
   approvalFromStorage,
+  decideFleetProposal,
   mergeAuxIntoTick,
   mountWorkspaceBridge,
   readModelContextGlobals,
@@ -38,7 +39,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MemoryPanel, type EnsemblyDraft, type LessonDraft } from "./memory-panel.js";
 import { SketchPad } from "./sketch-pad.js";
 import { pendingTickStillApplies } from "./tick-guard.js";
+import { uiControlSnapshot } from "./ui/cockpit-agent.js";
 import { Button, Toggle } from "./ui/controls.js";
+import { FleetMap } from "./ui/fleet-map.js";
 import { WebMcpStrip, type WebMcpStripState } from "./ui/webmcp-strip.js";
 
 const defaultRouter = new BrainRouter({ prefer: 1 });
@@ -138,6 +141,7 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
       globals: readModelContextGlobals(),
       getState: () => stateRef.current,
       getApproval: () => approvalRef.current,
+      getUiSnapshot: uiControlSnapshot,
       onCommit: (result) => {
         apply(result);
       },
@@ -247,6 +251,20 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
   function promoteRecord(id: string) {
     const current = stateRef.current;
     apply(promoteEnsemblyRecord(current, current.stateVersion, id));
+  }
+
+  function decideProposal(proposalId: string, status: "approved" | "rejected") {
+    const current = stateRef.current;
+    const result = decideFleetProposal(current, current.stateVersion, proposalId, status);
+    if (!result.ok && !("error" in result)) {
+      setNotice(
+        result.code === "UNKNOWN_PROPOSAL"
+          ? `Unknown proposal ${result.proposalId}.`
+          : `Proposal ${result.proposalId} is already ${result.status}.`,
+      );
+      return;
+    }
+    apply(result);
   }
 
   function appendLesson(draft: LessonDraft) {
@@ -366,6 +384,7 @@ export function App({ router = defaultRouter }: { router?: BrainRouter } = {}) {
       ) : null}
 
       <WebMcpStrip view={bridgeView} approval={approval} onApproval={setApproval} />
+      <FleetMap state={state} onDecide={decideProposal} />
 
       {state.mode === "cockpit" ? (
         <Cockpit state={state} onStatement={editStatement} onStroke={addStroke} />
