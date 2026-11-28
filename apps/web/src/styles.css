@@ -244,6 +244,17 @@ button:disabled {
   color: #1c1915;
 }
 
+@media (max-width: 720px) {
+  .settings-panel {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    border-radius: 0.75rem 0.75rem 0 0;
+  }
+}
+
 .log {
   min-height: 0;
   max-height: 6.5rem;
