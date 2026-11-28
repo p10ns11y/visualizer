@@ -8,6 +8,8 @@ A visual pilot cockpit for self-hosted SI: speak, sketch, and steer one shared w
 
 ![Pilot / Rail-Driver Autopilot Loop](docs/diagrams/pilot-flow.svg)
 
+![3-Tier Brain Degradation and Reuse Map](docs/diagrams/fallback-tiers.svg)
+
 ## Run
 
 ```sh
