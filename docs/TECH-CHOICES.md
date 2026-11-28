@@ -363,6 +363,6 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 
 ### Tail Plan
 
-- [ ] Update the three short docs, both verification skills, this entry, and the formal sync commit.
+- [x] Update the three short docs, both verification skills, this entry, and the formal sync commit.
 - [x] Save `step-2-wide` and `step-2-narrow`.
 

@@ -15,6 +15,6 @@ Checks: `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-
 
 - [x] Update `docs/CRITICAL-FLOWS.md`, `docs/ARCHITECTURE-LAYERS.md`, `docs/TEST-SUITE.md`, `README.md`, both verification skills, and `docs/TECH-CHOICES.md`.
 - [x] Save `step-2-wide` (1280×800) and `step-2-narrow` (390×844).
-- [ ] Move the formal sync commit because the covered transitions change. Regenerate model-based paths with `getSimplePaths`.
+- [x] Move the formal sync commit because the covered transitions change. Regenerate model-based paths with `getSimplePaths`.
 - [x] Rollback is reverting this pull request. `cursor/bare-shell-a167` stays as it is.
 - [x] Do not start steps 3–6.
