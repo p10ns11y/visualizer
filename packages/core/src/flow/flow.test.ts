@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyFlowEvent, createFlow, flowCan } from "./apply.js";
 import { flowStateIds } from "./machine.js";
-import { logLine, stageLabel } from "./schema.js";
+import { eventLogWindow, logLine, recentLog, stageLabel, type FlowLogEntry } from "./schema.js";
 import checks from "../formal/flow.reach.checks.json";
 
 function take(state: ReturnType<typeof createFlow>, type: "START" | "PAUSE" | "STOP" | "TOGGLE_MODE") {
@@ -77,5 +77,23 @@ describe("flow graph", () => {
 
   it("lists the same states the formal check names", () => {
     expect(checks.reachable).toEqual([...flowStateIds]);
+  });
+
+  it("keeps the latest log lines", () => {
+    const entries: FlowLogEntry[] = Array.from({ length: eventLogWindow + 5 }, (_, index) => ({
+      id: `log-${index + 1}`,
+      stateVersion: index + 1,
+      type: "TOGGLE_MODE",
+      fromStage: "asking",
+      toStage: "asking",
+      fromMotion: "live",
+      toMotion: "live",
+      fromMode: index % 2 === 0 ? "simple" : "advanced",
+      toMode: index % 2 === 0 ? "advanced" : "simple",
+    }));
+    const visible = recentLog(entries);
+    expect(visible).toHaveLength(eventLogWindow);
+    expect(visible[0]?.id).toBe(`log-${entries.length - eventLogWindow + 1}`);
+    expect(visible.at(-1)?.id).toBe(`log-${entries.length}`);
   });
 });

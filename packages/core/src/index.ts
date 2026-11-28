@@ -17,7 +17,9 @@ export {
   flowModes,
   flowMotions,
   flowStages,
+  eventLogWindow,
   logLine,
+  recentLog,
   stageLabel,
   stageLine,
 } from "./flow/schema.js";

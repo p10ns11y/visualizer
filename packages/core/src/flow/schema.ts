@@ -43,6 +43,13 @@ export const FlowStateSchema = z.object({
 });
 export type FlowState = z.infer<typeof FlowStateSchema>;
 
+export const eventLogWindow = 20;
+
+export function recentLog(entries: readonly FlowLogEntry[]): FlowLogEntry[] {
+  if (entries.length <= eventLogWindow) return [...entries];
+  return entries.slice(entries.length - eventLogWindow);
+}
+
 export function stageLabel(stage: FlowStage): string {
   switch (stage) {
     case "asking":

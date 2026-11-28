@@ -3,6 +3,7 @@ import {
   createFlow,
   flowCan,
   logLine,
+  recentLog,
   stageLine,
   type FlowEvent,
   type FlowState,
@@ -57,7 +58,7 @@ export function App() {
       <StageView flow={flow} />
       <h2 id="event-log-heading">Event log</h2>
       <ol className="log" data-log="true" aria-labelledby="event-log-heading">
-        {flow.eventLog.map((entry) => (
+        {recentLog(flow.eventLog).map((entry) => (
           <li key={entry.id} data-event={entry.type}>
             {logLine(entry)}
           </li>
