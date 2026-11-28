@@ -31,6 +31,8 @@ export { shellScreen, shellScreenDocument, shellScreenSchema } from "./shell.js"
 export type { ShellScreen } from "./shell.js";
 
 export { flowMachine, flowStateIds } from "./flow/machine.js";
+export { viewFor, viewMap } from "./view/map.js";
+export type { ViewNode, ViewSpec } from "./view/map.js";
 export { applyFlowEvent, createFlow, flowCan, flowValueKey, readFlowValue } from "./flow/apply.js";
 export type { FlowConflict, FlowResult } from "./flow/apply.js";
 export {

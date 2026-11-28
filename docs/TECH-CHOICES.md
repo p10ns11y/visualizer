@@ -366,3 +366,21 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - [x] Update the three short docs, both verification skills, this entry, and the formal sync commit.
 - [x] Save `step-2-wide` and `step-2-narrow`.
 
+## View map on ui-sdk
+
+- **Chosen:** `@ui-sdk/react` and `@ui-sdk/core` pinned to `0.1.0-beta.19`, with a pnpm override so both resolve to that version. React stays on `^19.1.1`. `@types/react` is `19.3.3` and `@types/react-dom` is `19.3.0`. The view map lives in `@visualizer/core` and names `stage-mark`, `button`, and `collapsible`. The web app renders those with `Button` and `Collapsible` from `@ui-sdk/react`, plus one `definePrimitive` whose controlled key is `stage`. `createAgent({ allow })` runs before render. `registerTools` publishes `snapshot`, `act`, and `query` when `document.modelContext.registerTool` is a function. The same allow list is component actions only, and it refuses `stage-mark`. When `registerTool` is missing, the page calls the bridge methods. Starter CSS from `@ui-sdk/core/web.css` is not imported.
+- **Why:** The library renders component behavior. It does not map `(mode, stage)` to a layout, so that map stays here. Beta.19 is the version this step names, and it is the current `beta` dist-tag. The peer floor is React 19 and `@types/react` `>=19.2.10`. A page-sized primitive would hide the shipped components. `snapshot` reads keys listed in `controlled`, so `stage` is one of those keys and the primitive lists no actions. The later panel is a collapsible, present only for `advanced`. Leaving the starter stylesheet out keeps the screen's own overflow rules.
+- **Basis:** Lookup on 2026-11-28, before the packages were added. `npm view @ui-sdk/react dist-tags` reported `latest` `0.1.0-beta.17` and `beta` `0.1.0-beta.19` (published `2026-11-27T21:24:54.863Z`). The same tags and time held for `@ui-sdk/core`. `npm view @ui-sdk/react@0.1.0-beta.19 peerDependencies` reported `react` `>=19`, `react-dom` `>=19`, `@types/react` `>=19.2.10`, and `@ui-sdk/core` `^0.1.0-beta.19`. `npm view react version` and `npm view react-dom version` returned `19.3.1`. `npm view @types/react version` returned `19.3.3`. `npm view @types/react-dom version` returned `19.3.0`, and `@types/react-dom@19.3.0` peers `@types/react` `^19.3.0`. `@types/react@19.2.10` exists. `@types/react-dom@19.2.7` peers `@types/react` `^19.2.0`. [Define a Primitive](https://ui-sdk.dev/docs/core/kernel/define-a-primitive) documents `definePrimitive`, `controlled`, and `createParts`. [Agent reference](https://ui-sdk.dev/docs/agents/connect-an-agent/reference) documents `createAgent`, `snapshot`, `act`, `query`, and `registerTools`, and says custom snapshot keys come from `controlled`. [WebMCP](https://ui-sdk.dev/docs/agents/connect-an-agent/webmcp) says registration does nothing without `document.modelContext.registerTool`. The React component list at [ui-sdk for React](https://ui-sdk.dev/docs/react/llms.txt) names `Button` (`@ui-sdk/react/button`) and `Collapsible` (`@ui-sdk/react/collapsible`).
+- **Latest trends checked before choosing:** Yes, on 2026-11-28, before the install. Compared the npm `latest` tag `0.1.0-beta.17` with the `beta` tag `0.1.0-beta.19`. Beta.19 is the newer published line and the pin this step requires. Compared `@types/react` `19.2.10` (the peer floor) with `19.3.3` (current) paired with `@types/react-dom` `19.3.0`. The current pair satisfies `>=19.2.10`. React `19.3.1` is current. The existing `^19.1.1` range already accepts it, and this step does not bump that range. No second component runtime was added. The installer printed an upgrade notice to pnpm `12.23.0`. This step stays on the pinned `10.33.4`.
+
+### Head Plan
+
+- [x] One typed spec for every mode and stage. Advanced adds a later panel.
+- [x] One `stage-mark` primitive exposes `stage` to `snapshot`.
+- [x] `createAgent` and `registerTools` expose `snapshot`, `act`, and `query`. Without `registerTool`, call the bridge.
+
+### Tail Plan
+
+- [x] Update the three short docs, the verification skill, this entry, and the screen shots.
+- [x] Leave the formal sync commit where it is.
+

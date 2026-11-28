@@ -70,6 +70,9 @@ async function readScreen(page) {
       stage: stage?.getAttribute("data-stage") ?? "",
       motion: stage?.getAttribute("data-motion") ?? "",
       mode: stage?.getAttribute("data-mode") ?? "",
+      view: document.querySelector("[data-view]")?.getAttribute("data-view") ?? "",
+      views: document.querySelectorAll("[data-view]").length,
+      panel: document.querySelector("[data-panel]")?.getAttribute("data-panel") ?? "",
       log: [...document.querySelectorAll("[data-log] li")].map((item) => item.textContent ?? ""),
       pageOverflow,
       mainOverflow,
@@ -98,8 +101,12 @@ function assertInitial(ready) {
     ready.stage !== "asking" ||
     ready.motion !== "live" ||
     ready.mode !== "simple" ||
+    ready.view !== "asking" ||
+    ready.views !== 1 ||
+    ready.panel !== "" ||
     ready.log.length !== 0 ||
-    !ready.text.includes("asking · simple")
+    !ready.text.includes("asking · simple") ||
+    !ready.text.includes("Questions")
   ) {
     throw new Error(`Preview is not the opening stage: ${JSON.stringify(ready)}`);
   }
@@ -271,6 +278,10 @@ async function drive(feature) {
     if (
       ready.stage !== "done" ||
       ready.mode !== "advanced" ||
+      ready.view !== "done" ||
+      ready.views !== 1 ||
+      ready.panel !== "later" ||
+      !ready.text.includes("later") ||
       ready.log.length !== 4 ||
       !ready.log[0]?.startsWith("START ") ||
       !ready.log[1]?.startsWith("PAUSE ") ||

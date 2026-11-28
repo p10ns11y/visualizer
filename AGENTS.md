@@ -32,7 +32,7 @@ Entries already in `docs/TECH-CHOICES.md` stay as written, including the ones wh
 
 ## Critical flows
 
-The page a person opens shows the current stage and the event log. The flow graph owns that stage. The pilot railway stays in `@visualizer/core`.
+The page a person opens shows one view for the current mode and stage, the stage line, and the event log. The flow graph owns the stage and the mode. The pilot railway stays in `@visualizer/core`.
 
 A pull request that adds or changes a user-facing flow must update all of the following in the same change:
 

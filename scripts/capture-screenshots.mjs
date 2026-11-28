@@ -10,8 +10,8 @@ const outDir = "/opt/cursor/artifacts";
 await mkdir(outDir, { recursive: true });
 
 const shots = [
-  { name: "step-2-wide", width: 1280, height: 800, doc: "docs/evidence/step-2-wide.png" },
-  { name: "step-2-narrow", width: 390, height: 844, doc: "docs/evidence/step-2-narrow.png" },
+  { name: "step-3-wide", width: 1280, height: 800, doc: "docs/evidence/step-3-wide.png" },
+  { name: "step-3-narrow", width: 390, height: 844, doc: "docs/evidence/step-3-narrow.png" },
 ];
 
 const browser = await puppeteer.launch({
@@ -34,6 +34,9 @@ try {
         scroll: main?.getAttribute("data-scroll") ?? "",
         stage: stage?.getAttribute("data-stage") ?? "",
         mode: stage?.getAttribute("data-mode") ?? "",
+        view: document.querySelector("[data-view]")?.getAttribute("data-view") ?? "",
+        views: document.querySelectorAll("[data-view]").length,
+        panel: document.querySelector("[data-panel]")?.getAttribute("data-panel") ?? "",
         log: document.querySelectorAll("[data-log] li").length,
         pageOverflow: document.documentElement.scrollHeight > document.documentElement.clientHeight + 1,
         mainOverflow: main !== null && main.scrollHeight > main.clientHeight + 1,
@@ -46,11 +49,15 @@ try {
       ready.scroll !== "false" ||
       ready.stage !== "asking" ||
       ready.mode !== "simple" ||
+      ready.view !== "asking" ||
+      ready.views !== 1 ||
+      ready.panel !== "" ||
       ready.log !== 0 ||
       ready.pageOverflow ||
       ready.mainOverflow ||
       !ready.text.includes("Event log") ||
-      !ready.text.includes("asking · simple")
+      !ready.text.includes("asking · simple") ||
+      !ready.text.includes("Questions")
     ) {
       throw new Error(`${shot.name} is not the flow screen: ${JSON.stringify(ready)}`);
     }

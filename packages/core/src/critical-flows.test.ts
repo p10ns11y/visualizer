@@ -1,15 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { applyFlowEvent, createFlow } from "./flow/apply.js";
-import { logLine } from "./flow/schema.js";
+import { flowModes, flowStages, logLine } from "./flow/schema.js";
 import { shellScreen, shellScreenDocument } from "./shell.js";
+import { viewFor } from "./view/map.js";
 
 describe("flow screen", () => {
   it("CF-01 shows the stage and the event log", () => {
     expect(shellScreen).toEqual({
       screens: ["flow"],
       scroll: false,
-      shows: ["stage", "log"],
+      shows: ["stage", "view", "log"],
     });
+    for (const mode of flowModes) {
+      for (const stage of flowStages) {
+        expect(viewFor(mode, stage).stage).toBe(stage);
+      }
+    }
+    expect(viewFor("simple", "asking").nodes.some((node) => node.kind === "collapsible")).toBe(false);
+    expect(viewFor("advanced", "asking").nodes.at(-1)).toEqual({ kind: "collapsible", label: "later" });
     expect(shellScreen.screens).toHaveLength(1);
     expect(shellScreenDocument).toEqual(expect.any(Object));
     const start = createFlow();

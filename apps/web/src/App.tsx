@@ -7,7 +7,9 @@ import {
   type FlowEvent,
   type FlowState,
 } from "@visualizer/core";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { connectModelContext } from "./agent.js";
+import { StageView } from "./view.js";
 
 const controls: ReadonlyArray<{ type: FlowEvent["type"]; label: string }> = [
   { type: "START", label: "Start" },
@@ -17,6 +19,8 @@ const controls: ReadonlyArray<{ type: FlowEvent["type"]; label: string }> = [
 
 export function App() {
   const [flow, setFlow] = useState<FlowState>(() => createFlow());
+
+  useEffect(() => connectModelContext(document), []);
 
   function send(event: FlowEvent) {
     const result = applyFlowEvent(flow, flow.stateVersion, event);
@@ -50,6 +54,7 @@ export function App() {
           {flow.mode === "simple" ? "Advanced" : "Simple"}
         </button>
       </div>
+      <StageView flow={flow} />
       <h2 id="event-log-heading">Event log</h2>
       <ol className="log" data-log="true" aria-labelledby="event-log-heading">
         {flow.eventLog.map((entry) => (
