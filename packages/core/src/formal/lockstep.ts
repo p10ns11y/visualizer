@@ -1,7 +1,6 @@
-import { BrainRouter } from "../brain/router.js";
 import { applyBuildTick, type BuildTick } from "../bootstrap/run.js";
 import { pilotMachine } from "../railway/pilot.js";
-import { createSampleWorkspace } from "../state/sample.js";
+import { createStandIn } from "../state/stand-in.js";
 import {
   applyPilotEvent,
   commitHuman,
@@ -36,8 +35,6 @@ const resting: ReadonlySet<PilotPhase> = new Set([
   "failed",
   "paused_by_human",
 ]);
-
-const router = new BrainRouter({ prefer: 1 });
 
 type Expectation = "current" | "stale";
 
@@ -130,7 +127,7 @@ async function dispatch(state: WorkspaceState, action: Action): Promise<CommitRe
     case "view":
       return commitView(state, expected, state.mode === "cockpit" ? "code" : "cockpit");
     case "tick":
-      return applyBuildTick(state, expected, action.tick, router);
+      return applyBuildTick(state, expected, action.tick);
     default: {
       const unreachable: never = action;
       return unreachable;
@@ -238,7 +235,7 @@ async function witness(phase: PilotPhase): Promise<LockstepReport | null> {
     completed: [],
     failed: [],
   };
-  let state = createSampleWorkspace();
+  let state = createStandIn();
   const trace = [`reach ${phase}`];
   for (const event of setup[phase]) {
     const stepped = applyPilotEvent(state, state.stateVersion, event);
@@ -282,7 +279,7 @@ export async function checkLockstep(): Promise<LockstepReport> {
 
   const seen = new Set<string>();
   const queue: Array<{ state: WorkspaceState; trace: string[] }> = [
-    { state: createSampleWorkspace(), trace: ["seed cockpit v0"] },
+    { state: createStandIn(), trace: ["seed cockpit v0"] },
   ];
   let transitions = 0;
 

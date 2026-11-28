@@ -67,7 +67,7 @@ console.log(
         "Representative events in pilot.fail.checks.json reach #pilot.failed and never reach #pilot.completed.",
         "Those CLI checks are coverage of the supplied events, not a proof that an unlisted event is impossible.",
         "checkLockstep interleaves finished calls to applyPilotEvent, commitHuman, commitView, pauseRun, resumeRun, and applyBuildTick.",
-        "It does not preempt router.judge mid-await.",
+        "applyBuildTick returns the same workspace when the version matches. It does not await a model.",
         `Search stops after stateVersion ${lockstepBounds.maxVersion} or ${lockstepBounds.maxFingerprints} fingerprints.`,
       ],
     },

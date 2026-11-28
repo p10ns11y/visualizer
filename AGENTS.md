@@ -32,6 +32,8 @@ Entries already in `docs/TECH-CHOICES.md` stay as written, including the ones wh
 
 ## Critical flows
 
+The page a person opens is one empty screen. The pilot railway stays in `@visualizer/core`.
+
 A pull request that adds or changes a user-facing flow must update all of the following in the same change:
 
 - `docs/CRITICAL-FLOWS.md`

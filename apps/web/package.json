@@ -11,13 +11,7 @@
     "test:critical-flows": "vitest run"
   },
   "dependencies": {
-    "@fontsource/fraunces": "^5.2.8",
-    "@fontsource/ibm-plex-mono": "^5.2.6",
-    "@fontsource/outfit": "^5.2.8",
-    "@ui-sdk/core": "0.1.0-beta.17",
-    "@ui-sdk/react": "0.1.0-beta.17",
     "@visualizer/core": "workspace:*",
-    "perfect-freehand": "1.2.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

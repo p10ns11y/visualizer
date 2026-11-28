@@ -329,3 +329,22 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - [x] Update `README.md` references, `docs/ARCHITECTURE-LAYERS.md`, `docs/TEST-SUITE.md`, `agent-patterns/xstate-v6.md`, `agent-patterns/adaptate.md`, and decisions 006 and 007. README and docs already name the host alias `laptop-1` or the loopback `127.0.0.1`.
 - [x] Append this entry.
 - [x] Run `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build` on a tree whose `repos/` holds only `.gitkeep`. Each exited 0.
+
+## Bare shell
+
+- **Chosen:** Keep Vite `^7.1.3` with `@vitejs/plugin-react` `^5.0.2` and React `^19.1.1` for one empty screen. Do not move to Vite `8.4.0` in this step. Drop `@ui-sdk/react`, `@ui-sdk/core`, `perfect-freehand`, the font packages, and `neo4j-driver`. Keep `xstate@6.0.0-beta.5`, `@adaptate/core@3.0.0`, and `@adaptate/utils@3.0.0`. The screen schema is checked with `parse` from `@adaptate/core/result` and described with `zodToOpenAPISchema` from `@adaptate/utils`. Model-based paths still come from `getSimplePaths`.
+- **Why:** The page is one render. The railway checks already run on XState 6. A bundler major, and the UI SDK, belong to later steps. The removed packages belonged to the screen this step deletes.
+- **Basis:** Lookup on 2026-11-28, before the shell was written. `npm view vite version` returned `8.4.0`. `npm view react version` and `npm view react-dom version` returned `19.3.1`. [Vite 8.4](https://vite.dev/blog/announcing-vite8-4) (2026-11-26) and the [Getting Started](https://vite.dev/guide/) page still scaffold React with `pnpm create vite` and the `react-ts` template. The npm page listed `latest` as `8.4.0` and `previous` as `6.4.6`.
+- **Latest trends checked before choosing:** Yes, on 2026-11-28, before the shell was written. Compared staying on the installed Vite 7 line, moving to Vite 8.4 (Rolldown, published 2026-11-26), and adding a new renderer. Vite 8.4 is current. This step keeps Vite 7 because the screen does not need the Rolldown build or the experimental SSR mode in that release. React 19.3.1 is current. The existing `^19.1.1` range already accepts it, and this step does not bump that range. ui-sdk stays out until a later step wires views.
+
+### Head Plan
+
+- [x] Delete the old screen, the MCP app, memory, fleet, brain, and the Neo4j compose file.
+- [x] Retarget model-based paths and the lockstep onto the stand-in.
+- [x] Render one empty screen and replace both critical-flow tests.
+
+### Tail Plan
+
+- [x] Rewrite the three short docs, the verification skills, and this entry.
+- [x] Run `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`.
+

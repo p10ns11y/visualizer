@@ -3,22 +3,14 @@ export {
   BannerSchema,
   BuildBriefSchema,
   BuildCursorSchema,
-  ConnectionSchema,
-  DesignTokensSchema,
   JudgementSchema,
   LogEntrySchema,
-  MockupNodeSchema,
   PilotEventSchema,
   PilotPhaseSchema,
   ProblemCardSchema,
-  SketchPointSchema,
-  SketchStrokeSchema,
-  ThemeIdSchema,
   WorkspaceStateSchema,
   bannerFor,
   pilotPhases,
-  themeIds,
-  themePresets,
   workingPhases,
 } from "./state/schema.js";
 export type {
@@ -26,29 +18,18 @@ export type {
   Banner,
   BuildBrief,
   BuildCursor,
-  Connection,
-  DesignTokens,
   Judgement,
   LogEntry,
-  MockupNode,
   PilotEvent,
   PilotPhase,
   ProblemCard,
-  SketchPoint,
-  SketchStroke,
-  ThemeId,
   WorkspaceState,
 } from "./state/schema.js";
 
-export { createSampleWorkspace, canvasCardId } from "./state/sample.js";
-export {
-  legacyWorkspaceStorageKey,
-  readPersistedWorkspace,
-  readWorkspaceStorage,
-  serializeWorkspace,
-  workspaceStorageKey,
-} from "./state/persist.js";
-export { appendSketchStroke, clearSketchStrokes, normalizeSketchPoints } from "./state/strokes.js";
+export { createStandIn } from "./state/stand-in.js";
+export { bareShell, bareShellDocument, bareShellSchema } from "./shell.js";
+export type { BareShell } from "./shell.js";
+
 export {
   StateConflictError,
   applyPilotEvent,
@@ -62,167 +43,5 @@ export type { CommitError, CommitResult, ConflictError } from "./state/store.js"
 
 export { pilotMachine, railwayOrder, reducePhase } from "./railway/pilot.js";
 
-export { BrainRouter, tier1Judge } from "./brain/router.js";
-export type {
-  BrainInput,
-  BrainTier,
-  FrontierClient,
-  LocalDecisionClient,
-} from "./brain/router.js";
-export {
-  createLocalDecisionClient,
-  localModelConfigFromEnv,
-} from "./brain/local-model.js";
-export type { LocalModelConfig } from "./brain/local-model.js";
-export {
-  BrainEventSchema,
-  StreamJudgementSchema,
-  chunkText,
-  collectParsedSteps,
-  collectTrackedSteps,
-  readJudgementStream,
-  requireDriftNote,
-} from "./brain/stream.js";
-export type { BrainEvent } from "./brain/stream.js";
-
-export {
-  ToolHandoffSchema,
-  connectorCatalog,
-  connectorIds,
-  createInProcessRunner,
-  localRunners,
-  runnerIds,
-} from "./tools/delegation.js";
-export type {
-  ConnectorContract,
-  ConnectorId,
-  LocalToolRunner,
-  RunnerId,
-  ToolRunRequest,
-  ToolRunResult,
-} from "./tools/delegation.js";
-
-export {
-  applyBuildTick,
-  buildTickOrder,
-  remainingTicks,
-  runSelfBootstrap,
-} from "./bootstrap/run.js";
-export { runGuidedBuild } from "./bootstrap/guided.js";
+export { applyBuildTick, buildTickOrder } from "./bootstrap/run.js";
 export type { BuildTick } from "./bootstrap/run.js";
-
-export {
-  CoherenceMilliSchema,
-  EnsemblyKindSchema,
-  EnsemblyRecordSchema,
-  LessonSignalSchema,
-  PulseLockSchema,
-  PulseMemorySchema,
-  PulseStatusSchema,
-  PulseTraceKindSchema,
-  FleetEdgeKindSchema,
-  FleetEdgeSchema,
-  FleetGraphSchema,
-  FleetNodeKindSchema,
-  FleetNodeSchema,
-  FleetProposalKindSchema,
-  FleetProposalSchema,
-  FleetProposalStatusSchema,
-  WorkflowLessonSchema,
-  ensemblyKinds,
-  fleetEdgeKinds,
-  fleetNodeKinds,
-  fleetProposalKinds,
-  fleetProposalStatuses,
-  sampleFleetGraph,
-  lessonSignals,
-  pulseLocks,
-  pulsePackSchema,
-  pulseStatuses,
-  pulseTraceKinds,
-} from "./state/schema.js";
-export type {
-  EnsemblyKind,
-  EnsemblyRecord,
-  LessonSignal,
-  PulseLock,
-  PulseMemory,
-  PulseStatus,
-  PulseTraceKind,
-  FleetEdge,
-  FleetEdgeKind,
-  FleetGraph,
-  FleetNode,
-  FleetNodeKind,
-  FleetProposal,
-  FleetProposalKind,
-  FleetProposalStatus,
-  WorkflowLesson,
-} from "./state/schema.js";
-export {
-  appendEnsemblyRecord,
-  importEnsemblyRecords,
-  promoteEnsemblyRecord,
-  recordWorkflowLesson,
-} from "./memory/commit.js";
-export { admittedKind, admittedStatus, canPromote, verifyHashFor } from "./memory/promote.js";
-export {
-  exportPulsePack,
-  mergeLedger,
-  readPulsePack,
-  recordsFromPack,
-} from "./memory/ensembly.js";
-export {
-  buildPulseInject,
-  estimateTokens,
-  pulseInjectPromptText,
-  pulseInjectTokenBudget,
-  pulseInjectTraceLimit,
-} from "./memory/pulse-inject.js";
-export type { PulseInject, PulseInjectTrace } from "./memory/pulse-inject.js";
-export { InMemoryGraphMemoryStore } from "./memory/in-memory-store.js";
-export { projectWorkspace } from "./memory/port.js";
-export type { LessonFilter, MemoryGraphStore } from "./memory/port.js";
-
-export { mergeAuxIntoTick } from "./state/merge-aux.js";
-export { analyzeFleet, findCycles, fleetHotspotDegree, liveEdges } from "./fleet/analyze.js";
-export type { FleetFinding } from "./fleet/analyze.js";
-export { fleetActionById, fleetActions } from "./fleet/actions.js";
-export type { FleetAction } from "./fleet/actions.js";
-export {
-  CatalogSpecSchema,
-  buildFleetSpec,
-  catalogComponentNames,
-  readCatalogSpec,
-} from "./fleet/catalog.js";
-export type { CatalogElement, CatalogRead, CatalogSpec } from "./fleet/catalog.js";
-export { decideFleetProposal, proposeFleetAction } from "./fleet/propose.js";
-export { buildCockpitSnapshot, measureCockpitSurface } from "./fleet/snapshot.js";
-export type { CockpitSnapshot, CockpitTokenReport, UiControlSnapshot } from "./fleet/snapshot.js";
-export {
-  approvalFromStorage,
-  describeWebMcpBridge,
-  mountWorkspaceBridge,
-  webMcpApprovalStorageKey,
-  webMcpInputSchemas,
-  webMcpToolNames,
-} from "./webmcp/bridge.js";
-export type {
-  WebMcpApproval,
-  WebMcpToolName,
-  WebMcpToolResult,
-  WebMcpToolSummary,
-  WorkspaceBridge,
-} from "./webmcp/bridge.js";
-export {
-  createLocalModelContext,
-  detectModelContext,
-  readModelContextGlobals,
-} from "./webmcp/model-context.js";
-export type {
-  LocalModelContext,
-  ModelContextGlobals,
-  ModelContextHost,
-  WebMcpSource,
-  WebMcpTool,
-} from "./webmcp/model-context.js";
