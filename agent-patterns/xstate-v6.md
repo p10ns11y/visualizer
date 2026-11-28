@@ -1,6 +1,6 @@
 # XState v6 patterns
 
-Read this note first (tag `xstate@6.0.0-beta.5`, tree `repos/xstate`). Open `repos/xstate` only if this note does not answer. Do not run a broad search in `repos/`. Import from `xstate`. Do not import from `repos/xstate`. Upstream `main` is v5. The contracts below are from `repos/xstate/docs/agents.md`, `repos/xstate/docs/testing.md`, `repos/xstate/docs/xstate-v5-to-v6.md`, and `repos/xstate/packages/core/test/runtimeValidation.test.ts`.
+Read this note first (tag `xstate@6.0.0-beta.5`, tree `repos/xstate`). Only if this note does not answer, run `scripts/fetch-ref.sh xstate`. Do not run a broad search in `repos/`. Import from `xstate`. Never edit files under `repos/`. Never import from `repos/xstate`. Upstream `main` is v5. The contracts below are from `repos/xstate/docs/agents.md`, `repos/xstate/docs/testing.md`, `repos/xstate/docs/xstate-v5-to-v6.md`, and `repos/xstate/packages/core/test/runtimeValidation.test.ts`.
 
 ## Machine setup
 
