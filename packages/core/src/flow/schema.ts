@@ -45,6 +45,7 @@ export const FlowStateSchema = z.object({
 export type FlowState = z.infer<typeof FlowStateSchema>;
 
 export const eventLogWindow = 20;
+export const eventLogLimit = 200;
 
 export function recentLog(entries: readonly FlowLogEntry[]): FlowLogEntry[] {
   if (entries.length <= eventLogWindow) return [...entries];

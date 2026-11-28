@@ -5,7 +5,7 @@ description: "Formally check the Visualizer flow graph: every state reachable, n
 
 # Formal verification for the flow graph
 
-The promise: every stage, motion, and mode combination can be reached, no non-final state is a deadlock, and a stale `expectedVersion` never appends an event-log line. The log starts empty and records an event only when the machine takes it.
+The promise: every stage, motion, and mode combination can be reached, no non-final state is a deadlock, and a stale `expectedVersion` never appends an event-log line. The log starts empty and records an event only when the machine takes it. The stored log keeps the latest 200 lines.
 
 A break lets the screen show a stage the machine cannot reach, or lets a stopped click look like a real event. Run the check when any covered file changes.
 

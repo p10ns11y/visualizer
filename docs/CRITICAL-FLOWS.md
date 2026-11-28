@@ -10,7 +10,7 @@ flowchart LR
 
 ## CF-01 Stage view and event log
 
-The page shows one screen. The view map supplies the current stage. Advanced mode adds a later panel. The mode toggle sits in Settings. The log starts empty and shows the latest 20 lines, so a new line stays in view. Start, Pause, Stop, Reset, and the mode toggle append a line only when the machine takes the event. Reset after done returns to the start. The page does not scroll.
+The page shows one screen. The view map supplies the current stage. Advanced mode adds a later panel. The mode toggle sits in Settings. The log starts empty, the stored log keeps the latest 200 lines, and the screen shows the latest 20, so a new line stays in view. Start, Pause, Stop, Reset, and the mode toggle append a line only when the machine takes the event. Reset after done returns to the start. The page does not scroll.
 
 Test: `CF-01` in `packages/core/src/critical-flows.test.ts`, and the render in `apps/web/src/critical-flow.dom.test.tsx`. The map and the WebMCP wiring are in `packages/core/src/view/map.test.ts` and `apps/web/src/agent.dom.test.tsx`.
 

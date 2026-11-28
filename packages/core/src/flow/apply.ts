@@ -1,6 +1,7 @@
 import { initialTransition, transition } from "xstate";
 import { flowMachine } from "./machine.js";
 import {
+  eventLogLimit,
   FlowStateSchema,
   type FlowEvent,
   type FlowLogEntry,
@@ -95,6 +96,11 @@ export function createFlow(): FlowState {
   });
 }
 
+function rememberLog(entries: readonly FlowLogEntry[], entry: FlowLogEntry): FlowLogEntry[] {
+  if (entries.length < eventLogLimit) return [...entries, entry];
+  return [...entries.slice(entries.length - eventLogLimit + 1), entry];
+}
+
 export function flowCan(state: FlowState, event: FlowEvent): boolean {
   const snapshot = snapshotOf(state);
   const [next] = transition(flowMachine, snapshot, event);
@@ -115,7 +121,7 @@ export function applyFlowEvent(
   const read = readFlowValue(next.value);
   const stateVersion = state.stateVersion + 1;
   const entry: FlowLogEntry = {
-    id: `log-${state.eventLog.length + 1}`,
+    id: `log-${stateVersion}`,
     stateVersion,
     type: event.type,
     fromStage: state.stage,
@@ -130,7 +136,7 @@ export function applyFlowEvent(
     state: FlowStateSchema.parse({
       stateVersion,
       ...read,
-      eventLog: [...state.eventLog, entry],
+      eventLog: rememberLog(state.eventLog, entry),
     }),
   };
 }

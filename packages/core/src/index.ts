@@ -38,6 +38,7 @@ export {
   flowModes,
   flowMotions,
   flowStages,
+  eventLogLimit,
   eventLogWindow,
   logLine,
   recentLog,
