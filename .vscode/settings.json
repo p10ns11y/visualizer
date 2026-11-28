@@ -1,13 +1,16 @@
 {
-  "typescript.preferences.autoImportFileExcludePatterns": ["repos/**"],
-  "javascript.preferences.autoImportFileExcludePatterns": ["repos/**"],
+  "typescript.preferences.autoImportFileExcludePatterns": ["repos/**", "packages/sources/**"],
+  "javascript.preferences.autoImportFileExcludePatterns": ["repos/**", "packages/sources/**"],
   "files.exclude": {
-    "repos/**": true
+    "repos/**": true,
+    "packages/sources/**": true
   },
   "files.watcherExclude": {
-    "repos/**": true
+    "repos/**": true,
+    "packages/sources/**": true
   },
   "search.exclude": {
-    "repos/**": true
+    "repos/**": true,
+    "packages/sources/**": true
   }
 }
