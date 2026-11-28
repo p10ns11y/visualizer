@@ -19,7 +19,7 @@ Synced with commit `3d04424ae7cdf1db6c925e37600e53f2ace1d951`. Move that hash fo
 - `packages/core/src/formal/export-machine.ts` — `flowMachineJson`
 - `packages/core/src/formal/flow.reach.checks.json`
 
-The pilot railway is still in `packages/core/src/railway/pilot.ts`. This check does not walk it.
+The flow graph is the only state machine this check walks.
 
 ## How to run
 
