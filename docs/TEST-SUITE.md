@@ -11,7 +11,9 @@ Commands, in the order CI `verify` runs the test steps:
 | `pnpm docs:mermaid` | `scripts/verify-mermaid.ts`. Parses every Mermaid fence in `README.md` and `docs/**` with `mermaid.parse`. CI `verify` runs it. |
 | `pnpm test:local-model` | `scripts/local-model-smoke.ts`. CF-04 runs this. CI does not require a listening model. |
 
-`pnpm typecheck` and `pnpm build` bookend those commands. They are not part of the test count. None of these commands enter `repos/`. CI does not run `scripts/fetch-ref.sh`. A tree with only `repos/.gitkeep` still passes these commands. `pnpm docs:mermaid` skips that directory through `scripts/vendor-paths.ts`. Workspace typecheck includes each package `src` tree only. Vitest include globs stay inside those packages, and the ESLint ignore list starts with `repos/**`.
+`pnpm typecheck` and `pnpm build` bookend those commands. They are not part of the test count. None of these commands enter `repos/`, `packages/sources/`, or `packages/liturgy/`. CI does not run `scripts/fetch-ref.sh`. A tree with only `repos/.gitkeep` still passes these commands. `pnpm docs:mermaid` skips `repos/` and `packages/sources/` through `scripts/vendor-paths.ts`. Workspace typecheck includes each package `src` tree only. Vitest include globs stay inside those packages, and the ESLint ignore list starts with `repos/**`.
+
+`J_liturgy` is a separate workflow. It runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, and `cargo test --locked` in `packages/liturgy` when `packages/liturgy/**` or `packages/sources/**` change. It does not fetch. It does not run the commands in the table above.
 
 Why these runners were chosen, and whether that choice was looked up or recalled, is in [TECH-CHOICES.md](TECH-CHOICES.md).
 

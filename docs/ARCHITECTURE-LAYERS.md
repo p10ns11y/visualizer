@@ -1,6 +1,6 @@
 # Architecture layers
 
-Target layering for Visualizer. This foundation step does not add a native crate. Today the shared workspace, the XState 6 railway, and the cockpit live in TypeScript (`@visualizer/core`, `@visualizer/web`). Later steps follow this spec instead of growing a second heavy runtime in JavaScript.
+Target layering for Visualizer. `packages/liturgy` is a std-only index crate beside the TypeScript workspace. The cockpit, the XState 6 railway, and the shared state live in `@visualizer/core` and `@visualizer/web`. The page and the bridge do not call the crate. Later steps follow this spec instead of growing a second heavy runtime in JavaScript.
 
 The UI talks to a thin bridge, the bridge talks to a thin core, and heavy payload work stays in [`adaptate`](https://github.com/p10ns11y/adaptate). `repos/xstate` and `repos/adaptate` are local checkouts from `scripts/fetch-ref.sh`, not layers and not stored in git. The cockpit imports `xstate`, `@adaptate/core`, and `@adaptate/utils`.
 

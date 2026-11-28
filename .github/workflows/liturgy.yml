@@ -1,0 +1,32 @@
+name: liturgy
+
+on:
+  push:
+    paths:
+      - "packages/liturgy/**"
+      - "packages/sources/**"
+  pull_request:
+    paths:
+      - "packages/liturgy/**"
+      - "packages/sources/**"
+
+jobs:
+  J_liturgy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/liturgy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.100.1
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --check
+        env:
+          CARGO_NET_OFFLINE: "true"
+      - run: cargo clippy --all-targets -- -D warnings
+        env:
+          CARGO_NET_OFFLINE: "true"
+      - run: cargo test --locked
+        env:
+          CARGO_NET_OFFLINE: "true"

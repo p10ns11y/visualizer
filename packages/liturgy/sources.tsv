@@ -1,0 +1,6 @@
+alias	ref	root
+ensembly-marketplaces	8e63b674d1b03fc16468e3de6b35a8efc18acfe4	packages/sources/ensembly-marketplaces
+plugins	9b226a7af0bbd30aeec0ae72fb6f147b191af1e2	packages/sources/plugins
+pstack	b7b93c36be9bcc36a74db438e0fd385d660bc559	pstack
+skills	88142789e8abbb16a9587bcd3f8b4132cb78aa9a	packages/sources/skills
+ub-mode	3da62bf3fcfd2034de41f30d920d2739e566171f	ub-mode
