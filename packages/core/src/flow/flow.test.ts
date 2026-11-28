@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { applyFlowEvent, createFlow, flowCan } from "./apply.js";
 import { flowStateIds } from "./machine.js";
-import { logLine, stageLabel } from "./schema.js";
+import { eventLogWindow, logLine, recentLog, stageLabel, type FlowLogEntry } from "./schema.js";
 import checks from "../formal/flow.reach.checks.json";
 
-function take(state: ReturnType<typeof createFlow>, type: "START" | "PAUSE" | "STOP" | "TOGGLE_MODE") {
+function take(
+  state: ReturnType<typeof createFlow>,
+  type: "START" | "PAUSE" | "STOP" | "TOGGLE_MODE" | "RESET",
+) {
   const next = applyFlowEvent(state, state.stateVersion, { type });
   expect(next.ok).toBe(true);
   if (!next.ok) throw new Error(type);
@@ -77,5 +80,36 @@ describe("flow graph", () => {
 
   it("lists the same states the formal check names", () => {
     expect(checks.reachable).toEqual([...flowStateIds]);
+  });
+
+  it("returns to the start after done", () => {
+    let state = take(createFlow(), "TOGGLE_MODE");
+    for (const stage of ["editing", "choosingTools", "building", "done"] as const) {
+      state = take(state, "START");
+      expect(state.stage).toBe(stage);
+    }
+    expect(flowCan(state, { type: "RESET" })).toBe(true);
+    expect(flowCan(createFlow(), { type: "RESET" })).toBe(false);
+    const reset = take(state, "RESET");
+    expect(reset).toMatchObject({ stage: "asking", motion: "live", mode: "simple" });
+    expect(logLine(reset.eventLog.at(-1)!)).toBe("RESET done to asking, advanced to simple");
+  });
+
+  it("keeps the latest log lines", () => {
+    const entries: FlowLogEntry[] = Array.from({ length: eventLogWindow + 5 }, (_, index) => ({
+      id: `log-${index + 1}`,
+      stateVersion: index + 1,
+      type: "TOGGLE_MODE",
+      fromStage: "asking",
+      toStage: "asking",
+      fromMotion: "live",
+      toMotion: "live",
+      fromMode: index % 2 === 0 ? "simple" : "advanced",
+      toMode: index % 2 === 0 ? "advanced" : "simple",
+    }));
+    const visible = recentLog(entries);
+    expect(visible).toHaveLength(eventLogWindow);
+    expect(visible[0]?.id).toBe(`log-${entries.length - eventLogWindow + 1}`);
+    expect(visible.at(-1)?.id).toBe(`log-${entries.length}`);
   });
 });

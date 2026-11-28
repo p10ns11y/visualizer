@@ -12,12 +12,13 @@ export const flowModes = ["simple", "advanced"] as const;
 export const FlowModeSchema = z.enum(flowModes);
 export type FlowMode = z.infer<typeof FlowModeSchema>;
 
-export const flowEventTypes = ["START", "PAUSE", "STOP", "TOGGLE_MODE"] as const;
+export const flowEventTypes = ["START", "PAUSE", "STOP", "TOGGLE_MODE", "RESET"] as const;
 export const FlowEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("START") }),
   z.object({ type: z.literal("PAUSE") }),
   z.object({ type: z.literal("STOP") }),
   z.object({ type: z.literal("TOGGLE_MODE") }),
+  z.object({ type: z.literal("RESET") }),
 ]);
 export type FlowEvent = z.infer<typeof FlowEventSchema>;
 
@@ -42,6 +43,13 @@ export const FlowStateSchema = z.object({
   eventLog: z.array(FlowLogEntrySchema),
 });
 export type FlowState = z.infer<typeof FlowStateSchema>;
+
+export const eventLogWindow = 20;
+
+export function recentLog(entries: readonly FlowLogEntry[]): FlowLogEntry[] {
+  if (entries.length <= eventLogWindow) return [...entries];
+  return entries.slice(entries.length - eventLogWindow);
+}
 
 export function stageLabel(stage: FlowStage): string {
   switch (stage) {
@@ -72,6 +80,12 @@ export function logLine(entry: FlowLogEntry): string {
   switch (entry.type) {
     case "TOGGLE_MODE":
       return `TOGGLE_MODE ${entry.fromMode} to ${entry.toMode}`;
+    case "RESET": {
+      const from = placeLabel(entry.fromStage, entry.fromMotion);
+      const to = placeLabel(entry.toStage, entry.toMotion);
+      if (entry.fromMode === entry.toMode) return `RESET ${from} to ${to}`;
+      return `RESET ${from} to ${to}, ${entry.fromMode} to ${entry.toMode}`;
+    }
     case "START":
     case "PAUSE":
     case "STOP": {

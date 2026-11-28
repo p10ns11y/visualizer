@@ -3,11 +3,22 @@ import {
   createFlow,
   flowCan,
   logLine,
+  recentLog,
   stageLine,
   type FlowEvent,
   type FlowState,
 } from "@visualizer/core";
-import { useState } from "react";
+import {
+  Dialog,
+  DialogBackdrop,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@ui-sdk/react/dialog";
+import { useEffect, useState } from "react";
+import { connectModelContext } from "./agent.js";
+import { StageView } from "./view.js";
 
 const controls: ReadonlyArray<{ type: FlowEvent["type"]; label: string }> = [
   { type: "START", label: "Start" },
@@ -17,6 +28,8 @@ const controls: ReadonlyArray<{ type: FlowEvent["type"]; label: string }> = [
 
 export function App() {
   const [flow, setFlow] = useState<FlowState>(() => createFlow());
+
+  useEffect(() => connectModelContext(document), []);
 
   function send(event: FlowEvent) {
     const result = applyFlowEvent(flow, flow.stateVersion, event);
@@ -42,17 +55,31 @@ export function App() {
             {control.label}
           </button>
         ))}
-        <button
-          type="button"
-          aria-pressed={flow.mode === "advanced"}
-          onClick={() => send({ type: "TOGGLE_MODE" })}
-        >
-          {flow.mode === "simple" ? "Advanced" : "Simple"}
-        </button>
+        {flow.stage === "done" ? (
+          <button type="button" onClick={() => send({ type: "RESET" })}>
+            Reset
+          </button>
+        ) : null}
+        <Dialog>
+          <DialogTrigger>Settings</DialogTrigger>
+          <DialogBackdrop className="settings-backdrop" />
+          <DialogContent className="settings-panel">
+            <DialogTitle>Settings</DialogTitle>
+            <button
+              type="button"
+              aria-pressed={flow.mode === "advanced"}
+              onClick={() => send({ type: "TOGGLE_MODE" })}
+            >
+              {flow.mode === "simple" ? "Advanced" : "Simple"}
+            </button>
+            <DialogClose>Close</DialogClose>
+          </DialogContent>
+        </Dialog>
       </div>
+      <StageView flow={flow} />
       <h2 id="event-log-heading">Event log</h2>
       <ol className="log" data-log="true" aria-labelledby="event-log-heading">
-        {flow.eventLog.map((entry) => (
+        {recentLog(flow.eventLog).map((entry) => (
           <li key={entry.id} data-event={entry.type}>
             {logLine(entry)}
           </li>

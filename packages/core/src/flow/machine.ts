@@ -31,6 +31,7 @@ export const flowMachine = setup({
       PAUSE: emptyEvent,
       STOP: emptyEvent,
       TOGGLE_MODE: emptyEvent,
+      RESET: emptyEvent,
     },
   },
 }).createMachine({
@@ -44,7 +45,11 @@ export const flowMachine = setup({
         editing: stageRegion("#flow.stage.choosingTools"),
         choosingTools: stageRegion("#flow.stage.building"),
         building: stageRegion("#flow.stage.done"),
-        done: { type: "final" },
+        done: {
+          on: {
+            RESET: { target: "#flow" },
+          },
+        },
       },
     },
     mode: {

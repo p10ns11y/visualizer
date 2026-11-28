@@ -6,7 +6,7 @@ import { z } from "zod";
 export const shellScreenSchema = z.object({
   screens: z.tuple([z.literal("flow")]),
   scroll: z.literal(false),
-  shows: z.tuple([z.literal("stage"), z.literal("log")]),
+  shows: z.tuple([z.literal("stage"), z.literal("view"), z.literal("log")]),
 });
 
 export type ShellScreen = z.infer<typeof shellScreenSchema>;
@@ -18,7 +18,7 @@ function asStandard<T>(schema: z.ZodType<T>): StandardSchemaV1<unknown, T> {
 const checked = parse(asStandard(shellScreenSchema), {
   screens: ["flow"],
   scroll: false,
-  shows: ["stage", "log"],
+  shows: ["stage", "view", "log"],
 });
 
 if (!checked.ok) {

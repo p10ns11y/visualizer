@@ -4,7 +4,7 @@ Read this note first (tag `xstate@6.0.0-beta.5`, tree `repos/xstate`). Only if t
 
 ## Machine setup
 
-Declare the contract in `setup({ schemas })`, then `createMachine`. A static transition is an object. This is the shape already used by `packages/core/src/railway/pilot.ts`:
+Declare the contract in `setup({ schemas })`, then `createMachine`. A static transition is an object. This is the shape already used by `packages/core/src/flow/machine.ts`:
 
 ```ts
 import { setup } from "xstate";
@@ -18,7 +18,7 @@ const machine = setup({
     },
   },
 }).createMachine({
-  id: "pilot",
+  id: "sample",
   initial: "idle",
   states: {
     idle: { on: { START: { target: "planning" } } },
@@ -55,7 +55,7 @@ on: {
 }
 ```
 
-Pure calculation does not start an actor. `initialTransition` and `transition` each return a `[snapshot, actions]` tuple. That is what `reducePhase` in the pilot railway uses.
+Pure calculation does not start an actor. `initialTransition` and `transition` each return a `[snapshot, actions]` tuple. That is what `applyFlowEvent` uses to replay the flow graph.
 
 ## Actors
 

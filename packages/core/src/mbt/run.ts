@@ -22,7 +22,8 @@ function isFlowEvent(event: { type: string }): event is FlowEvent {
     event.type === "START" ||
     event.type === "PAUSE" ||
     event.type === "STOP" ||
-    event.type === "TOGGLE_MODE"
+    event.type === "TOGGLE_MODE" ||
+    event.type === "RESET"
   );
 }
 

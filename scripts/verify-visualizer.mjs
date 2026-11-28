@@ -70,6 +70,9 @@ async function readScreen(page) {
       stage: stage?.getAttribute("data-stage") ?? "",
       motion: stage?.getAttribute("data-motion") ?? "",
       mode: stage?.getAttribute("data-mode") ?? "",
+      view: document.querySelector("[data-view]")?.getAttribute("data-view") ?? "",
+      views: document.querySelectorAll("[data-view]").length,
+      panel: document.querySelector("[data-panel]")?.getAttribute("data-panel") ?? "",
       log: [...document.querySelectorAll("[data-log] li")].map((item) => item.textContent ?? ""),
       pageOverflow,
       mainOverflow,
@@ -98,8 +101,12 @@ function assertInitial(ready) {
     ready.stage !== "asking" ||
     ready.motion !== "live" ||
     ready.mode !== "simple" ||
+    ready.view !== "asking" ||
+    ready.views !== 1 ||
+    ready.panel !== "" ||
     ready.log.length !== 0 ||
-    !ready.text.includes("asking · simple")
+    !ready.text.includes("asking · simple") ||
+    !ready.text.includes("Questions")
   ) {
     throw new Error(`Preview is not the opening stage: ${JSON.stringify(ready)}`);
   }
@@ -263,7 +270,7 @@ async function drive(feature) {
   const { browser, page } = await connect();
   try {
     assertInitial(await readScreen(page));
-    for (const name of ["Start", "Pause", "Advanced", "Stop"]) {
+    for (const name of ["Start", "Pause", "Settings", "Advanced", "Close", "Stop"]) {
       await press(page, name);
     }
     const ready = await readScreen(page);
@@ -271,6 +278,10 @@ async function drive(feature) {
     if (
       ready.stage !== "done" ||
       ready.mode !== "advanced" ||
+      ready.view !== "done" ||
+      ready.views !== 1 ||
+      ready.panel !== "later" ||
+      !ready.text.includes("later") ||
       ready.log.length !== 4 ||
       !ready.log[0]?.startsWith("START ") ||
       !ready.log[1]?.startsWith("PAUSE ") ||
@@ -279,8 +290,22 @@ async function drive(feature) {
     ) {
       throw new Error(`Drive did not reach done: ${JSON.stringify(ready)}`);
     }
+    await press(page, "Reset");
+    const restarted = await readScreen(page);
+    assertFrame(restarted);
+    if (
+      restarted.stage !== "asking" ||
+      restarted.motion !== "live" ||
+      restarted.mode !== "simple" ||
+      restarted.view !== "asking" ||
+      restarted.panel !== "" ||
+      restarted.log.length !== 5 ||
+      !restarted.log[4]?.startsWith("RESET ")
+    ) {
+      throw new Error(`Reset did not return to the start: ${JSON.stringify(restarted)}`);
+    }
     mkdirSync(evidenceDir, { recursive: true });
-    writeFileSync(path.join(evidenceDir, "flow.txt"), ready.text);
+    writeFileSync(path.join(evidenceDir, "flow.txt"), restarted.text);
     await page.screenshot({ path: path.join(evidenceDir, "flow.png") });
   } finally {
     await browser.disconnect();

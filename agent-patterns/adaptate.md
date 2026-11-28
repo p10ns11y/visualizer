@@ -39,7 +39,7 @@ Zod objects in this repo are passed through a local cast to `StandardSchemaV1` b
 
 `createStreamValidator(schema, configs)` from `@adaptate/core/stream` returns `partial` and `final`. Each config name comes back as `{ valid, errors }`. `final` uses `safeParse` on the transformed schema. The connector call uses a `ready` config that marks `connectorId`, `workspaceVersion`, and `summary` required.
 
-`zodToOpenAPISchema` from `@adaptate/utils` walks a Zod schema into an OpenAPI object, including `required`. A schema cycle throws `RangeError`. WebMCP tool inputs use this converter. Do not hand-write a second JSON Schema for the same Zod object.
+`zodToOpenAPISchema` from `@adaptate/utils` walks a Zod schema into an OpenAPI object, including `required`. A schema cycle throws `RangeError`. The screen schema in `packages/core/src/shell.ts` uses this converter. Do not hand-write a second JSON Schema for the same Zod object.
 
 `verifyStream` from `@adaptate/core/verify` concatenates `Uint8Array` chunks and returns `{ ok: true, value }` or `{ ok: false }`. The test "concatenates chunks in memory and verifies before any disk write" is the contract: it does not write a file. Pass `size` and a hash when the manifest has them. A short stream fails closed.
 
