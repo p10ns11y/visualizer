@@ -34,7 +34,7 @@ Entries dated before the build cadence record what actually happened, including 
 
 ## Stately skill
 
-- **Chosen:** Global install only: `npx --yes skills add statelyai/skills -a cursor -g -y --json`. On this VM the files landed in `/home/ubuntu/.agents/skills/` as `stately`, `state-management`, `xstate-v5`, `xstate-v6`, and `readme`. They are not in the repo and not in this cloud agent's skill catalog (`~/.agents/skills` is not on that catalog path).
+- **Chosen:** Global install only: `npx --yes skills add statelyai/skills -a cursor -g -y --json`. On the machine aliased `laptop-1` the files landed in `.agents/skills/` as `stately`, `state-management`, `xstate-v5`, `xstate-v6`, and `readme`. They are not in the repo and not in this cloud agent's skill catalog (`.agents/skills` is not on that catalog path).
 - **Why:** The task asked to install those skills into Cursor on this VM and to leave the repo and the pull request untouched. A global install avoided a dirty worktree.
 - **Basis:** Researched, current information. The task named `github.com/statelyai/skills` and `https://stately.ai/docs/skills`. The installer fetched that repo, and the five directories were listed from disk afterward. The installer reported a Snyk critical finding on `stately` and low findings on the other four; that report was recorded, not used to pick a different pack.
 - **Latest trends checked before choosing:** No marketplace comparison. Yes for installing the named repo as it existed when that command ran.
@@ -274,3 +274,20 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - [x] Append this entry, including whether the choice came from live research. Note in `docs/TEST-SUITE.md` that the check commands do not enter `repos/`.
 - [x] Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, `pnpm build`, and `pnpm docs:mermaid`. Pull request body at or under 120 words.
 - [x] rebase onto main and renumber ADRs before review.
+
+## Docs front page
+
+- **Chosen:** Keep the README diagram in Mermaid, parsed by the existing `pnpm docs:mermaid` (`mermaid@12.4.0`). Compress the cockpit screenshot with `oxipng` `10.2.1` at `-o 4 --strip safe`. No new package. No palette quantizer.
+- **Why:** The README is a short visual front page. Mermaid is already what CI parses, so a second diagram tool would split the check. The screenshot is a UI capture with flat color and soft gradients. A lossless optimizer keeps the pixels. A palette reduction can band those gradients.
+- **Basis:** The Mermaid parser is the one already recorded in the Mermaid diagram check above (`mermaid` `12.4.0`, `npm view` on 2026-11-27). oxipng: the [10.2.1 release](https://github.com/oxipng/oxipng/releases/tag/v10.2.1) and the [oxipng README](https://github.com/oxipng/oxipng) example `oxipng -o 4 --strip safe`. [Encode Wiki, PNG](https://encode.wiki/codecs/images/png) recommends oxipng for lossless recompression and pngquant when a palette is acceptable. [Image Load Lab, 18 Oct 2026](https://imageloadlab.com/oxipng-optimization-levels/) measured oxipng 10.2.1 and found `-o 2` did most of the work on screenshots, with `-o 4` a small extra saving. This asset is written once, so `-o 4` matches the oxipng README example.
+- **Latest trends checked before choosing:** Yes, on 2026-11-28, before the screenshot was compressed. Compared oxipng 10.2.1 (lossless) with pngquant (palette, lossy). oxipng won for a cockpit capture. A newer Mermaid major was not adopted; CI already pins `12.4.0`. pnpm printed an upgrade notice to `12.23.0`; this step stays on the pinned `10.33.4`.
+
+### Head Plan
+
+- [x] Shorten `README.md` to one description line, one hero screenshot, one Mermaid diagram, the run command, links into `docs/`, and the `@adaptate/core` / `@adaptate/utils` credit. Remove the three SVG diagrams that only the README used.
+- [x] Fold the lock table and neighbor notes into `docs/ARCHITECTURE-LAYERS.md`. Fix the memory facts in `docs/MEMORY-NEO4J.md` against `canPromote`. Light-trim decisions 001 and 002. Add the two rules to `AGENTS.md` and point `agent-patterns/` at the same read order.
+
+### Tail Plan
+
+- [x] Relative link check over `README.md`, `docs/**`, `AGENTS.md`, and `agent-patterns/**` (37 links, all resolved). `pnpm docs:mermaid` reports four diagrams.
+- [x] Run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`. Pull request body at or under 120 words.
