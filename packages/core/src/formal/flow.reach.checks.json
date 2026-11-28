@@ -1,0 +1,22 @@
+{
+  "events": [
+    { "type": "START" },
+    { "type": "PAUSE" },
+    { "type": "STOP" },
+    { "type": "TOGGLE_MODE" }
+  ],
+  "reachable": [
+    "#flow.stage.asking.live",
+    "#flow.stage.asking.paused",
+    "#flow.stage.editing.live",
+    "#flow.stage.editing.paused",
+    "#flow.stage.choosingTools.live",
+    "#flow.stage.choosingTools.paused",
+    "#flow.stage.building.live",
+    "#flow.stage.building.paused",
+    "#flow.stage.done",
+    "#flow.mode.simple",
+    "#flow.mode.advanced"
+  ],
+  "limit": 1000
+}

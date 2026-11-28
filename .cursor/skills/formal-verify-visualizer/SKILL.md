@@ -1,27 +1,25 @@
 ---
 name: formal-verify-visualizer
-description: "Formally check Visualizer's stateVersion lock and human-pause safety on the XState 6 pilot railway. Use when a change touches applyPilotEvent, commitHuman, pauseRun, resumeRun, applyBuildTick, or the pilot machine."
+description: "Formally check the Visualizer flow graph: every state reachable, no non-final deadlock, and a stale event cannot append a log line. Use when a change touches the flow machine, applyFlowEvent, stateVersion, or Pause."
 ---
 
-# Formal verification for the Visualizer lockstep
+# Formal verification for the flow graph
 
-The promise: a committed workspace write raises `stateVersion` by one, a stale `expectedVersion` never changes the workspace, an agent write cannot commit while the run is paused or after it has stopped in `completed` or `failed`, and every railway phase can reach a resting phase (`paused_by_human`, `completed`, or `failed`).
+The promise: every stage, motion, and mode combination can be reached, no non-final state is a deadlock, and a stale `expectedVersion` never appends an event-log line. The log starts empty and records an event only when the machine takes it.
 
-A break lets a person lose an edit or lets a stopped run keep writing. Run the check when any covered file changes.
+A break lets the screen show a stage the machine cannot reach, or lets a stopped click look like a real event. Run the check when any covered file changes.
 
 ## Covered code
 
-Synced with commit `b0441c4a4ba75255b5316e9eb3e8f38e0d11695c`. Move that hash forward only after `pnpm verify:formal` passes and the notes below still describe the code at that commit.
+Synced with commit `PENDING_FLOW_GRAPH`. Move that hash forward only after `pnpm verify:formal` passes and the notes below still describe the code at that commit.
 
-- `packages/core/src/state/store.ts` — `applyPilotEvent`, `commitHuman`, `commitView`, `pauseRun`, `resumeRun`, `assertCommit`
-- `packages/core/src/bootstrap/run.ts` — `applyBuildTick`
-- `packages/core/src/railway/pilot.ts` — `pilotMachine`, `reducePhase`
-- `packages/core/src/formal/lockstep.ts` — `checkLockstep`
-- `packages/core/src/formal/export-machine.ts` — `pilotMachineJson`
-- `packages/core/src/formal/pilot.safe.checks.json`
-- `packages/core/src/formal/pilot.fail.checks.json`
+- `packages/core/src/flow/machine.ts` — `flowMachine`
+- `packages/core/src/flow/apply.ts` — `createFlow`, `applyFlowEvent`, `flowCan`
+- `packages/core/src/formal/flow-graph.ts` — `checkFlowGraph`
+- `packages/core/src/formal/export-machine.ts` — `flowMachineJson`
+- `packages/core/src/formal/flow.reach.checks.json`
 
-`applyBuildTick` is the stand-in. For `start`, `judge`, `engage`, and `finish`, a matching version returns the same workspace object. A stale version returns `STATE_CONFLICT`. The tick does not move the railway and does not await a model. Pilot events, human edits, pause, resume, and view changes still go through `store.ts`.
+The pilot railway is still in `packages/core/src/railway/pilot.ts`. This check does not walk it.
 
 ## How to run
 
@@ -31,34 +29,32 @@ From the repo root:
 pnpm verify:formal
 ```
 
-The command uses XState `6.0.0-beta.5` from `@visualizer/core`. It writes the machine with `machineToJSON`, then runs `xstate validate` and `xstate test` on the two checks files, then `checkLockstep()`. Exit code `0` prints JSON with `"ok": true`. Any other result is a failure. Do not treat a fingerprint bound as a failure by itself; the report includes `fingerprints` and `maxFingerprints`.
+The command uses XState `6.0.0-beta.5` from `@visualizer/core`. It writes the machine with `machineToJSON`, then runs `xstate validate` and `xstate test` on `flow.reach.checks.json`, then `checkFlowGraph()`. Exit code `0` prints JSON with `"ok": true`. Any other result is a failure.
 
 ## What the tools cover
 
-XState's bundled CLI checks the railway graph. `pilot.safe.checks.json` supplies every event except `FAIL` and asserts `never: ["#pilot.failed"]` plus `reachable` for `planning`, `running`, `drift_detected`, `paused_by_human`, `resuming`, and `completed`. `pilot.fail.checks.json` supplies `START`, `PLAN_READY`, and `FAIL`, asserts `never: ["#pilot.completed"]`, and asserts `reachable: ["#pilot.failed"]`. A reachability miss means those representatives did not witness the state. It does not prove the state is unreachable under some other event list.
+`xstate test` supplies Start, Pause, Stop, and the mode toggle, and asserts `reachable` for every state node in `flowStateIds`. A reachability miss means those representatives did not witness the state. It does not prove the state is unreachable under some other event list.
 
-`checkLockstep` calls the real functions. It walks a rest path for all eight phases, then breadth-first interleaves agent events (`START`, `PLAN_READY`, `DRIFT`, `CLEAR`, `COMPLETE`, `FAIL`), build ticks (`start`, `judge`, `engage`, `finish`), human edit, pause, resume, and view toggle. Each action is tried with the current version and with a stale version. The search stops at `stateVersion` 8 or 1500 fingerprints. The search does not model two processes sharing one object without going through `expectedVersion`.
+`checkFlowGraph` calls `getShortestPaths` and requires all 18 combinations of stage, motion, and mode. A non-final leaf with no transition, or a reached snapshot with no outgoing event, is a deadlock. `done` is final in the stage region. The mode region can still toggle there, so that snapshot is not a deadlock. One stale Start must return `STATE_CONFLICT` and leave the log empty.
 
 This check is not a TLA+ model. If a later change adds a TLA+ model of the same promise, read that result with `/statechart`.
 
-`pnpm test:mbt` is a separate check. It calls `getSimplePaths` from `xstate/graph` and executes those paths on the stand-in workspace. A green model-based run does not replace this lockstep check, and a green lockstep run does not replace the path walk.
+`pnpm test:mbt` is a separate check. It calls `getSimplePaths` from `xstate/graph`, runs those paths on `applyFlowEvent`, and then takes any transition the simple paths skip because it returns to the initial state. A green model-based run does not replace this check, and a green flow-graph run does not replace the path walk.
 
 ## Reading a failure
 
-A real bug names a property and a short counterexample in the code's words. The stale-write break, a version check that never fired inside `applyPilotEvent`, failed as:
+A real bug names a property and a short counterexample. A missing combination fails as:
 
 ```json
 {
-  "property": "stale-write rejection",
-  "detail": "agent START (stale) committed from version 1 while current was 0",
-  "counterexample": ["seed cockpit v0", "agent START (stale)"]
+  "property": "reachability",
+  "detail": "reachable states ...",
+  "counterexample": ["building|paused|advanced"]
 }
 ```
 
-That was a scratch edit, reverted after the check caught it. The same command then passed.
-
-A modeling error is a failure that the product code is not supposed to forbid. Examples: treating a same-mode `commitView` as a version bump (it returns the same state), treating `pauseRun` outside a working phase as a pause, or expecting the search to continue past `stateVersion` 8. Do not weaken a listed property to hide a real commit. Update the model only when the product rule changed, then move the sync commit.
+A modeling error is a failure the product is not supposed to forbid. Do not drop a listed state to hide a missing transition. Update the model only when the product rule changed, then move the sync commit.
 
 ## Updating the check
 
-When a change is supposed to alter one of these rules, update the witness or the action list in `lockstep.ts`, update the checks JSON if the railway graph changed, rerun `pnpm verify:formal`, and move the sync commit to the commit you just verified. When covered code changed and this skill was not updated with it, use `/maintain-formal-verification-skill` before trusting a pass.
+When a change is supposed to alter one of these rules, update `flow.reach.checks.json` and `checkFlowGraph`, rerun `pnpm verify:formal`, and move the sync commit to the commit you just verified. When covered code changed and this skill was not updated with it, use `/maintain-formal-verification-skill` before trusting a pass.

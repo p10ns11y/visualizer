@@ -1,11 +1,11 @@
 ---
 name: verify-visualizer
-description: "Open the Visualizer empty screen in a browser. Use when a change touches that screen and the page has to be shown."
+description: "Open the Visualizer flow screen in a browser. Use when a change touches that screen and the page has to be shown."
 ---
 
 # Verify Visualizer
 
-The surface is the Vite preview of `@visualizer/web` at `http://127.0.0.1:4183/`. The page is one empty screen. Chrome is launched through `puppeteer-core` from `CHROME_PATH` or `/usr/bin/google-chrome`. Two copies on port `4183` cannot run together; refuse to drive a preview this skill did not start.
+The surface is the Vite preview of `@visualizer/web` at `http://127.0.0.1:4183/`. The page is one screen. It shows the stage and the event log. Chrome is launched through `puppeteer-core` from `CHROME_PATH` or `/usr/bin/google-chrome`. Two copies on port `4183` cannot run together; refuse to drive a preview this skill did not start.
 
 ## Launch
 
@@ -15,7 +15,7 @@ From the repo root, with no session file:
 node scripts/verify-visualizer.mjs launch
 ```
 
-Launch builds the web package, starts `vite preview` on `127.0.0.1:4183`, and opens a headless Chrome page. Ready means the heading is `Visualizer`, `data-screen` is `empty`, `data-scroll` is `false`, and the page does not scroll. The command writes `/tmp/verify-visualizer/session.json` with the preview pid, the Chrome pid, and the browser websocket. It leaves Chrome running and disconnects.
+Launch builds the web package, starts `vite preview` on `127.0.0.1:4183`, and opens a headless Chrome page. Ready means the heading is `Visualizer`, `data-screen` is `flow`, `data-stage` is `asking`, `data-scroll` is `false`, the event log is empty, and the page does not scroll. The command writes `/tmp/verify-visualizer/session.json` with the preview pid, the Chrome pid, and the browser websocket. It leaves Chrome running and disconnects.
 
 ## Doctor
 
@@ -27,24 +27,24 @@ Doctor is read-only. It checks that both recorded pids are alive, that `GET` of 
 
 ## Drive
 
-Read `.cursor/skills/verify-visualizer/features/README.md` first. The screen has one heading, `Visualizer`.
+Read `.cursor/skills/verify-visualizer/features/README.md` first. The screen has the heading `Visualizer`, the stage line, Start, Pause, Stop, the mode toggle, and the event log.
 
 ```sh
-node scripts/verify-visualizer.mjs drive bare-shell
+node scripts/verify-visualizer.mjs drive flow
 ```
 
 ```sh
-node scripts/verify-visualizer.mjs browser text --path /opt/cursor/artifacts/verify-visualizer/bare-shell.txt
-node scripts/verify-visualizer.mjs browser screenshot --path /opt/cursor/artifacts/verify-visualizer/bare-shell.png
+node scripts/verify-visualizer.mjs browser text --path /opt/cursor/artifacts/verify-visualizer/flow.txt
+node scripts/verify-visualizer.mjs browser screenshot --path /opt/cursor/artifacts/verify-visualizer/flow.png
 ```
 
-Do not call React state setters or a test-only route.
+Do not call React state setters or a test-only route. Press the buttons the page shows.
 
 ## Evidence
 
-Proof is the text dump and the screenshot under `/opt/cursor/artifacts/verify-visualizer/`. The text dump shows `Visualizer` and nothing else on the screen. Capture the open page, not a second view.
+Proof is the text dump and the screenshot under `/opt/cursor/artifacts/verify-visualizer/`. After `drive flow`, the text shows `done`, `advanced`, and the four log lines for Start, Pause, the mode toggle, and Stop. Capture the open page, not a second view.
 
-`pnpm test:mbt` regenerates railway paths and is not a browser session. Do not treat a green model-based run as proof that the screen was opened.
+`pnpm test:mbt` regenerates flow paths and is not a browser session. Do not treat a green model-based run as proof that the screen was opened.
 
 Keep the map honest with `/maintain-verification-skill` when the screen or its labels change.
 

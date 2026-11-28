@@ -27,8 +27,35 @@ export type {
 } from "./state/schema.js";
 
 export { createStandIn } from "./state/stand-in.js";
-export { bareShell, bareShellDocument, bareShellSchema } from "./shell.js";
-export type { BareShell } from "./shell.js";
+export { shellScreen, shellScreenDocument, shellScreenSchema } from "./shell.js";
+export type { ShellScreen } from "./shell.js";
+
+export { flowMachine, flowStateIds } from "./flow/machine.js";
+export { applyFlowEvent, createFlow, flowCan, flowValueKey, readFlowValue } from "./flow/apply.js";
+export type { FlowConflict, FlowResult } from "./flow/apply.js";
+export {
+  FlowEventSchema,
+  FlowLogEntrySchema,
+  FlowModeSchema,
+  FlowMotionSchema,
+  FlowStageSchema,
+  FlowStateSchema,
+  flowEventTypes,
+  flowModes,
+  flowMotions,
+  flowStages,
+  logLine,
+  stageLabel,
+  stageLine,
+} from "./flow/schema.js";
+export type {
+  FlowEvent,
+  FlowLogEntry,
+  FlowMode,
+  FlowMotion,
+  FlowStage,
+  FlowState,
+} from "./flow/schema.js";
 
 export {
   StateConflictError,
