@@ -13,6 +13,8 @@ The UI talks to a thin bridge, the bridge talks to a thin core, and heavy payloa
 | **Three-tier fallback** | Deterministic code, then a lightweight local decision model, when frontier access drops. |
 | **Local tool handoff** | Coding work goes to local CLI and GUI tools, plus the MCP connectors this repo already serves. |
 
+![3-Tier Brain Degradation and Reuse Map](diagrams/fallback-tiers.svg)
+
 ## Neighbors
 
 [Chopin](https://githubnext.com/projects/chopin/) plans in multiplayer MDX and stops before execution. This cockpit owns the railway and the shared workspace. The adapter stays a proposal: [`002`](decisions/002-chopin-interop-via-mcp.md).

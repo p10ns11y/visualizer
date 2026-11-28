@@ -29,5 +29,5 @@ Preconditions:
 
 - The page does not call Tier 2. A green Build does not prove the harness.
 - CI runs the critical-flow smoke of this command and allows the fallback. CI does not set the strict variable.
-- The default URL is `http://127.0.0.1:11434/v1`. The host alias `laptop-1` stays in the README and is not a network name.
+- The default URL is `http://127.0.0.1:11434/v1`. The host alias `laptop-1` is recorded in [docs/TECH-CHOICES.md](../../../../docs/TECH-CHOICES.md) and is not a network name.
 - Cleanup of the browser session must not remove the JSON proof in the evidence directory.

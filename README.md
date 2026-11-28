@@ -4,15 +4,9 @@ A visual pilot cockpit for self-hosted SI: speak, sketch, and steer one shared w
 
 ![Visual Cockpit, with the sample fleet and the live plates](docs/hero-cockpit.png)
 
-```mermaid
-flowchart LR
-  cockpit["Visual Cockpit"] --> workspace["Shared workspace"]
-  code["Code Mode"] --> workspace
-  workspace --> railway["XState 6 railway"]
-  railway --> tiers["Tier 3, then Tier 2, then Tier 1"]
-```
+![One App, Two Modes, One Shared State](docs/diagrams/architecture-cockpit.svg)
 
-Visual Cockpit and Code Mode read and write that workspace. XState 6 owns the railway.
+![Pilot / Rail-Driver Autopilot Loop](docs/diagrams/pilot-flow.svg)
 
 ## Run
 
