@@ -11,7 +11,7 @@ A break lets the screen show a stage the machine cannot reach, or lets a stopped
 
 ## Covered code
 
-Synced with commit `0503ab6b7ff3669ae1c9c2f2b4ccf504f808baae`. Move that hash forward only after `pnpm verify:formal` passes and the notes below still describe the code at that commit.
+Synced with commit `5fee67a19e24943666a2b7970caa39957b3cfcd3`. Move that hash forward only after `pnpm verify:formal` passes and the notes below still describe the code at that commit.
 
 - `packages/core/src/flow/machine.ts` — `flowMachine`
 - `packages/core/src/flow/apply.ts` — `createFlow`, `applyFlowEvent`, `flowCan`
