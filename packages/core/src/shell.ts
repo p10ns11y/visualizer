@@ -3,25 +3,27 @@ import type { StandardSchemaV1 } from "@adaptate/core/standard";
 import { zodToOpenAPISchema } from "@adaptate/utils";
 import { z } from "zod";
 
-export const bareShellSchema = z.object({
-  screens: z.tuple([z.literal("empty")]),
+export const shellScreenSchema = z.object({
+  screens: z.tuple([z.literal("flow")]),
   scroll: z.literal(false),
+  shows: z.tuple([z.literal("stage"), z.literal("log")]),
 });
 
-export type BareShell = z.infer<typeof bareShellSchema>;
+export type ShellScreen = z.infer<typeof shellScreenSchema>;
 
 function asStandard<T>(schema: z.ZodType<T>): StandardSchemaV1<unknown, T> {
   return schema as unknown as StandardSchemaV1<unknown, T>;
 }
 
-const checked = parse(asStandard(bareShellSchema), {
-  screens: ["empty"],
+const checked = parse(asStandard(shellScreenSchema), {
+  screens: ["flow"],
   scroll: false,
+  shows: ["stage", "log"],
 });
 
 if (!checked.ok) {
-  throw new Error("Bare shell failed schema check");
+  throw new Error("Shell screen failed schema check");
 }
 
-export const bareShell: BareShell = checked.value;
-export const bareShellDocument: unknown = zodToOpenAPISchema(bareShellSchema);
+export const shellScreen: ShellScreen = checked.value;
+export const shellScreenDocument: unknown = zodToOpenAPISchema(shellScreenSchema);

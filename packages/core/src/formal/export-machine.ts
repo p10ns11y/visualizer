@@ -1,6 +1,6 @@
 import { machineToJSON } from "xstate";
-import { pilotMachine } from "../railway/pilot.js";
+import { flowMachine } from "../flow/machine.js";
 
-export function pilotMachineJson(): string {
-  return JSON.stringify(machineToJSON(pilotMachine));
+export function flowMachineJson(): string {
+  return JSON.stringify(machineToJSON(flowMachine));
 }

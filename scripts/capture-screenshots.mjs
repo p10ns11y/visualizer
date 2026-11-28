@@ -10,8 +10,8 @@ const outDir = "/opt/cursor/artifacts";
 await mkdir(outDir, { recursive: true });
 
 const shots = [
-  { name: "bare-shell-wide", width: 1280, height: 800, doc: "docs/hero-bare.png" },
-  { name: "bare-shell-narrow", width: 390, height: 844, doc: "docs/hero-bare-mobile.png" },
+  { name: "step-2-wide", width: 1280, height: 800, doc: "docs/evidence/step-2-wide.png" },
+  { name: "step-2-narrow", width: 390, height: 844, doc: "docs/evidence/step-2-narrow.png" },
 ];
 
 const browser = await puppeteer.launch({
@@ -27,10 +27,14 @@ try {
     await page.goto(base, { waitUntil: "networkidle0" });
     const ready = await page.evaluate(() => {
       const main = document.querySelector("main");
+      const stage = document.querySelector("[data-stage]");
       return {
         title: document.querySelector("h1")?.textContent ?? "",
         screen: main?.getAttribute("data-screen") ?? "",
         scroll: main?.getAttribute("data-scroll") ?? "",
+        stage: stage?.getAttribute("data-stage") ?? "",
+        mode: stage?.getAttribute("data-mode") ?? "",
+        log: document.querySelectorAll("[data-log] li").length,
         pageOverflow: document.documentElement.scrollHeight > document.documentElement.clientHeight + 1,
         mainOverflow: main !== null && main.scrollHeight > main.clientHeight + 1,
         text: document.body.innerText.trim(),
@@ -38,13 +42,17 @@ try {
     });
     if (
       ready.title !== "Visualizer" ||
-      ready.screen !== "empty" ||
+      ready.screen !== "flow" ||
       ready.scroll !== "false" ||
+      ready.stage !== "asking" ||
+      ready.mode !== "simple" ||
+      ready.log !== 0 ||
       ready.pageOverflow ||
       ready.mainOverflow ||
-      ready.text !== "Visualizer"
+      !ready.text.includes("Event log") ||
+      !ready.text.includes("asking · simple")
     ) {
-      throw new Error(`${shot.name} is not one empty screen: ${JSON.stringify(ready)}`);
+      throw new Error(`${shot.name} is not the flow screen: ${JSON.stringify(ready)}`);
     }
     const artifact = path.join(outDir, `${shot.name}.png`);
     await page.screenshot({

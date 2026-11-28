@@ -348,3 +348,21 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - [x] Rewrite the three short docs, the verification skills, and this entry.
 - [x] Run `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`.
 
+## Flow graph
+
+- **Chosen:** Stay on `xstate@6.0.0-beta.5`. One `setup().createMachine` owns stage and mode with object transitions. `pnpm test:mbt` still generates paths with `getSimplePaths` from `xstate/graph` and checks them against `applyFlowEvent`. `getAdjacencyMap` lists every transition. `pnpm verify:formal` still runs `xstate validate` and `xstate test`, then `checkFlowGraph`. The path runner stays in this repo. The pin stays at `6.0.0-beta.5`.
+- **Why:** The flow graph is a finite machine. The repo, `scripts/fetch-ref.sh`, and the formal command already run on beta.5. Beta.6 adds schema sampling, durable inspection, and rejection types this step does not use. `@xstate/test` walks paths with fast-check. This repo already executes the paths itself. Simple paths omit the two edges that return to the initial state. The adjacency map names those edges, and the test takes each one from a simple path that has reached its source.
+- **Basis:** Lookup on 2026-11-28, before the machine was written. `npm view xstate dist-tags` reported `latest` `5.33.4` and `beta` `6.0.0-beta.6`. The [beta.6 release](https://github.com/statelyai/xstate/releases/tag/xstate%406.0.0-beta.6) (2026-11-27) lists those three additions. [Model-based testing](https://stately.ai/docs/xstate/v6/model-based-testing) documents `getSimplePaths`, `getAdjacencyMap`, and `@xstate/test` `testPaths`. [The agent guide](https://stately.ai/docs/xstate/v6/agents) documents `xstate test` reachability on supplied events. `npm view @xstate/test dist-tags` reported `beta` `2.0.0-beta.3`. The installed beta.5 graph run listed 58 transitions and 1002 simple paths, with 2 edges absent from those paths.
+- **Latest trends checked before choosing:** Yes, on 2026-11-28, before the machine was written. Compared XState `5.33.4` (`latest`), `6.0.0-beta.6` (`beta`), and staying on `6.0.0-beta.5`. Compared `@xstate/test@2.0.0-beta.3` plus fast-check with the in-repo `getSimplePaths` runner. No second state-machine library was added. pnpm printed an upgrade notice to `12.23.0`. This step stays on the pinned `10.33.4`.
+
+### Head Plan
+
+- [x] One machine owns stage and mode, with Start, Pause, Stop, and the mode toggle.
+- [x] The event log starts empty and records only events the machine takes.
+- [x] Formal checks and model-based paths target this machine.
+
+### Tail Plan
+
+- [x] Update the three short docs, both verification skills, this entry, and the formal sync commit.
+- [x] Save `step-2-wide` and `step-2-narrow`.
+

@@ -1,22 +1,14 @@
-import { getSimplePaths } from "xstate/graph";
-import { applyBuildTick } from "../bootstrap/run.js";
-import { pilotMachine } from "../railway/pilot.js";
-import { createStandIn } from "../state/stand-in.js";
-import {
-  WorkspaceStateSchema,
-  pilotPhases,
-  type PilotEvent,
-  type PilotPhase,
-  type WorkspaceState,
-} from "../state/schema.js";
-import { applyPilotEvent, commitView } from "../state/store.js";
+import { adjacencyMapToArray, getAdjacencyMap, getSimplePaths } from "xstate/graph";
+import { applyFlowEvent, createFlow, flowValueKey } from "../flow/apply.js";
+import { flowMachine } from "../flow/machine.js";
+import { FlowStateSchema, type FlowEvent, type FlowState } from "../flow/schema.js";
 
 export type MbtReport =
   | {
       ok: true;
       paths: number;
       steps: number;
-      phases: PilotPhase[];
+      transitions: number;
     }
   | {
       ok: false;
@@ -25,129 +17,129 @@ export type MbtReport =
       detail: string;
     };
 
-function phaseOf(value: unknown): PilotPhase | undefined {
-  return pilotPhases.find((phase) => phase === value);
-}
-
-function isPilotEvent(event: { type: string }): event is PilotEvent {
-  if (event.type === "FAIL") return "reason" in event && typeof event.reason === "string";
+function isFlowEvent(event: { type: string }): event is FlowEvent {
   return (
     event.type === "START" ||
-    event.type === "PLAN_READY" ||
-    event.type === "DRIFT" ||
-    event.type === "CLEAR" ||
-    event.type === "HUMAN_PAUSE" ||
-    event.type === "RESUME" ||
-    event.type === "COMPLETE"
+    event.type === "PAUSE" ||
+    event.type === "STOP" ||
+    event.type === "TOGGLE_MODE"
   );
 }
 
-async function assertInvariants(state: WorkspaceState): Promise<string | null> {
-  if (state.stateVersion < 0) return "stateVersion decreased";
-  const parsed = WorkspaceStateSchema.safeParse(state);
-  if (!parsed.success) return "workspace failed schema validation";
-  const other = state.mode === "cockpit" ? "code" : "cockpit";
-  const viewed = commitView(state, state.stateVersion, other);
-  if (!viewed.ok) return "view switch was rejected";
-  if (
-    viewed.state.problemCards.some(
-      (card, index) => card.statement !== state.problemCards[index]?.statement,
-    )
-  ) {
-    return "view switch changed a problem statement";
+function edgeId(from: string, type: string, to: string): string {
+  return `${from}|${type}|${to}`;
+}
+
+function stateKey(state: FlowState): string {
+  return `${state.stage}|${state.motion}|${state.mode}`;
+}
+
+function replay(pathSteps: ReadonlyArray<{ event: { type: string }; state: { value: unknown } }>): {
+  state: FlowState;
+  covered: string[];
+  detail: string | null;
+} {
+  let state = createFlow();
+  const covered: string[] = [];
+  let previous = flowValueKey(pathSteps[0]?.state.value);
+  for (let stepIndex = 0; stepIndex < pathSteps.length; stepIndex += 1) {
+    const step = pathSteps[stepIndex];
+    if (!step) return { state, covered, detail: "missing graph step" };
+    if (step.event.type === "xstate.init") {
+      if (flowValueKey(step.state.value) !== stateKey(state)) {
+        return { state, covered, detail: "init left the asking state" };
+      }
+      previous = flowValueKey(step.state.value);
+      continue;
+    }
+    if (!isFlowEvent(step.event)) {
+      return { state, covered, detail: `graph event ${step.event.type} is not a flow event` };
+    }
+    const version = state.stateVersion;
+    const committed = applyFlowEvent(state, version, step.event);
+    if (!committed.ok) {
+      return { state, covered, detail: `${step.event.type} was rejected from ${state.stage}` };
+    }
+    state = committed.state;
+    if (state.stateVersion !== version + 1) {
+      return { state, covered, detail: `stateVersion ${version} moved to ${state.stateVersion}` };
+    }
+    if (state.eventLog.length !== state.stateVersion) {
+      return { state, covered, detail: "the log length diverged from stateVersion" };
+    }
+    const parsed = FlowStateSchema.safeParse(state);
+    if (!parsed.success) return { state, covered, detail: "flow state failed schema validation" };
+    const nextKey = flowValueKey(step.state.value);
+    if (stateKey(state) !== nextKey) {
+      return {
+        state,
+        covered,
+        detail: `flow ${stateKey(state)} diverged from graph ${nextKey}`,
+      };
+    }
+    covered.push(edgeId(previous, step.event.type, nextKey));
+    previous = nextKey;
   }
-  if (viewed.state.autopilot.phase !== state.autopilot.phase) return "view switch changed the railway";
-  if (viewed.state.stateVersion !== state.stateVersion + 1) return "view switch did not raise stateVersion";
-  const returned = commitView(viewed.state, viewed.state.stateVersion, state.mode);
-  if (!returned.ok || returned.state.autopilot.phase !== state.autopilot.phase) {
-    return "return view lost the railway phase";
-  }
-  if (
-    state.autopilot.phase === "paused_by_human" ||
-    state.autopilot.phase === "completed" ||
-    state.autopilot.phase === "failed"
-  ) {
-    const agent = await applyBuildTick(state, state.stateVersion, "judge");
-    if (!agent.ok || agent.state !== state) return `agent tick committed during ${state.autopilot.phase}`;
-  }
-  return null;
+  return { state, covered, detail: null };
 }
 
 export async function runModelBasedPaths(): Promise<MbtReport> {
-  const paths = getSimplePaths(pilotMachine, {
-    events: {
-      FAIL: [{ reason: "runner unavailable" }],
-    },
-  });
-  const seen = new Set<PilotPhase>();
+  const paths = getSimplePaths(flowMachine);
+  const edges = adjacencyMapToArray(getAdjacencyMap(flowMachine));
+  const covered = new Set<string>();
   let steps = 0;
-  let state = createStandIn();
-  const initial = await assertInvariants(state);
-  if (initial) return { ok: false, path: 0, step: 0, detail: initial };
-  seen.add(state.autopilot.phase);
+  const reached = new Map<string, FlowState>();
 
   for (let pathIndex = 0; pathIndex < paths.length; pathIndex += 1) {
     const path = paths[pathIndex];
     if (!path) return { ok: false, path: pathIndex, step: 0, detail: "missing path" };
-    state = createStandIn();
-    for (let stepIndex = 0; stepIndex < path.steps.length; stepIndex += 1) {
-      const step = path.steps[stepIndex];
-      if (!step) return { ok: false, path: pathIndex, step: stepIndex, detail: "missing graph step" };
-      const eventType: string = step.event.type;
-      if (eventType === "xstate.init") {
-        const initialPhase = phaseOf(step.state.value);
-        if (initialPhase !== "idle" || state.autopilot.phase !== "idle") {
-          return { ok: false, path: pathIndex, step: stepIndex, detail: "init left the idle state" };
-        }
-        seen.add("idle");
-        continue;
-      }
-      if (!isPilotEvent(step.event)) {
-        return {
-          ok: false,
-          path: pathIndex,
-          step: stepIndex,
-          detail: `graph event ${eventType} is not a pilot event`,
-        };
-      }
-      const previous = state.stateVersion;
-      const committed = applyPilotEvent(state, state.stateVersion, step.event);
-      if (!committed.ok) {
-        return {
-          ok: false,
-          path: pathIndex,
-          step: stepIndex,
-          detail: `${step.event.type} was rejected from ${state.autopilot.phase}`,
-        };
-      }
-      state = committed.state;
-      steps += 1;
-      if (state.stateVersion !== previous + 1) {
-        return {
-          ok: false,
-          path: pathIndex,
-          step: stepIndex,
-          detail: `stateVersion ${previous} moved to ${state.stateVersion}`,
-        };
-      }
-      const expected = phaseOf(step.state.value);
-      if (!expected || state.autopilot.phase !== expected) {
-        return {
-          ok: false,
-          path: pathIndex,
-          step: stepIndex,
-          detail: `workspace ${state.autopilot.phase} diverged from graph ${String(step.state.value)}`,
-        };
-      }
-      seen.add(state.autopilot.phase);
-      const violation = await assertInvariants(state);
-      if (violation) return { ok: false, path: pathIndex, step: stepIndex, detail: violation };
-    }
+    const played = replay(path.steps);
+    if (played.detail) return { ok: false, path: pathIndex, step: steps, detail: played.detail };
+    for (const id of played.covered) covered.add(id);
+    steps += played.covered.length;
+    reached.set(flowValueKey(path.state.value), played.state);
   }
 
-  const missing = pilotPhases.filter((phase) => !seen.has(phase));
-  if (missing.length > 0) {
-    return { ok: false, path: paths.length, step: steps, detail: `uncovered phases ${missing.join(", ")}` };
+  for (const edge of edges) {
+    const from = flowValueKey(edge.state.value);
+    const to = flowValueKey(edge.nextState.value);
+    const id = edgeId(from, edge.event.type, to);
+    if (covered.has(id)) continue;
+    const source = reached.get(from);
+    if (!source) {
+      return { ok: false, path: paths.length, step: steps, detail: `no simple path reached ${from}` };
+    }
+    const committed = applyFlowEvent(source, source.stateVersion, edge.event);
+    if (!committed.ok || stateKey(committed.state) !== to) {
+      return {
+        ok: false,
+        path: paths.length,
+        step: steps,
+        detail: `${edge.event.type} from ${from} did not reach ${to}`,
+      };
+    }
+    if (committed.state.eventLog.length !== source.eventLog.length + 1) {
+      return { ok: false, path: paths.length, step: steps, detail: `${id} was not logged` };
+    }
+    covered.add(id);
+    steps += 1;
   }
-  return { ok: true, paths: paths.length, steps, phases: [...seen] };
+
+  const missing = edges.filter((edge) => {
+    const id = edgeId(
+      flowValueKey(edge.state.value),
+      edge.event.type,
+      flowValueKey(edge.nextState.value),
+    );
+    return !covered.has(id);
+  });
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      path: paths.length,
+      step: steps,
+      detail: `uncovered transitions ${missing.length}`,
+    };
+  }
+  return { ok: true, paths: paths.length, steps, transitions: edges.length };
 }
