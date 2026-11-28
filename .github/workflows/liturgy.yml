@@ -1,21 +1,21 @@
-name: melt
+name: liturgy
 
 on:
   push:
     paths:
-      - "packages/melt/**"
+      - "packages/liturgy/**"
       - "packages/sources/**"
   pull_request:
     paths:
-      - "packages/melt/**"
+      - "packages/liturgy/**"
       - "packages/sources/**"
 
 jobs:
-  J_melt:
+  J_liturgy:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/melt
+        working-directory: packages/liturgy
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.100.1

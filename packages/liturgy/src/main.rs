@@ -11,11 +11,11 @@ fn main() -> ExitCode {
             let repo = match repo_root() {
                 Some(path) => path,
                 None => {
-                    eprintln!("melt: cannot find the repository root");
+                    eprintln!("liturgy: cannot find the repository root");
                     return ExitCode::from(1);
                 }
             };
-            match melt::index_bytes(&repo) {
+            match liturgy::index_bytes(&repo) {
                 Ok(bytes) => {
                     let mut out = io::stdout().lock();
                     if out.write_all(&bytes).is_err() {
@@ -24,7 +24,7 @@ fn main() -> ExitCode {
                     ExitCode::SUCCESS
                 }
                 Err(error) => {
-                    eprintln!("melt: {error}");
+                    eprintln!("liturgy: {error}");
                     ExitCode::from(1)
                 }
             }
@@ -37,7 +37,7 @@ fn main() -> ExitCode {
 }
 
 fn usage() {
-    eprintln!("usage: melt index");
+    eprintln!("usage: liturgy index");
 }
 
 fn repo_root() -> Option<std::path::PathBuf> {

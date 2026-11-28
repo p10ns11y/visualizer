@@ -4,11 +4,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
-pub struct MeltError {
+pub struct LiturgyError {
     message: String,
 }
 
-impl MeltError {
+impl LiturgyError {
     fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
@@ -16,13 +16,13 @@ impl MeltError {
     }
 }
 
-impl std::fmt::Display for MeltError {
+impl std::fmt::Display for LiturgyError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str(&self.message)
     }
 }
 
-impl std::error::Error for MeltError {}
+impl std::error::Error for LiturgyError {}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Alias {
@@ -34,14 +34,14 @@ enum Alias {
 }
 
 impl Alias {
-    fn parse(text: &str) -> Result<Self, MeltError> {
+    fn parse(text: &str) -> Result<Self, LiturgyError> {
         match text {
             "plugins" => Ok(Self::Plugins),
             "skills" => Ok(Self::Skills),
             "ensembly-marketplaces" => Ok(Self::Ensembly),
             "pstack" => Ok(Self::Pstack),
             "ub-mode" => Ok(Self::UbMode),
-            _ => Err(MeltError::new(format!("unknown source alias: {text}"))),
+            _ => Err(LiturgyError::new(format!("unknown source alias: {text}"))),
         }
     }
 
@@ -87,16 +87,16 @@ impl Ord for RevRank {
     }
 }
 
-pub fn index_bytes(repo: &Path) -> Result<Vec<u8>, MeltError> {
-    let sources = read_table(&repo.join("packages/melt/sources.tsv"))?;
-    let external = read_table(&repo.join("packages/melt/external.tsv"))?;
+pub fn index_bytes(repo: &Path) -> Result<Vec<u8>, LiturgyError> {
+    let sources = read_table(&repo.join("packages/liturgy/sources.tsv"))?;
+    let external = read_table(&repo.join("packages/liturgy/external.tsv"))?;
     let mut merged: BTreeMap<(String, String), Node> = BTreeMap::new();
     for row in sources.iter().skip(1) {
         if row.is_empty() || row.iter().all(|cell| cell.is_empty()) {
             continue;
         }
         if row.len() < 3 {
-            return Err(MeltError::new("sources.tsv row is short"));
+            return Err(LiturgyError::new("sources.tsv row is short"));
         }
         let alias = Alias::parse(&row[0])?;
         let root = &row[2];
@@ -105,13 +105,14 @@ pub fn index_bytes(repo: &Path) -> Result<Vec<u8>, MeltError> {
         } else {
             let dir = repo.join(root);
             if !dir.is_dir() {
-                return Err(MeltError::new(format!("missing house tree: {root}")));
+                return Err(LiturgyError::new(format!("missing house tree: {root}")));
             }
             let mut files = Vec::new();
             collect_nodes(&dir, &mut files)?;
             for path in files {
-                let bytes = fs::read(&path)
-                    .map_err(|error| MeltError::new(format!("read {}: {error}", path.display())))?;
+                let bytes = fs::read(&path).map_err(|error| {
+                    LiturgyError::new(format!("read {}: {error}", path.display()))
+                })?;
                 let text = String::from_utf8_lossy(&bytes);
                 let playbook = is_playbook(&path);
                 let path_id = path_id(&path, playbook);
@@ -174,12 +175,12 @@ fn load_external(
     table: &[Vec<String>],
     alias: Alias,
     merged: &mut BTreeMap<(String, String), Node>,
-) -> Result<(), MeltError> {
+) -> Result<(), LiturgyError> {
     let name = match alias {
         Alias::Pstack => "pstack",
         Alias::UbMode => "ub-mode",
         Alias::Plugins | Alias::Skills | Alias::Ensembly => {
-            return Err(MeltError::new("house alias in external load"));
+            return Err(LiturgyError::new("house alias in external load"));
         }
     };
     let mut found = false;
@@ -188,7 +189,7 @@ fn load_external(
             continue;
         }
         if row.len() < 6 {
-            return Err(MeltError::new("external.tsv row is short"));
+            return Err(LiturgyError::new("external.tsv row is short"));
         }
         if row[0] != name {
             continue;
@@ -196,7 +197,7 @@ fn load_external(
         found = true;
         let digest = row[4].trim();
         if digest.len() != 64 || !digest.chars().all(|ch| ch.is_ascii_hexdigit()) {
-            return Err(MeltError::new(format!("bad digest for {}", row[1])));
+            return Err(LiturgyError::new(format!("bad digest for {}", row[1])));
         }
         insert_node(
             merged,
@@ -211,22 +212,22 @@ fn load_external(
         );
     }
     if !found {
-        return Err(MeltError::new(format!("no external rows for {name}")));
+        return Err(LiturgyError::new(format!("no external rows for {name}")));
     }
     Ok(())
 }
 
-fn collect_nodes(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), MeltError> {
+fn collect_nodes(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), LiturgyError> {
     let mut entries = fs::read_dir(dir)
-        .map_err(|error| MeltError::new(format!("read dir {}: {error}", dir.display())))?
+        .map_err(|error| LiturgyError::new(format!("read dir {}: {error}", dir.display())))?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|error| MeltError::new(format!("read dir entry: {error}")))?;
+        .map_err(|error| LiturgyError::new(format!("read dir entry: {error}")))?;
     entries.sort_by_key(|entry| entry.file_name());
     for entry in entries {
         let path = entry.path();
         let kind = entry
             .file_type()
-            .map_err(|error| MeltError::new(format!("file type: {error}")))?;
+            .map_err(|error| LiturgyError::new(format!("file type: {error}")))?;
         if kind.is_symlink() {
             continue;
         }
@@ -447,9 +448,9 @@ fn sanitize(text: &str) -> String {
     collapse(&text.replace(['\t', '\r', '\n'], " "))
 }
 
-fn read_table(path: &Path) -> Result<Vec<Vec<String>>, MeltError> {
+fn read_table(path: &Path) -> Result<Vec<Vec<String>>, LiturgyError> {
     let text = fs::read_to_string(path)
-        .map_err(|error| MeltError::new(format!("read {}: {error}", path.display())))?;
+        .map_err(|error| LiturgyError::new(format!("read {}: {error}", path.display())))?;
     let mut rows = Vec::new();
     for line in text.split('\n') {
         if line.is_empty() {
@@ -672,7 +673,7 @@ mod tests {
         let once = index_bytes(&root).expect("index");
         let twice = index_bytes(&root).expect("index again");
         assert_eq!(once, twice);
-        let golden = std::fs::read(root.join("packages/melt/index.tsv")).expect("golden");
+        let golden = std::fs::read(root.join("packages/liturgy/index.tsv")).expect("golden");
         assert_eq!(once, golden);
         let text = String::from_utf8(once).expect("utf-8");
         let mut ids = Vec::new();

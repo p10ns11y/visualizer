@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "melt"
+name = "liturgy"
 version = "0.1.0"

@@ -1,4 +1,4 @@
-Melt reads committed house trees and a table of external records. It does not fetch those records.
+Liturgy reads committed house trees and a table of external records. It does not fetch those records.
 
 House trees live under packages/sources. Each tree keeps its LICENSE and NOTICE.
 
