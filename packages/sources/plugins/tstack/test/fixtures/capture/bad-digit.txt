@@ -1,7 +1,0 @@
-source: mail
-kind: none
-ask: See item 2.
-deadline: none
-owner: none
-holds: none
-ref: mail:1

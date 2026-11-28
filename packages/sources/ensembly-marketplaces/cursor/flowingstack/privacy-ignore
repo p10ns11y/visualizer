@@ -1,5 +1,0 @@
-test/test_privacy_scan.py
-test/fixtures/privacy/*
-.git/*
-*__pycache__/*
-.pytest_cache/*

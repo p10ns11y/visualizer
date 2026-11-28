@@ -1,5 +1,0 @@
-id: c-ref
-input: module
-output: same module
-check: unchanged: behaviour unchanged
-counter: p95 latency
