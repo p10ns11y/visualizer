@@ -27,7 +27,7 @@ Doctor is read-only. It checks that both recorded pids are alive, that `GET` of 
 
 ## Drive
 
-Read `.cursor/skills/verify-visualizer/features/README.md` first. The screen has the heading `Visualizer`, the stage line, the current view, Start, Pause, Stop, Reset after done, the mode toggle, and the event log.
+Read `.cursor/skills/verify-visualizer/features/README.md` first. The screen has the heading `Visualizer`, the stage line, the current view, Start, Pause, Stop, Reset after done, Settings, and the event log. The mode toggle is inside Settings.
 
 ```sh
 node scripts/verify-visualizer.mjs drive flow

@@ -14,8 +14,8 @@ This directory is the maintained source for opening Visualizer the way a person 
 ## Driving conventions
 
 - Start from a fresh launch.
-- The accessible names are the heading `Visualizer`, the stage line, the current view, Start, Pause, Stop, Advanced, and the event log.
-- `drive flow` presses Start, Pause, Advanced, Stop, and Reset, then writes proof files.
+- The accessible names are the heading `Visualizer`, the stage line, the current view, Start, Pause, Stop, Settings, and the event log. Advanced is inside Settings.
+- `drive flow` opens Settings, presses Advanced, closes Settings, then presses Stop and Reset, and writes proof files.
 - Cleanup kills the preview pid and the Chrome pid recorded in the session file. It leaves `/opt/cursor/artifacts/verify-visualizer/`.
 
 ## Proof and skip reporting
@@ -30,4 +30,4 @@ Each feature file has an H1, one opening paragraph, and these H2 sections in ord
 
 ## Features
 
-- [Flow screen](./flow.md) opens the page, presses Start, Pause, Advanced, Stop, and Reset, and checks that the page does not scroll.
+- [Flow screen](./flow.md) opens the page, opens Settings for the mode toggle, presses Stop and Reset, and checks that the page does not scroll.

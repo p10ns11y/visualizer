@@ -38,6 +38,7 @@ try {
         views: document.querySelectorAll("[data-view]").length,
         panel: document.querySelector("[data-panel]")?.getAttribute("data-panel") ?? "",
         log: document.querySelectorAll("[data-log] li").length,
+        advanced: [...document.querySelectorAll("button")].filter((item) => item.textContent === "Advanced").length,
         pageOverflow: document.documentElement.scrollHeight > document.documentElement.clientHeight + 1,
         mainOverflow: main !== null && main.scrollHeight > main.clientHeight + 1,
         text: document.body.innerText.trim(),
@@ -57,7 +58,9 @@ try {
       ready.mainOverflow ||
       !ready.text.includes("Event log") ||
       !ready.text.includes("asking · simple") ||
-      !ready.text.includes("Questions")
+      !ready.text.includes("Questions") ||
+      !ready.text.includes("Settings") ||
+      ready.advanced !== 0
     ) {
       throw new Error(`${shot.name} is not the flow screen: ${JSON.stringify(ready)}`);
     }

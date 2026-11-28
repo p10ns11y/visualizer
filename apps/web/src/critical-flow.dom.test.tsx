@@ -17,6 +17,7 @@ describe("flow screen", () => {
   let host: HTMLDivElement;
 
   beforeEach(() => {
+    Element.prototype.getAnimations = () => [];
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     host = document.createElement("div");
     document.body.append(host);
@@ -65,6 +66,9 @@ describe("flow screen", () => {
     expect(document.querySelector("[data-view]")?.getAttribute("data-panel")).toBeNull();
     expect(document.querySelector("[data-stage-mark]")?.getAttribute("data-stage-mark")).toBe("asking");
     expect(document.querySelector("[data-view]")?.textContent).toContain("Questions");
+    expect([...document.querySelectorAll("button")].some((item) => item.textContent === "Advanced")).toBe(
+      false,
+    );
     click("Start");
     expect(document.querySelector("[data-stage]")?.getAttribute("data-stage")).toBe("editing");
     expect(document.querySelector("[data-view]")?.getAttribute("data-view")).toBe("editing");
@@ -84,7 +88,9 @@ describe("flow screen", () => {
     })]);
     click("Pause");
     expect(document.querySelector("[data-motion]")?.getAttribute("data-motion")).toBe("paused");
+    click("Settings");
     click("Advanced");
+    click("Close");
     expect(document.querySelector("[data-mode]")?.getAttribute("data-mode")).toBe("advanced");
     expect(document.querySelector("[data-view]")?.getAttribute("data-panel")).toBe("later");
     expect(document.querySelector("[data-view]")?.textContent).toContain("later");

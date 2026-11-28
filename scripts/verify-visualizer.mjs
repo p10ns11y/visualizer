@@ -270,7 +270,7 @@ async function drive(feature) {
   const { browser, page } = await connect();
   try {
     assertInitial(await readScreen(page));
-    for (const name of ["Start", "Pause", "Advanced", "Stop"]) {
+    for (const name of ["Start", "Pause", "Settings", "Advanced", "Close", "Stop"]) {
       await press(page, name);
     }
     const ready = await readScreen(page);

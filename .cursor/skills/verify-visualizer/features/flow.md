@@ -1,19 +1,19 @@
 # Flow screen
 
-The page is one screen. It shows the view for the current stage, the stage line, and the event log. It does not scroll. The log starts empty. Advanced mode adds a later panel.
+The page is one screen. It shows the view for the current stage, the stage line, and the event log. It does not scroll. The log starts empty. Settings holds the mode toggle. Advanced mode adds a later panel.
 
 ## Sub-features
 
 - `open` shows the heading, `data-screen="flow"`, stage `asking`, view `asking`, mode `simple`, the Questions placeholder, and an empty log.
 - `still` confirms the document and the screen do not overflow the viewport.
-- `drive` presses Start, Pause, Advanced, and Stop. The stage and the view reach `done`, the mode is `advanced`, the later panel is present, and the log has those four events. Reset then returns to asking, live, and simple.
+- `drive` presses Start, Pause, Settings, Advanced, Close, and Stop. The stage and the view reach `done`, the mode is `advanced`, the later panel is present, and the log has those four events. Reset then returns to asking, live, and simple.
 
 ## How to get to it (user POV)
 
 - From the repo root, run `pnpm --filter @visualizer/web build`, then `pnpm --filter @visualizer/web exec vite preview --host 127.0.0.1 --port 4183 --strictPort`.
 - Open `http://127.0.0.1:4183/`.
 - The heading reads Visualizer. The stage line reads `asking · simple`. The view reads Questions. The event log has no rows.
-- Start moves the stage and the view to editing. Pause holds that stage. Advanced toggles the mode and shows the later panel. Stop reaches done. Reset returns to the start.
+- Start moves the stage and the view to editing. Pause holds that stage. Settings opens the mode toggle. Advanced toggles the mode and shows the later panel. Stop reaches done. Reset returns to the start.
 
 ## Driving it with verify-visualizer
 

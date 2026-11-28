@@ -8,6 +8,14 @@ import {
   type FlowEvent,
   type FlowState,
 } from "@visualizer/core";
+import {
+  Dialog,
+  DialogBackdrop,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@ui-sdk/react/dialog";
 import { useEffect, useState } from "react";
 import { connectModelContext } from "./agent.js";
 import { StageView } from "./view.js";
@@ -52,13 +60,21 @@ export function App() {
             Reset
           </button>
         ) : null}
-        <button
-          type="button"
-          aria-pressed={flow.mode === "advanced"}
-          onClick={() => send({ type: "TOGGLE_MODE" })}
-        >
-          {flow.mode === "simple" ? "Advanced" : "Simple"}
-        </button>
+        <Dialog>
+          <DialogTrigger>Settings</DialogTrigger>
+          <DialogBackdrop className="settings-backdrop" />
+          <DialogContent className="settings-panel">
+            <DialogTitle>Settings</DialogTitle>
+            <button
+              type="button"
+              aria-pressed={flow.mode === "advanced"}
+              onClick={() => send({ type: "TOGGLE_MODE" })}
+            >
+              {flow.mode === "simple" ? "Advanced" : "Simple"}
+            </button>
+            <DialogClose>Close</DialogClose>
+          </DialogContent>
+        </Dialog>
       </div>
       <StageView flow={flow} />
       <h2 id="event-log-heading">Event log</h2>
