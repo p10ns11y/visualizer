@@ -11,12 +11,12 @@ Bare shell. Later steps stay on later pull requests.
 - [x] Render one screen in `apps/web`. The page does not scroll.
 - [x] Rewrite `docs/CRITICAL-FLOWS.md`, `docs/ARCHITECTURE-LAYERS.md`, and `docs/TEST-SUITE.md` as short diagrams.
 
-Checks: `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, `pnpm build`. Desktop and mobile shots show one screen.
+Checks: `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, `pnpm build`. Wide and narrow shots show one screen.
 
 ## Tail plan
 
 - [x] Update `README.md`, the three docs above, the verification skills, the adaptate note, and `docs/TECH-CHOICES.md`.
-- [x] Save `bare-shell-desktop.png` and `bare-shell-mobile.png`.
+- [x] Save `bare-shell-wide.png` and `bare-shell-narrow.png`.
 - [x] Move the formal sync commit because `applyBuildTick` changed. Regenerate model-based paths with `getSimplePaths`.
 - [x] Rollback is reverting this pull request. `4c7dac8` stays in history.
 - [x] Do not start steps 2–6. Do not touch liturgy.

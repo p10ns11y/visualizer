@@ -10,8 +10,8 @@ const outDir = "/opt/cursor/artifacts";
 await mkdir(outDir, { recursive: true });
 
 const shots = [
-  { name: "bare-shell-desktop", width: 1280, height: 800, doc: "docs/hero-bare.png" },
-  { name: "bare-shell-mobile", width: 390, height: 844, doc: "docs/hero-bare-mobile.png" },
+  { name: "bare-shell-wide", width: 1280, height: 800, doc: "docs/hero-bare.png" },
+  { name: "bare-shell-narrow", width: 390, height: 844, doc: "docs/hero-bare-mobile.png" },
 ];
 
 const browser = await puppeteer.launch({
