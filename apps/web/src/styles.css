@@ -17,9 +17,9 @@ body {
   height: 100%;
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto auto auto auto minmax(0, 1fr);
-  gap: 1.25rem;
-  padding: 1.5rem;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
 }
 
 h1,
@@ -43,12 +43,110 @@ h2 {
   font-size: 1.25rem;
 }
 
-.controls,
-.view {
+.controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+}
+
+.view {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ask {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.questions,
+.preview {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.questions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.questions [role="radiogroup"] {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.questions [role="radiogroup"] label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.12rem 0.3rem 0.12rem 0;
+  border: 1px solid #1c1915;
+  border-radius: 999px;
+  min-height: 1.7rem;
+  padding: 0.1rem 0.55rem;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.wire {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 0;
+  border: 1px solid #1c1915;
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.65rem;
+}
+
+.wire[data-wire="mobile"] {
+  max-width: 11rem;
+}
+
+.wire [role="toolbar"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.wire [data-slot="meter-track"] {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #e4ddd2;
+}
+
+.wire [data-slot="meter-indicator"] {
+  height: 100%;
+  background: #1c1915;
+}
+
+.gaps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gaps li {
+  border: 1px solid #1c1915;
+  border-radius: 0.7rem;
+  padding: 0.25rem 0.6rem;
 }
 
 .later {
@@ -59,11 +157,6 @@ h2 {
   border: 1px solid #1c1915;
   border-radius: 0.75rem;
   padding: 0.45rem 0.7rem;
-}
-
-.view {
-  min-height: 0;
-  overflow: hidden;
 }
 
 button {
@@ -78,6 +171,54 @@ button {
 
 button:disabled {
   opacity: 0.35;
+}
+
+.questions button {
+  width: 0.75rem;
+  height: 0.75rem;
+  min-height: 0;
+  padding: 0;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.questions button[aria-checked="true"] {
+  background: #1c1915;
+}
+
+@media (max-width: 720px) {
+  .screen {
+    gap: 0.4rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  h1 {
+    font-size: 1.15rem;
+  }
+
+  .stage {
+    margin-top: 0.15rem;
+    font-size: 1rem;
+  }
+
+  .ask {
+    gap: 0.4rem;
+  }
+
+  .questions [role="radiogroup"] label {
+    min-height: 1.45rem;
+    font-size: 0.82rem;
+  }
+
+  button {
+    min-height: 2.15rem;
+    padding: 0.15rem 0.6rem;
+  }
+
+  .questions button {
+    min-height: 0;
+    padding: 0;
+  }
 }
 
 .settings-backdrop {
@@ -105,8 +246,9 @@ button:disabled {
 
 .log {
   min-height: 0;
+  max-height: 6.5rem;
   margin: 0;
-  padding: 0.75rem 0 0;
+  padding: 0.45rem 0 0;
   display: flex;
   flex-direction: column;
   justify-content: unsafe flex-end;
@@ -117,4 +259,10 @@ button:disabled {
 
 .log li {
   padding: 0.2rem 0;
+}
+
+@media (max-width: 720px) {
+  .log {
+    max-height: 4.25rem;
+  }
 }

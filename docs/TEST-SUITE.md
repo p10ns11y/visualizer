@@ -12,7 +12,7 @@ flowchart LR
 
 | Command | What it runs |
 | :--- | :--- |
-| `pnpm test` | `@visualizer/core` Vitest files under `packages/core/src/**/*.test.ts` except `critical-flows.test.ts`, including `packages/core/src/view/map.test.ts`. |
+| `pnpm test` | `@visualizer/core` Vitest files under `packages/core/src/**/*.test.ts` except `critical-flows.test.ts`, including `packages/core/src/view/map.test.ts`, `packages/core/src/ask/templates.test.ts`, and `packages/core/src/ask/gaps.test.ts`. |
 | `pnpm test:critical-flows` | `packages/core/src/critical-flows.test.ts`, `apps/web/src/critical-flow.dom.test.tsx`, and `apps/web/src/agent.dom.test.tsx`. Names are in [`CRITICAL-FLOWS.md`](CRITICAL-FLOWS.md). |
 | `pnpm test:mbt` | `scripts/test-mbt.ts`. Regenerates simple paths with `getSimplePaths` from `xstate/graph` and covers every flow transition. |
 | `pnpm verify:formal` | XState CLI checks plus `checkFlowGraph`. Bounds are in [formal-verify-visualizer](../.cursor/skills/formal-verify-visualizer/SKILL.md). |

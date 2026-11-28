@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { emptyDesign, openGaps } from "./ask/gaps.js";
+import { templateFor } from "./ask/templates.js";
 import { applyFlowEvent, createFlow } from "./flow/apply.js";
 import { flowModes, flowStages, logLine } from "./flow/schema.js";
 import { shellScreen, shellScreenDocument } from "./shell.js";
@@ -30,5 +32,16 @@ describe("flow screen", () => {
     expect(stepped.state.stage).toBe("editing");
     expect(stepped.state.eventLog).toHaveLength(1);
     expect(logLine(stepped.state.eventLog[0]!)).toBe("START asking to editing");
+  });
+
+  it("CF-02 recomputes gap cards from answers and leaves the event log alone", () => {
+    const start = createFlow();
+    expect(start.eventLog).toEqual([]);
+    expect(viewFor("simple", "asking").nodes[1]).toEqual({ kind: "ask" });
+    expect(templateFor("website").title).toBe("Page");
+    expect(openGaps({ what: "website" }, emptyDesign).map((gap) => gap.id)).toEqual(["hosting"]);
+    const next = openGaps({ what: "website", who: "users" }, emptyDesign).map((gap) => gap.id);
+    expect(next).toEqual(["auth", "hosting"]);
+    expect(start.eventLog).toEqual([]);
   });
 });

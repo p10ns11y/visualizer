@@ -1,8 +1,8 @@
 # Visualizer
 
-One screen. It shows the view for the current stage, and the event log.
+One screen. Asking shows questions beside a preview, and the event log.
 
-![Flow screen](docs/evidence/step-3-wide.png)
+![Flow screen](docs/evidence/step-4-wide.png)
 
 ## Run
 

@@ -1,12 +1,16 @@
 import {
+  answerQuestion,
   applyFlowEvent,
   createFlow,
+  emptyDesign,
   flowCan,
   logLine,
   recentLog,
   stageLine,
+  type Answers,
   type FlowEvent,
   type FlowState,
+  type QuestionId,
 } from "@visualizer/core";
 import {
   Dialog,
@@ -28,6 +32,11 @@ const controls: ReadonlyArray<{ type: FlowEvent["type"]; label: string }> = [
 
 export function App() {
   const [flow, setFlow] = useState<FlowState>(() => createFlow());
+  const [answers, setAnswers] = useState<Answers>({});
+
+  function onAnswer(id: QuestionId, value: string) {
+    setAnswers((current) => answerQuestion(current, id, value));
+  }
 
   useEffect(() => connectModelContext(document), []);
 
@@ -76,7 +85,7 @@ export function App() {
           </DialogContent>
         </Dialog>
       </div>
-      <StageView flow={flow} />
+      <StageView flow={flow} answers={answers} design={emptyDesign} onAnswer={onAnswer} />
       <h2 id="event-log-heading">Event log</h2>
       <ol className="log" data-log="true" aria-labelledby="event-log-heading">
         {recentLog(flow.eventLog).map((entry) => (

@@ -384,3 +384,20 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - [x] Update the three short docs, the verification skill, this entry, and the screen shots.
 - [x] Leave the formal sync commit where it is.
 
+## Asking preview and gap cards
+
+- **Chosen:** Stay on `@ui-sdk/react` and `@ui-sdk/core` `0.1.0-beta.19`. Questions use `RadioGroup` from `@ui-sdk/react/radio` with `Field` from `@ui-sdk/react/field`. Each what answer has one wireframe in `packages/core/src/ask/templates.ts`, drawn with `Toolbar`, `Tabs`, `Input`, `Button`, `Separator`, and `Meter` from the same package. Gap rules live in `packages/core/src/ask/gaps.ts`. `openGaps(answers, design)` is a pure function. An ask mark exposes the encoded answers and open gaps on the existing `snapshot` and `query` bridge. No rules package and no form package were added.
+- **Why:** The pinned component line already covers a single choice and the wireframe parts. The gap list is a closed table, so a second rules runtime would only reinterpret it. Design is an argument now so a later edit can settle a decision without changing the function. Answers are not flow-graph events, so they do not write log lines.
+- **Basis:** Lookup on 2026-11-28, before the files were added. `npm view @ui-sdk/react dist-tags` reported `latest` `0.1.0-beta.17` and `beta` `0.1.0-beta.19` (published `2026-11-27T21:24:54.863Z`). [Radio](https://ui-sdk.dev/docs/react/components/radio) documents `RadioGroup`, `value`, and `onValueChange`. [Toolbar](https://ui-sdk.dev/docs/react/components/toolbar), [Tabs](https://ui-sdk.dev/docs/react/components/tabs), [Input](https://ui-sdk.dev/docs/react/components/input), [Separator](https://ui-sdk.dev/docs/react/components/separator), and [Meter](https://ui-sdk.dev/docs/react/components/meter) document the parts the templates render. [Agent reference](https://ui-sdk.dev/docs/agents/connect-an-agent/reference) says `snapshot` exposes keys named in `controlled`.
+- **Latest trends checked before choosing:** Yes, on 2026-11-28, before the code. Compared staying on ui-sdk `0.1.0-beta.19` with npm `latest` `0.1.0-beta.17`. Beta.19 is the newer published line and the pin already in the app. Compared `json-rules-engine` `7.3.1` and `react-hook-form` `7.92.0` with the in-repo table and the radio group already in the pinned package. No new package was added. pnpm printed an upgrade notice to `12.23.0`. This step stays on the pinned `10.33.4`.
+
+### Head Plan
+
+- [x] Four preset questions, one wireframe for each what answer, and gap cards from `openGaps`.
+- [x] Answers stay off the event log. Snapshot and query read the answers and the open gaps.
+
+### Tail Plan
+
+- [x] Update the three short docs, the verification skill, this entry, and the screen shots.
+- [x] Leave the formal sync commit where it is.
+

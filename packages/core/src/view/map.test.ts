@@ -13,19 +13,19 @@ describe("view map", () => {
         expect(spec.mode).toBe(mode);
         expect(spec.stage).toBe(stage);
         expect(spec.nodes[0]).toEqual({ kind: "stage-mark" });
-        expect(spec.nodes[1]?.kind).toBe("button");
+        expect(spec.nodes[1]?.kind).toBe(stage === "asking" ? "ask" : "button");
       }
     }
   });
 
-  it("gives each stage its own placeholder and adds later only in advanced mode", () => {
-    const labels = flowStages.map((stage) => {
+  it("gives asking an ask region and keeps a placeholder for the other stages", () => {
+    expect(viewFor("simple", "asking").nodes[1]).toEqual({ kind: "ask" });
+    const labels = flowStages.flatMap((stage) => {
       const node = viewFor("simple", stage).nodes[1];
-      if (node?.kind !== "button") throw new Error(`Missing placeholder for ${stage}`);
-      return node.label;
+      return node?.kind === "button" ? [node.label] : [];
     });
-    expect(new Set(labels).size).toBe(flowStages.length);
-    expect(labels).toEqual(["Questions", "Preview", "Tools", "Build", "Done"]);
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(labels).toEqual(["Preview", "Tools", "Build", "Done"]);
     for (const stage of flowStages) {
       const simple = viewFor("simple", stage);
       const advanced = viewFor("advanced", stage);

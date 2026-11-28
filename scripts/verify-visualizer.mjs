@@ -106,10 +106,23 @@ function assertInitial(ready) {
     ready.panel !== "" ||
     ready.log.length !== 0 ||
     !ready.text.includes("asking · simple") ||
-    !ready.text.includes("Questions")
+    !ready.text.includes("What are you making?")
   ) {
     throw new Error(`Preview is not the opening stage: ${JSON.stringify(ready)}`);
   }
+}
+
+async function choose(page, name) {
+  const clicked = await page.evaluate((label) => {
+    const found = [...document.querySelectorAll("[data-choice]")].find(
+      (item) => item.textContent?.trim() === label,
+    );
+    const target = found?.querySelector("[role='radio'], button") ?? found;
+    if (!(target instanceof HTMLElement)) return false;
+    target.click();
+    return true;
+  }, name);
+  if (!clicked) throw new Error(`Could not choose ${name}`);
 }
 
 async function press(page, name) {
@@ -270,6 +283,18 @@ async function drive(feature) {
   const { browser, page } = await connect();
   try {
     assertInitial(await readScreen(page));
+    await choose(page, "SaaS");
+    await choose(page, "Users");
+    const asked = await readScreen(page);
+    if (
+      asked.log.length !== 0 ||
+      asked.stage !== "asking" ||
+      !asked.text.includes("Workspace") ||
+      !asked.text.includes("Auth") ||
+      !asked.text.includes("Hosting")
+    ) {
+      throw new Error(`Answers did not change the preview: ${JSON.stringify(asked)}`);
+    }
     for (const name of ["Start", "Pause", "Settings", "Advanced", "Close", "Stop"]) {
       await press(page, name);
     }
