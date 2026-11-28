@@ -4,7 +4,10 @@ import { flowStateIds } from "./machine.js";
 import { eventLogWindow, logLine, recentLog, stageLabel, type FlowLogEntry } from "./schema.js";
 import checks from "../formal/flow.reach.checks.json";
 
-function take(state: ReturnType<typeof createFlow>, type: "START" | "PAUSE" | "STOP" | "TOGGLE_MODE") {
+function take(
+  state: ReturnType<typeof createFlow>,
+  type: "START" | "PAUSE" | "STOP" | "TOGGLE_MODE" | "RESET",
+) {
   const next = applyFlowEvent(state, state.stateVersion, { type });
   expect(next.ok).toBe(true);
   if (!next.ok) throw new Error(type);
@@ -77,6 +80,19 @@ describe("flow graph", () => {
 
   it("lists the same states the formal check names", () => {
     expect(checks.reachable).toEqual([...flowStateIds]);
+  });
+
+  it("returns to the start after done", () => {
+    let state = take(createFlow(), "TOGGLE_MODE");
+    for (const stage of ["editing", "choosingTools", "building", "done"] as const) {
+      state = take(state, "START");
+      expect(state.stage).toBe(stage);
+    }
+    expect(flowCan(state, { type: "RESET" })).toBe(true);
+    expect(flowCan(createFlow(), { type: "RESET" })).toBe(false);
+    const reset = take(state, "RESET");
+    expect(reset).toMatchObject({ stage: "asking", motion: "live", mode: "simple" });
+    expect(logLine(reset.eventLog.at(-1)!)).toBe("RESET done to asking, advanced to simple");
   });
 
   it("keeps the latest log lines", () => {

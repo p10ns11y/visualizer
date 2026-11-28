@@ -97,5 +97,13 @@ describe("flow screen", () => {
     expect(button("Pause").disabled).toBe(true);
     expect(button("Stop").disabled).toBe(true);
     expect(document.querySelectorAll("[data-log] li")).toHaveLength(4);
+    click("Reset");
+    expect(document.querySelector("[data-stage]")?.getAttribute("data-stage")).toBe("asking");
+    expect(document.querySelector("[data-motion]")?.getAttribute("data-motion")).toBe("live");
+    expect(document.querySelector("[data-mode]")?.getAttribute("data-mode")).toBe("simple");
+    expect(document.querySelector("[data-view]")?.getAttribute("data-view")).toBe("asking");
+    expect(document.querySelector("[data-view]")?.getAttribute("data-panel")).toBeNull();
+    expect(document.querySelectorAll("[data-log] li")).toHaveLength(5);
+    expect(document.querySelectorAll("[data-log] li").item(4).textContent).toContain("RESET ");
   });
 });

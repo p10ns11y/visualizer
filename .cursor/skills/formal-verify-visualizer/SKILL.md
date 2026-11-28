@@ -33,9 +33,9 @@ The command uses XState `6.0.0-beta.5` from `@visualizer/core`. It writes the ma
 
 ## What the tools cover
 
-`xstate test` supplies Start, Pause, Stop, and the mode toggle, and asserts `reachable` for every state node in `flowStateIds`. A reachability miss means those representatives did not witness the state. It does not prove the state is unreachable under some other event list.
+`xstate test` supplies Start, Pause, Stop, Reset, and the mode toggle, and asserts `reachable` for every state node in `flowStateIds`. A reachability miss means those representatives did not witness the state. It does not prove the state is unreachable under some other event list.
 
-`checkFlowGraph` calls `getShortestPaths` and requires all 18 combinations of stage, motion, and mode. A non-final leaf with no transition, or a reached snapshot with no outgoing event, is a deadlock. `done` is final in the stage region. The mode region can still toggle there, so that snapshot is not a deadlock. One stale Start must return `STATE_CONFLICT` and leave the log empty.
+`checkFlowGraph` calls `getShortestPaths` and requires all 18 combinations of stage, motion, and mode. A non-final leaf with no transition, or a reached snapshot with no outgoing event, is a deadlock. Reset from `done` returns to asking, live, and simple. The mode region can still toggle at `done`. One stale Start must return `STATE_CONFLICT` and leave the log empty.
 
 This check is not a TLA+ model. If a later change adds a TLA+ model of the same promise, read that result with `/statechart`.
 

@@ -47,6 +47,11 @@ export function App() {
             {control.label}
           </button>
         ))}
+        {flow.stage === "done" ? (
+          <button type="button" onClick={() => send({ type: "RESET" })}>
+            Reset
+          </button>
+        ) : null}
         <button
           type="button"
           aria-pressed={flow.mode === "advanced"}

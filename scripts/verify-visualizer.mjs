@@ -290,8 +290,22 @@ async function drive(feature) {
     ) {
       throw new Error(`Drive did not reach done: ${JSON.stringify(ready)}`);
     }
+    await press(page, "Reset");
+    const restarted = await readScreen(page);
+    assertFrame(restarted);
+    if (
+      restarted.stage !== "asking" ||
+      restarted.motion !== "live" ||
+      restarted.mode !== "simple" ||
+      restarted.view !== "asking" ||
+      restarted.panel !== "" ||
+      restarted.log.length !== 5 ||
+      !restarted.log[4]?.startsWith("RESET ")
+    ) {
+      throw new Error(`Reset did not return to the start: ${JSON.stringify(restarted)}`);
+    }
     mkdirSync(evidenceDir, { recursive: true });
-    writeFileSync(path.join(evidenceDir, "flow.txt"), ready.text);
+    writeFileSync(path.join(evidenceDir, "flow.txt"), restarted.text);
     await page.screenshot({ path: path.join(evidenceDir, "flow.png") });
   } finally {
     await browser.disconnect();

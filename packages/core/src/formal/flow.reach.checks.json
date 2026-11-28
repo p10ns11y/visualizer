@@ -3,7 +3,8 @@
     { "type": "START" },
     { "type": "PAUSE" },
     { "type": "STOP" },
-    { "type": "TOGGLE_MODE" }
+    { "type": "TOGGLE_MODE" },
+    { "type": "RESET" }
   ],
   "reachable": [
     "#flow.stage.asking.live",
