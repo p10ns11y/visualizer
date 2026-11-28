@@ -17,6 +17,6 @@ Checks: `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-
 
 - [x] Update `README.md`, the three docs above, the verification skills, the adaptate note, and `docs/TECH-CHOICES.md`.
 - [x] Save `bare-shell-desktop.png` and `bare-shell-mobile.png`.
-- [ ] Move the formal sync commit because `applyBuildTick` changed. Regenerate model-based paths with `getSimplePaths`.
+- [x] Move the formal sync commit because `applyBuildTick` changed. Regenerate model-based paths with `getSimplePaths`.
 - [x] Rollback is reverting this pull request. `4c7dac8` stays in history.
 - [x] Do not start steps 2–6. Do not touch liturgy.

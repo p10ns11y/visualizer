@@ -11,7 +11,7 @@ A break lets a person lose an edit or lets a stopped run keep writing. Run the c
 
 ## Covered code
 
-Synced with commit `SYNC_COMMIT_SHA`. Move that hash forward only after `pnpm verify:formal` passes and the notes below still describe the code at that commit.
+Synced with commit `b0441c4a4ba75255b5316e9eb3e8f38e0d11695c`. Move that hash forward only after `pnpm verify:formal` passes and the notes below still describe the code at that commit.
 
 - `packages/core/src/state/store.ts` — `applyPilotEvent`, `commitHuman`, `commitView`, `pauseRun`, `resumeRun`, `assertCommit`
 - `packages/core/src/bootstrap/run.ts` — `applyBuildTick`
