@@ -1,96 +1,39 @@
 # Visualizer
 
-A visual pilot cockpit for self-hosted SI — speak, sketch, and let the run drive itself.
+A visual pilot cockpit for self-hosted SI: speak, sketch, and steer one shared workspace.
 
-![One App, Two Modes, One Shared State](docs/diagrams/architecture-cockpit.svg)
+![Visual Cockpit, with the sample fleet and the live plates](docs/hero-cockpit.png)
 
-## Problem
+```mermaid
+flowchart LR
+  cockpit["Visual Cockpit"] --> workspace["Shared workspace"]
+  code["Code Mode"] --> workspace
+  workspace --> railway["XState 6 railway"]
+  railway --> tiers["Tier 3, then Tier 2, then Tier 1"]
+```
 
-Text-box-only SI workflows force a builder to describe, wait, and re-describe — hiding the plan in a chat log and locking the work to a cloud session. Visualizer turns spoken thinking, rough sketches, and live mockups into a self-hosted cockpit you can start, watch, and steer. When tokens run out or access drops, the same local control graph keeps running on deterministic code and lightweight open-source decision models. SGI stays a horizon; this scaffold is self-hosted SI you can pause.
-
-## Locked Decisions
-
-| Decision | Lock |
-| :--- | :--- |
-| **Code Mode toggle** | One shared typed state, on a `@ui-sdk/react` one-app, two-modes base. |
-| **Reuse, don't rebuild** | Opportunity Finder's dual-mode collision guards (`stateVersion` + Stop banner), XState railway, and `adaptate` + Zod typed contracts. |
-| **3-tier fallback** | Deterministic code and lightweight open-source decision models when tokens run out or access is lost. |
-| **Local tool handoff** | Coding tasks go to available local CLI and GUI tools (Cursor, Claude Code, and other local harnesses) plus essential MCP connectors. |
-
-![Pilot / Rail-Driver Autopilot Loop](docs/diagrams/pilot-flow.svg)
-
-![3-Tier Brain Degradation and Reuse Map](docs/diagrams/fallback-tiers.svg)
-
-## Comparison: Visualizer vs. Chopin and Ecosystem References
-
-| Dimension | Visualizer | [Chopin](https://githubnext.com/projects/chopin/) (GitHub Next) |
-| :--- | :--- | :--- |
-| **Input** | Voice- and canvas-first | Document- and chat-first (MDX, chat, and comments) |
-| **Primary user** | Solo builder, from idea to shipped app | Software teams aligning on a feature before coding |
-| **Core primitives** | Problem-statement cards, live mockups, freehand sketches, pluggable design systems, database arrows, Build trigger | Living MDX plan, decision cards, research blocks, side-by-side UI prototypes, jigs |
-| **Output** | Direct build trigger from the cockpit | Living, versioned specification, handed to a coding agent via MCP |
-| **Collaboration** | Human-in-the-loop solo flow | Real-time multiplayer (teammates + agents) |
-| **Anchored to** | Workflow, skills, and local tools | An existing GitHub repository |
-| **Maturity** | Early scaffold | Early open-source prototype |
-| **Bridge** | Imports and exports a pulse pack on the headless MCP server | Exposes an MCP server |
-
-**Ecosystem references** — useful around the cockpit, not a substitute for it:
-
-- **[Lopsi](https://github.com/frankievalentine/lopsi-bot-eve)** — third-party Apache-2.0 template on [Vercel Eve](https://github.com/vercel/eve). Its folder-per-agent layout is inspiration only; this repo does not fork Lopsi, and the cockpit is not built around Eve.
-- **[Vercel Board](https://github.com/vercel/board)** — a hosted experimental message and task board. It is not this cockpit's log and not a visual canvas. The shared log is Ensembly. See [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](docs/decisions/001-ensembly-vs-vercel-board-sync.md).
+Visual Cockpit and Code Mode read and write that workspace. XState 6 owns the railway.
 
 ## Run
 
 ```sh
 pnpm install
 pnpm dev
-pnpm typecheck && pnpm test && pnpm test:critical-flows && pnpm test:mbt && pnpm verify:formal && pnpm build
 ```
 
-`@visualizer/core` holds the shared workspace, collision guards, XState railway, 3-tier brain, and local tool contracts. `@visualizer/web` is the one app: Visual Cockpit and Code Mode read and write that same state. XState 6 is the only state owner. Button and toggle behavior comes from `@ui-sdk/react`, wrapped in `apps/web/src/ui/controls.tsx`. `createAgent().snapshot()` feeds the compact cockpit snapshot. `act` files a pending fleet proposal by action id.
+The dev server listens on `127.0.0.1:5173`.
 
-Step 1 opens with problem cards for Step 2 of Visualizer itself: freehand canvas sketching, a live WebMCP `document.modelContext` bridge, and a card titled "Ensembly shared log". [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](docs/decisions/001-ensembly-vs-vercel-board-sync.md) records why that log is Ensembly, not a `@vercel/board` SQLite file. Build runs the Tier 1 railway. Stop pauses it. A verified Step 2 brief then shows in both modes.
+## Docs
 
-The canvas plate takes freehand ink. Each stroke is pinned to the freehand problem card, stored on the shared workspace, and kept in `localStorage` across a reload. Code Mode lists those strokes and can clear them. A stroke during a working phase pauses the run and keeps the ink. The page now registers the WebMCP tools on native `modelContext` or the local bridge. Cross-machine Ensembly sync remains open.
-
-Both modes also show a sample interconnection map of an SI bot fleet: bots, routines, tasks, and shared stores, with hands-off, trigger, read, and write edges. The map is rendered from one Zod catalog. An unknown component or a prop the schema does not name is rejected, and the spec is not executed. Findings call out a cycle, fan-in and fan-out hotspots, orphan nodes, and a dead edge. An SI agent reads `snapshot` and files a refactor with `act`. The proposal stays pending until a person approves or rejects it, and the graph is not rewritten. On this sample surface the snapshot is 704 tokens, the accessibility listing is 853, and the HTML serialization is 1144. The decision is [`docs/decisions/005-dynamic-ui-catalog.md`](docs/decisions/005-dynamic-ui-catalog.md).
-
-The Memory panel, in both modes, lists Pulse Memory, the Canon 1 `pulse-pack-v1` sparse inject, and workflow lessons. Ensembly is the append-only ledger. A record promotes into Pulse Memory after a confirmed outcome, a user-stated trace, or a tool-verified trace with a matching verify hash. Superseded traces stay out of the active inject. The inject token count is the serialized `{ schema, traces }` payload and stays inside 120. A lesson, a ledger append, and a promotion name the current railway phase and do not pause it. Older workspaces that lack those fields still load. A `pulse-pack-v1` file that omits `ext` still imports. Neo4j is an optional projection; the commands and Cypher are in `docs/MEMORY-NEO4J.md`. CI uses the in-memory graph port.
-
-### Headless MCP
-
-Outside SI agents can use the same tools without a browser tab:
-
-```sh
-pnpm --filter @visualizer/mcp start
-```
-
-The server binds to `127.0.0.1:8787` and writes `.visualizer/workspace.json` with mode `0600`. `VISUALIZER_MCP_STATE` must stay inside `VISUALIZER_MCP_STATE_ROOT` (the working directory unless you set it). `VISUALIZER_MCP_ALLOW_STATE_PATH=1` lifts that check. `VISUALIZER_MCP_PORT` changes the port. Writes are off until `VISUALIZER_MCP_ALLOW_WRITES=1` or `VISUALIZER_MCP_WRITE_TOKEN` matches the bearer. An empty token does not open writes. A second process that points at the same file sees the same workspace. The decision is [`docs/decisions/004-headless-mcp.md`](docs/decisions/004-headless-mcp.md).
-
-### Local decision model
-
-Tier 2 calls an OpenAI-compatible server. `VISUALIZER_LOCAL_MODEL_URL` defaults to `http://127.0.0.1:11434/v1`. `VISUALIZER_LOCAL_MODEL_NAME` defaults to `decision`. On the machine aliased `laptop-1`, point those variables at the local server and run:
-
-```sh
-pnpm test:local-model
-```
-
-`VISUALIZER_LOCAL_MODEL_STRICT=1` exits non-zero unless Tier 2 answers. The critical-flow smoke runs the same command and accepts a Tier 1 fallback, so a missing local server does not fail CI. The cockpit Build stays on Tier 1.
-
-`repos/xstate` (tag `xstate@6.0.0-beta.5`) and `repos/adaptate` (`main`) are read-only source for coding agents. They are not packages. Imports stay on `xstate`, `@adaptate/core`, and `@adaptate/utils`. Short idioms are in `agent-patterns/`. The record is [`docs/decisions/006-vendor-library-source.md`](docs/decisions/006-vendor-library-source.md).
-
-Critical flows are listed in `docs/CRITICAL-FLOWS.md`. Test commands are listed in `docs/TEST-SUITE.md`. The target layering (thin native core, `adaptate` acceleration, a thin bridge, and the JS/WebView state layer) is in `docs/ARCHITECTURE-LAYERS.md`, including the [origin and `@ctatedev` fleet comparison](docs/ARCHITECTURE-LAYERS.md#origin-pain-points-and-fleet-topology-comparison-ctatedev-reference). `pnpm test:mbt` regenerates simple paths from the XState 6 railway and checks each step against the workspace and the connector calls. `pnpm verify:formal` checks `stateVersion` and the pilot railway. Why those tools were chosen, and whether the choice was recalled or looked up, is in `docs/TECH-CHOICES.md`. Browser steps for the cockpit live in `.cursor/skills/verify-visualizer/`.
+- [Architecture layers](docs/ARCHITECTURE-LAYERS.md) — locks, layers, and neighbors
+- [Critical flows](docs/CRITICAL-FLOWS.md)
+- [Test suite](docs/TEST-SUITE.md)
+- [Memory graph](docs/MEMORY-NEO4J.md)
+- [Tech choices](docs/TECH-CHOICES.md)
+- Decisions: [001](docs/decisions/001-ensembly-vs-vercel-board-sync.md), [002](docs/decisions/002-chopin-interop-via-mcp.md), [003](docs/decisions/003-ensembly-pulse-alignment-audit.md), [004](docs/decisions/004-headless-mcp.md), [005](docs/decisions/005-dynamic-ui-catalog.md), [006](docs/decisions/006-vendor-library-source.md)
+- Patterns: [XState 6](agent-patterns/xstate-v6.md), [adaptate](agent-patterns/adaptate.md)
 
 ## References
 
-- [`adaptate`](https://github.com/p10ns11y/adaptate) (`@adaptate/core`, `@adaptate/utils`) — typed contracts reused with Zod. The same source is vendored at `repos/adaptate` for reading. The autopilot stream uses `transformSchema`, `makeConditionalSchemaTransformer`, `parse` / `parseStream` from `@adaptate/core/result`, and `fromAsyncIterableSteps` from `@adaptate/core/stream-incremental`. Connector calls use `createStreamValidator`, `isSettled`, and `verifyStream` from `@adaptate/core`, connector schemas use `zodToOpenAPISchema` from `@adaptate/utils`, and the fleet catalog uses `parse` from `@adaptate/core`.
-- `@ui-sdk/react` — one-app, two-modes primitives. `createAgent` reads control refs. Fleet writes go through `act` by action id.
-- [Uncle Bob, 27 Nov 2026](https://x.com/unclebobmartin/status/2123401950305660969) — a bot fleet grows from one task into intertwined routines that need a bot to retune the connections. The sample map is that picture, with generic names.
-- [XState](https://xstate.js.org) 6 — statecharts and the railway backbone. Tag `xstate@6.0.0-beta.5` is vendored at `repos/xstate` for reading. Upstream `main` is still v5.
-- [Chopin](https://githubnext.com/projects/chopin/) — GitHub Next's multiplayer MDX planning prototype
-- [Lopsi](https://github.com/frankievalentine/lopsi-bot-eve) — folder-per-agent layout inspiration
-- [Vercel Board](https://vercel.com/docs/board) — hosted experimental log compared in [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](docs/decisions/001-ensembly-vs-vercel-board-sync.md). Not the shared store.
-- [ensembly](https://github.com/thecuriousts/ensembly) — Canon 1 pulse pack (`pulse-pack-v1`) that feeds the memory graph. Older `ensembly-pulse-pack-v1` packs still import. Packs that omit `ext` import as well.
-- [`@modelcontextprotocol/server`](https://github.com/modelcontextprotocol/typescript-sdk) `2.4.0` — Streamable HTTP server for the headless tool surface. `@adaptate/utils` still converts the tool inputs.
-- [Neo4j JavaScript driver](https://neo4j.com/docs/javascript-manual/current/) — optional Bolt projection of Pulse Memory and workflow lessons
-- [Chris Tate, `@ctatedev`, 27 Nov 2026 fleet diagram](https://x.com/ctatedev/status/2126180726278353288) — independent local/remote fleet sketch compared in `docs/ARCHITECTURE-LAYERS.md`
+- [`adaptate`](https://github.com/p10ns11y/adaptate) — `@adaptate/core` and `@adaptate/utils`. Typed streams, schema checks, and OpenAPI conversion. The reading copy is `repos/adaptate`.
+- [XState](https://xstate.js.org) 6 (`xstate@6.0.0-beta.5`) — the railway. The reading copy is `repos/xstate`.

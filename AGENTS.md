@@ -9,6 +9,14 @@ Every change starts with two plans, and both are checked off before the change i
 
 Reduce the usual friction: regenerate model-based paths from `getSimplePaths` instead of freezing a path list; do not move the formal sync commit unless the covered transition functions changed; record the lookup that actually happened instead of marking trends as checked after the fact; run `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build` before pushing.
 
+## README
+
+README stays a short visual front page.
+
+## Library notes
+
+Read `agent-patterns/<lib>.md` first. Open `repos/` only if the note does not answer. Do not run a broad search in `repos/`.
+
 ## One step at a time
 
 Product work moves one step per pass. Do not batch the next product step into the current one. Finish the current step, run verification, report, and wait for review before starting the next step.
@@ -37,7 +45,7 @@ Use `/maintain-verification-skill` when the verification map drifts from the scr
 
 ## Vendored repositories
 
-`repos/xstate` and `repos/adaptate` are read-only reference. When work touches XState or adaptate, read the vendored tree and `agent-patterns/` and prefer those patterns over a guess or a web search. Never edit files under `repos/`. Never import from `repos/`. Application code keeps importing `xstate`, `@adaptate/core`, and `@adaptate/utils`.
+`repos/xstate` and `repos/adaptate` are read-only reference. When work touches XState or adaptate, read `agent-patterns/<lib>.md` first. Open `repos/` only if the note does not answer. Do not run a broad search in `repos/`. Prefer those notes over a guess or a web search. Never edit files under `repos/`. Never import from `repos/`. Application code keeps importing `xstate`, `@adaptate/core`, and `@adaptate/utils`.
 
 `repos/xstate` is tag `xstate@6.0.0-beta.5`. Upstream `main` is XState 5. A newer v6 tag replaces the ref in the pull command. Do not pull `main` into `repos/xstate`.
 

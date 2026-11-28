@@ -1,6 +1,6 @@
 # adaptate patterns
 
-Read `repos/adaptate` (`main`, `@adaptate/core` and `@adaptate/utils` `3.0.0`) and this note before writing a parser or a tool schema. Import the packages. Do not import from `repos/adaptate`.
+Read this note first (`@adaptate/core` and `@adaptate/utils` `3.0.0`, tree `repos/adaptate` at `main`). Open `repos/adaptate` only if this note does not answer. Do not run a broad search in `repos/`. Import the packages. Do not import from `repos/adaptate`.
 
 The call sites in this repo are `packages/core/src/brain/stream.ts` and `packages/core/src/tools/adapt-call.ts`. The implementations are `repos/adaptate/packages/core/src/result.ts`, `repos/adaptate/packages/core/src/index.ts`, `repos/adaptate/packages/core/src/stream.ts`, `repos/adaptate/packages/core/src/verify.ts`, and `repos/adaptate/packages/utils/src/openapi.ts`. Tests are `repos/adaptate/packages/core/src/__tests__/result.test.ts` and `verify.test.ts`.
 

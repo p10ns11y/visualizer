@@ -2,9 +2,7 @@
 
 These flows must keep working as Visualizer grows. A pull request that adds or changes a user-facing flow updates this file, the tests behind `pnpm test:critical-flows`, and the verification skills named in `AGENTS.md`.
 
-Tool choices for these flows, the unit suite, the formal check, and the model-based paths are logged in `docs/TECH-CHOICES.md`. The commands are listed in `docs/TEST-SUITE.md`. A change that adds a flow or a test command appends a provenance entry there in the same change, using the one-step loop in `AGENTS.md`: tools, why they fit, a cited current lookup, and a trend check done before the choice.
-
-Each flow below names the test that executes it. The suite fails the `verify` job when any of them break.
+Commands are in [`TEST-SUITE.md`](TEST-SUITE.md). Provenance is in [`TECH-CHOICES.md`](TECH-CHOICES.md). Each flow below names the test that executes it. The suite fails the `verify` job when any of them break.
 
 ## CF-01 Cockpit edit is the code-mode workspace
 
@@ -68,6 +66,6 @@ Test: `CF-10` in `packages/core/src/critical-flows.test.ts`, the catalog and bri
 
 ## Lockstep properties
 
-`pnpm verify:formal` checks the promise those flows rely on: monotonic `stateVersion`, stale-write rejection, no agent commit while paused or after a terminal phase, and a rest path from every railway phase. The bounds and the command live in `.cursor/skills/formal-verify-visualizer/SKILL.md`.
+`pnpm verify:formal` checks the promise those flows rely on: monotonic `stateVersion`, stale-write rejection, no agent commit while paused or after a terminal phase, and a rest path from every railway phase. The bounds and the command live in [formal-verify-visualizer](../.cursor/skills/formal-verify-visualizer/SKILL.md).
 
 `pnpm test:mbt` regenerates every simple path from the XState 6 pilot graph and runs each step through the workspace, the connector calls, and the local runner. It is a regression check for these flows, not a new screen.

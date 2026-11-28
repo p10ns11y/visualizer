@@ -1,20 +1,20 @@
 # Memory graph
 
-Visualizer keeps two layers on the shared workspace.
+Two layers live on the shared workspace. Neo4j is an optional projection of those same fields. Unit tests, critical flows, model-based paths, and the formal check use `InMemoryGraphMemoryStore`. They do not open a Bolt socket.
 
 | Layer | What it stores | When it changes |
 | :--- | :--- | :--- |
 | Ensembly ledger | Append-only records: `rule`, `costly_mistake`, or `decision`, each with a summary, rationale, provenance, and an optional confirmed outcome. | A person appends a record. A second append of the same id does not rewrite the first. |
-| Pulse Memory | The same record after a confirmed outcome. | Promotion copies the record. An empty outcome stays on the ledger. |
-| Workflow lessons | A friction, rework, or adjustment note linked to a railway phase and, when present, a problem card. | A person records a lesson. A working phase pauses, the same way a statement edit does. |
+| Pulse Memory | A ledger row `canPromote` admits: a confirmed outcome, `status: user-stated`, or `status: tool-verified` whose `verifyHash` is `sha256:` plus the SHA-256 of the summary. `supersededBy` keeps that row out of the active inject. | Promotion copies the record. `buildPulseInject` keeps at most 8 active traces inside a 120-token budget. The count is `ceil(utf-8 bytes / 4)` of `{ schema, traces }`. |
+| Workflow lessons | A friction, rework, or adjustment note linked to a railway phase and, when present, a problem card. | A person records a lesson. A working phase keeps running, and `stateVersion` does not change. |
 
-`ensembly` stays the verified ledger. Visualizer writes an append-only JSONL line per record and an `ensembly-pulse-pack-v1` pack. The pack hash follows `compute_pack_hash` in `thecuriousts/ensembly` `crates/ensembly-kernel/src/pulse_pack.rs`: serde struct field order for traces and archive events, sorted keys for JSON values, and SHA-256 of `{"archive":…,"memory_hash":…,"traces":…}`. Only records with a confirmed outcome become `memory_traces`. Archive events carry every ledger line. Import is idempotent: the same id and body is skipped, and a different body for that id is reported and does not replace the first line.
+Visualizer writes Canon 1 `pulse-pack-v1`. Packs labeled `ensembly-pulse-pack-v1` or `peram-pulse-pack-v1` are read only, as are packs that omit `ext`. The pack hash follows `compute_pack_hash` in `thecuriousts/ensembly` `crates/ensembly-kernel/src/pulse_pack.rs`: serde struct field order for traces and archive events, sorted keys for JSON values, and SHA-256 of `{"archive":…,"memory_hash":…,"traces":…}`. Only records `canPromote` admits become `memory_traces`. Archive events carry every ledger line. Import is idempotent: the same id and body is skipped, and a different body for that id is reported and does not replace the first line.
+
+The layer contract is in [`ARCHITECTURE-LAYERS.md`](ARCHITECTURE-LAYERS.md). The alignment note is [`decisions/003-ensembly-pulse-alignment-audit.md`](decisions/003-ensembly-pulse-alignment-audit.md).
 
 ## Neo4j projection
 
-`MemoryGraphStore` is the port. `Neo4jMemoryStore` (`@visualizer/core/neo4j`) runs the official `neo4j-driver` and the statements in `packages/core/src/memory/cypher/schema.cypher`. Query text is fixed. Record fields travel as parameters. `ON CREATE SET` keeps the first write.
-
-`InMemoryGraphMemoryStore` implements the same port. Unit tests, critical flows, model-based paths, and the formal check use it. They do not open a Bolt socket.
+`MemoryGraphStore` is the port. `Neo4jMemoryStore` (`@visualizer/core/neo4j`) runs the official `neo4j-driver` `6.3.2` and the statements in `packages/core/src/memory/cypher/schema.cypher`. Query text is fixed. Record fields travel as parameters. `ON CREATE SET` keeps the first write.
 
 Local Neo4j, optional:
 

@@ -23,8 +23,8 @@ Lookup on 2026-11-27: npm `@vercel/board` `0.56.1` (package page updated 2026-11
 ## Where `@vercel/board` does not replace Ensembly plus Cloudflare sync
 
 - **Lock-in and data residency.** The hosted board stores messages, threads, tasks, labels, and attachments in the United States. There is no region setting, so an EU store is not a choice. The feature is Experimental. It is free while experimental, and Vercel may charge later. Slack, GitHub, and Linear sync depend on Vercel Connect, and Board grants do not apply on those platforms.
-- **A completion line is not verified memory.** `tasks complete` records that a claim ended. It does not replace Ensembly's append-only ledger, promotion into Pulse Memory only after a confirmed outcome, workflow lessons on the Neo4j projection, or the XState 6 railway checked by `pnpm verify:formal`.
-- **Channel posts are instructions.** The board docs say agents read messages as instructions, and a task's text tells whichever worker claims it what to do. A sync from Slack, GitHub, or Linear can put outside text on that queue. Channel write grants have to stay narrow. Ensembly promotion still requires a confirmed outcome on this workspace.
+- **A completion line is not verified memory.** `tasks complete` records that a claim ended. It does not replace Ensembly's append-only ledger, promotion into Pulse Memory under `canPromote`, workflow lessons on the Neo4j projection, or the XState 6 railway checked by `pnpm verify:formal`.
+- **Channel posts are instructions.** The board docs say agents read messages as instructions, and a task's text tells whichever worker claims it what to do. A sync from Slack, GitHub, or Linear can put outside text on that queue. Channel write grants have to stay narrow. Ensembly promotion still follows `canPromote` on this workspace.
 
 ## Practical play
 

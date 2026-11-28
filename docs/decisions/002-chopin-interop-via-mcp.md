@@ -17,7 +17,7 @@ Read from `githubnext/chopin` `docs/architecture.md` on `main` (2026-11-27). Non
 
 1. **Streamable HTTP MCP bridge (first slice).** Chopin serves a bearer-authenticated MCP endpoint at `/mcp` from the same origin as its HTTP API. Pull access is read only. Push or administration access permits document updates. The adapter pulls approved MDX plans and attributed Decisions into `visualizer` cards, and pushes verified execution progress and statechart diagrams back into Chopin.
 2. **Remote Planner harness (`HARNESS=remote` via `/api/v1/agent` WebSocket).** The upgrade offers `chopin.agent.v1` and carries a GitHub bearer. The attached client runs the model. Chopin's host tools, Decisions, and room writes stay on the server, one client per document. The adapter runs `visualizer`'s Coordinator, backed by Ensembly Pulse Memory and Neo4j Workflow Memory, as Chopin's live Planner inside a multiplayer document.
-3. **Decision-ledger alignment.** Question answers and accepted comment threads are durable records outside the prose. MDX nodes are projections, and the records stay authoritative. The adapter maps those attributed human Decisions into Ensembly's append-only ledger. Verified outcomes promote into Neo4j Pulse Memory.
+3. **Decision-ledger alignment.** Question answers and accepted comment threads are durable records outside the prose. MDX nodes are projections, and the records stay authoritative. The adapter maps those attributed human Decisions into Ensembly's append-only ledger. Verified outcomes promote into Pulse Memory. Neo4j is the optional projection of that memory.
 
 ## Caveat
 
