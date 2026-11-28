@@ -4,8 +4,8 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { pilotMachineJson } from "../packages/core/src/formal/export-machine.ts";
-import { checkLockstep, lockstepBounds } from "../packages/core/src/formal/lockstep.ts";
+import { flowMachineJson } from "../packages/core/src/formal/export-machine.ts";
+import { checkFlowGraph, flowGraphBounds } from "../packages/core/src/formal/flow-graph.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const formalDir = path.join(root, "packages/core/src/formal");
@@ -16,8 +16,8 @@ const xstateVersion = (require(path.join(xstateRoot, "package.json")) as { versi
   .version;
 
 const directory = mkdtempSync(path.join(tmpdir(), "visualizer-formal-"));
-const machinePath = path.join(directory, "pilot.json");
-writeFileSync(machinePath, pilotMachineJson());
+const machinePath = path.join(directory, "flow.json");
+writeFileSync(machinePath, flowMachineJson());
 
 function runXstate(args: string[]) {
   const result = spawnSync(process.execPath, [xstateBin, ...args], {
@@ -37,19 +37,14 @@ function runXstate(args: string[]) {
 }
 
 const validated = runXstate(["validate", machinePath]);
-const safe = runXstate([
+const reached = runXstate([
   "test",
   machinePath,
-  path.join(formalDir, "pilot.safe.checks.json"),
+  path.join(formalDir, "flow.reach.checks.json"),
 ]);
-const failed = runXstate([
-  "test",
-  machinePath,
-  path.join(formalDir, "pilot.fail.checks.json"),
-]);
-const lockstep = await checkLockstep();
-if (!lockstep.ok) {
-  console.error(JSON.stringify(lockstep, null, 2));
+const flowGraph = checkFlowGraph();
+if (!flowGraph.ok) {
+  console.error(JSON.stringify(flowGraph, null, 2));
   process.exit(1);
 }
 
@@ -59,16 +54,15 @@ console.log(
       ok: true,
       xstate: xstateVersion,
       validate: validated.command,
-      checks: [safe.command, failed.command],
-      lockstep,
-      bounds: lockstepBounds,
+      checks: [reached.command],
+      flowGraph,
+      bounds: flowGraphBounds,
       scope: [
-        "Representative events in pilot.safe.checks.json never reach #pilot.failed and do reach the other railway states.",
-        "Representative events in pilot.fail.checks.json reach #pilot.failed and never reach #pilot.completed.",
-        "Those CLI checks are coverage of the supplied events, not a proof that an unlisted event is impossible.",
-        "checkLockstep interleaves finished calls to applyPilotEvent, commitHuman, commitView, pauseRun, resumeRun, and applyBuildTick.",
-        "applyBuildTick returns the same workspace when the version matches. It does not await a model.",
-        `Search stops after stateVersion ${lockstepBounds.maxVersion} or ${lockstepBounds.maxFingerprints} fingerprints.`,
+        "Representative events in flow.reach.checks.json reach every flow state node.",
+        "That CLI check is coverage of the supplied events, not a proof that an unlisted event is impossible.",
+        "checkFlowGraph requires every stage, motion, and mode combination, and no non-final deadlock.",
+        "A stale Start does not change the flow and does not append a log line.",
+        "The event log starts empty. A line is written only when the machine takes the event.",
       ],
     },
     null,

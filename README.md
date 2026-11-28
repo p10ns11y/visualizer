@@ -1,8 +1,8 @@
 # Visualizer
 
-One empty screen.
+One screen. It shows the stage and the event log.
 
-![Empty screen](docs/hero-bare.png)
+![Flow screen](docs/evidence/step-2-wide.png)
 
 ## Run
 
@@ -23,4 +23,4 @@ The dev server listens on `127.0.0.1:5173`.
 ## References
 
 - [`adaptate`](https://github.com/p10ns11y/adaptate) — `@adaptate/core` and `@adaptate/utils`. Local reading copy: `scripts/fetch-ref.sh adaptate`.
-- [XState](https://xstate.js.org) 6 (`xstate@6.0.0-beta.5`) — the pilot railway. Local reading copy: `scripts/fetch-ref.sh xstate`.
+- [XState](https://xstate.js.org) 6 (`xstate@6.0.0-beta.5`) — the flow graph. Local reading copy: `scripts/fetch-ref.sh xstate`.

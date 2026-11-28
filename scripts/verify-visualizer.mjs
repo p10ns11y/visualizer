@@ -61,11 +61,16 @@ async function readScreen(page) {
     const pageOverflow = document.documentElement.scrollHeight > document.documentElement.clientHeight + 1;
     const mainOverflow =
       main !== null && main.scrollHeight > main.clientHeight + 1;
+    const stage = document.querySelector("[data-stage]");
     return {
       title: document.querySelector("h1")?.textContent ?? "",
       screen: main?.getAttribute("data-screen") ?? "",
       scroll: main?.getAttribute("data-scroll") ?? "",
-      regions: document.querySelectorAll("main, section, article, ul, ol").length,
+      mains: document.querySelectorAll("main").length,
+      stage: stage?.getAttribute("data-stage") ?? "",
+      motion: stage?.getAttribute("data-motion") ?? "",
+      mode: stage?.getAttribute("data-mode") ?? "",
+      log: [...document.querySelectorAll("[data-log] li")].map((item) => item.textContent ?? ""),
       pageOverflow,
       mainOverflow,
       text: document.body.innerText.trim(),
@@ -73,18 +78,41 @@ async function readScreen(page) {
   });
 }
 
-function assertScreen(ready) {
+function assertFrame(ready) {
   if (
     ready.title !== "Visualizer" ||
-    ready.screen !== "empty" ||
+    ready.screen !== "flow" ||
     ready.scroll !== "false" ||
-    ready.regions !== 1 ||
+    ready.mains !== 1 ||
     ready.pageOverflow ||
     ready.mainOverflow ||
-    ready.text !== "Visualizer"
+    !ready.text.includes("Event log")
   ) {
-    throw new Error(`Preview is not one empty screen: ${JSON.stringify(ready)}`);
+    throw new Error(`Preview is not one flow screen: ${JSON.stringify(ready)}`);
   }
+}
+
+function assertInitial(ready) {
+  assertFrame(ready);
+  if (
+    ready.stage !== "asking" ||
+    ready.motion !== "live" ||
+    ready.mode !== "simple" ||
+    ready.log.length !== 0 ||
+    !ready.text.includes("asking · simple")
+  ) {
+    throw new Error(`Preview is not the opening stage: ${JSON.stringify(ready)}`);
+  }
+}
+
+async function press(page, name) {
+  const clicked = await page.evaluate((label) => {
+    const button = [...document.querySelectorAll("button")].find((item) => item.textContent === label);
+    if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
+    button.click();
+    return true;
+  }, name);
+  if (!clicked) throw new Error(`Could not press ${name}`);
 }
 
 async function launch() {
@@ -141,7 +169,7 @@ async function launch() {
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 800 });
   await page.goto(url, { waitUntil: "networkidle0" });
-  assertScreen(await readScreen(page));
+  assertInitial(await readScreen(page));
   if (!preview.pid || !chromeProc.pid) throw new Error("Missing process id");
   writeFileSync(
     sessionPath,
@@ -196,13 +224,13 @@ async function browserCommand(argv) {
     const [action, ...rest] = argv;
     if (action === "reload") {
       await page.reload({ waitUntil: "networkidle0" });
-      assertScreen(await readScreen(page));
+      assertInitial(await readScreen(page));
       console.log(JSON.stringify({ ok: true, action }));
       return;
     }
     if (action === "text") {
       const ready = await readScreen(page);
-      assertScreen(ready);
+      assertFrame(ready);
       const destination = flag(rest, "--path");
       mkdirSync(path.dirname(destination), { recursive: true });
       writeFileSync(destination, ready.text);
@@ -210,7 +238,7 @@ async function browserCommand(argv) {
       return;
     }
     if (action === "screenshot") {
-      assertScreen(await readScreen(page));
+      assertFrame(await readScreen(page));
       const destination = flag(rest, "--path");
       mkdirSync(path.dirname(destination), { recursive: true });
       await page.screenshot({ path: destination });
@@ -231,9 +259,32 @@ function flag(argv, name) {
 }
 
 async function drive(feature) {
-  if (feature !== "bare-shell") throw new Error(`Unmapped feature ${feature}`);
-  await browserCommand(["text", "--path", path.join(evidenceDir, "bare-shell.txt")]);
-  await browserCommand(["screenshot", "--path", path.join(evidenceDir, "bare-shell.png")]);
+  if (feature !== "flow") throw new Error(`Unmapped feature ${feature}`);
+  const { browser, page } = await connect();
+  try {
+    assertInitial(await readScreen(page));
+    for (const name of ["Start", "Pause", "Advanced", "Stop"]) {
+      await press(page, name);
+    }
+    const ready = await readScreen(page);
+    assertFrame(ready);
+    if (
+      ready.stage !== "done" ||
+      ready.mode !== "advanced" ||
+      ready.log.length !== 4 ||
+      !ready.log[0]?.startsWith("START ") ||
+      !ready.log[1]?.startsWith("PAUSE ") ||
+      !ready.log[2]?.startsWith("TOGGLE_MODE ") ||
+      !ready.log[3]?.startsWith("STOP ")
+    ) {
+      throw new Error(`Drive did not reach done: ${JSON.stringify(ready)}`);
+    }
+    mkdirSync(evidenceDir, { recursive: true });
+    writeFileSync(path.join(evidenceDir, "flow.txt"), ready.text);
+    await page.screenshot({ path: path.join(evidenceDir, "flow.png") });
+  } finally {
+    await browser.disconnect();
+  }
   console.log(JSON.stringify({ ok: true, feature, evidenceDir }));
 }
 
@@ -260,7 +311,7 @@ function cleanup() {
     JSON.stringify({
       ok: true,
       removed: true,
-      evidenceKept: existsSync(path.join(evidenceDir, "bare-shell.png")),
+      evidenceKept: existsSync(path.join(evidenceDir, "flow.png")),
       evidenceDir,
     }),
   );
