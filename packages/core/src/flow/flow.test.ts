@@ -135,4 +135,23 @@ describe("flow graph", () => {
     expect(stale.ok).toBe(false);
     expect(state.eventLog).toHaveLength(eventLogLimit);
   });
+
+  it("applies the next event from the stored stage after the log wraps", () => {
+    for (const count of [eventLogLimit + 1, 450]) {
+      let state = createFlow();
+      for (let step = 0; step < count; step += 1) state = take(state, "TOGGLE_MODE");
+      const mode = count % 2 === 0 ? "simple" : "advanced";
+      expect(state).toMatchObject({ stage: "asking", motion: "live", mode });
+      expect(flowCan(state, { type: "TOGGLE_MODE" })).toBe(true);
+      expect(flowCan(state, { type: "START" })).toBe(true);
+      const toggled = take(state, "TOGGLE_MODE");
+      expect(toggled).toMatchObject({
+        stage: "asking",
+        motion: "live",
+        mode: mode === "simple" ? "advanced" : "simple",
+      });
+      const started = take(state, "START");
+      expect(started).toMatchObject({ stage: "editing", motion: "live", mode });
+    }
+  });
 });

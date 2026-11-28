@@ -67,11 +67,27 @@ export function flowValueKey(value: unknown): string {
   return `${read.stage}|${read.motion}|${read.mode}`;
 }
 
+function storedValue(state: FlowState): { stage: string | Record<string, FlowMotion>; mode: FlowMode } {
+  switch (state.stage) {
+    case "done":
+      return { stage: "done", mode: state.mode };
+    case "asking":
+    case "editing":
+    case "choosingTools":
+    case "building":
+      return { stage: { [state.stage]: state.motion }, mode: state.mode };
+    default: {
+      const unreachable: never = state.stage;
+      return unreachable;
+    }
+  }
+}
+
 function snapshotOf(state: FlowState) {
-  let [snapshot] = initialTransition(flowMachine);
-  for (const entry of state.eventLog) {
-    const [next] = transition(flowMachine, snapshot, { type: entry.type });
-    snapshot = next;
+  const snapshot = flowMachine.resolveState({ value: storedValue(state) });
+  const stored = `${state.stage}|${state.motion}|${state.mode}`;
+  if (flowValueKey(snapshot.value) !== stored) {
+    throw new Error("Stored flow does not match the machine");
   }
   return snapshot;
 }

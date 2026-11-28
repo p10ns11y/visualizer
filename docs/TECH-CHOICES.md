@@ -408,3 +408,10 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - **Basis:** Lookup on 2026-11-28. `npm view vitest@3.2.7 dependencies.tinypool` returned `^1.1.1` (modified `2026-11-25T11:52:10.408Z`). `npm view puppeteer-core version` returned `25.19.0`. `npm view tinypool version` returned `2.2.0`. `npm view vitest version` returned `5.1.2`.
 - **Latest trends checked before choosing:** The pin lookup ran before install: `vitest@3.2.7` still depends on `tinypool` `^1.1.1`, `tinypool` current was `2.2.0`, and `puppeteer-core` current was `25.19.0`. `npm view vitest version` was read again on 2026-11-28 while writing this entry and returned `5.1.2`. That later read did not move the pin. The suite and the advisory floor are the 3.2 line. No new package was added. pnpm printed an upgrade notice to `12.23.0`. This step stays on the pinned `10.33.4`.
 
+## Stored snapshot
+
+- **Chosen:** Build the next snapshot with `flowMachine.resolveState`. The value is the stored stage, motion, and mode. The event log is not replayed.
+- **Why:** The stored log keeps 200 lines. Replaying that ring from the initial state drops the events that fell off, so the next transition disagrees with the stored mode.
+- **Basis:** Lookup on 2026-11-28, before the function was rewritten. `resolveState({ value })` is declared on `StateMachine` in the installed `xstate@6.0.0-beta.5` file `dist/declarations/src/StateMachine.d.ts`. `initialTransition` and `transition` stay the pure tuple API already used here.
+- **Latest trends checked before choosing:** No new package. The pin stays `xstate@6.0.0-beta.5`. A second state library was not compared for this fix.
+
