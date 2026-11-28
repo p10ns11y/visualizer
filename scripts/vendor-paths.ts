@@ -18,7 +18,7 @@ function leavesRepo(root: string, file: string): boolean {
   return relative === ".." || relative.startsWith(`..${path.sep}`);
 }
 
-export function isVendoredPath(root: string, file: string): boolean {
+export function isLibraryCheckoutPath(root: string, file: string): boolean {
   const base = path.resolve(root);
   const logical = path.resolve(file);
   if (isLibraryRelative(path.relative(base, logical))) return true;

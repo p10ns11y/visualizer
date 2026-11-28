@@ -2,7 +2,7 @@ import { getAdjacencyMap, getShortestPaths, toDirectedGraph } from "xstate/graph
 import type { DirectedGraphNode } from "xstate/graph";
 import { applyFlowEvent, createFlow, flowValueKey } from "../flow/apply.js";
 import { flowMachine, flowStateIds } from "../flow/machine.js";
-import { flowModes, flowMotions, flowStages } from "../flow/schema.js";
+import { eventLogLimit, flowModes, flowMotions, flowStages } from "../flow/schema.js";
 
 export type FlowGraphReport =
   | {
@@ -95,6 +95,34 @@ export function checkFlowGraph(): FlowGraphReport {
   }
   if (start.eventLog.length !== 0) {
     return fail("event log", "the initial log is not empty", ["create"]);
+  }
+
+  for (const steps of [eventLogLimit + 1, 450]) {
+    let wrapped = start;
+    for (let step = 0; step < steps; step += 1) {
+      const next = applyFlowEvent(wrapped, wrapped.stateVersion, { type: "TOGGLE_MODE" });
+      if (!next.ok) {
+        return fail("stored snapshot", "a mode toggle was rejected", [String(steps)]);
+      }
+      wrapped = next.state;
+    }
+    const mode = steps % 2 === 0 ? "simple" : "advanced";
+    if (wrapped.stage !== "asking" || wrapped.mode !== mode) {
+      return fail("stored snapshot", "the stored mode drifted from the toggles", [
+        `${steps}`,
+        wrapped.mode,
+      ]);
+    }
+    const toggled = applyFlowEvent(wrapped, wrapped.stateVersion, { type: "TOGGLE_MODE" });
+    const started = applyFlowEvent(wrapped, wrapped.stateVersion, { type: "START" });
+    if (!toggled.ok || toggled.state.mode === wrapped.mode || toggled.state.stage !== "asking") {
+      return fail("stored snapshot", "a toggle after the log wrapped kept the mode", [`${steps}`]);
+    }
+    if (!started.ok || started.state.stage !== "editing" || started.state.mode !== wrapped.mode) {
+      return fail("stored snapshot", "Start after the log wrapped changed the stored mode", [
+        `${steps}`,
+      ]);
+    }
   }
 
   return {

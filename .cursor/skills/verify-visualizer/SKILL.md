@@ -15,7 +15,7 @@ From the repo root, with no session file:
 node scripts/verify-visualizer.mjs launch
 ```
 
-Launch builds the web package, starts `vite preview` on `127.0.0.1:4183`, and opens a headless Chrome page. Ready means the heading is `Visualizer`, `data-screen` is `flow`, `data-stage` is `asking`, `data-view` is `asking`, `data-scroll` is `false`, the later panel is absent, the event log is empty, and the page does not scroll. The command writes `/tmp/verify-visualizer/session.json` with the preview pid, the Chrome pid, and the browser websocket. It leaves Chrome running and disconnects.
+Launch builds the web package, starts `vite preview` on `127.0.0.1:4183`, and opens a headless Chrome page. Ready means the heading is `Visualizer`, `data-screen` is `flow`, `data-stage` is `asking`, `data-view` is `asking`, `data-scroll` is `false`, the later panel is absent, the question `What are you making?` is on the page, the event log is empty, and the page does not scroll. The command writes `/tmp/verify-visualizer/session.json` with the preview pid, the Chrome pid, and the browser websocket. It leaves Chrome running and disconnects.
 
 ## Doctor
 
@@ -42,7 +42,7 @@ Do not call React state setters or a test-only route. Press the buttons the page
 
 ## Evidence
 
-Proof is the text dump and the screenshot under `/opt/cursor/artifacts/verify-visualizer/`. After `drive flow`, the text shows `done`, `advanced`, the later panel, and the four log lines for Start, Pause, the mode toggle, and Stop. Capture the open page, not a second view.
+Proof is the text dump and the screenshot under `/opt/cursor/artifacts/verify-visualizer/`. After `drive flow`, the page has returned to asking. The text shows Workspace, the five log lines, and the last line starts with `RESET`. Capture the open page, not a second view.
 
 `pnpm test:mbt` regenerates flow paths and is not a browser session. Do not treat a green model-based run as proof that the screen was opened.
 

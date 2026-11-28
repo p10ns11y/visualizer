@@ -5,13 +5,13 @@ description: "Formally check the Visualizer flow graph: every state reachable, n
 
 # Formal verification for the flow graph
 
-The promise: every stage, motion, and mode combination can be reached, no non-final state is a deadlock, and a stale `expectedVersion` never appends an event-log line. The log starts empty and records an event only when the machine takes it.
+The promise: every stage, motion, and mode combination can be reached, no non-final state is a deadlock, and a stale `expectedVersion` never appends an event-log line. The log starts empty and records an event only when the machine takes it. The stored log keeps the latest 200 lines. The next transition is taken from the stored stage, motion, and mode. The log is not replayed.
 
 A break lets the screen show a stage the machine cannot reach, or lets a stopped click look like a real event. Run the check when any covered file changes.
 
 ## Covered code
 
-Synced with commit `0503ab6b7ff3669ae1c9c2f2b4ccf504f808baae`. Move that hash forward only after `pnpm verify:formal` passes and the notes below still describe the code at that commit.
+Synced with commit `fccd2e94db892517bd8c7f58e838bf13d83329c8`. Move that hash forward only after `pnpm verify:formal` passes and the notes below still describe the code at that commit.
 
 - `packages/core/src/flow/machine.ts` — `flowMachine`
 - `packages/core/src/flow/apply.ts` — `createFlow`, `applyFlowEvent`, `flowCan`
@@ -35,7 +35,7 @@ The command uses XState `6.0.0-beta.5` from `@visualizer/core`. It writes the ma
 
 `xstate test` supplies Start, Pause, Stop, Reset, and the mode toggle, and asserts `reachable` for every state node in `flowStateIds`. A reachability miss means those representatives did not witness the state. It does not prove the state is unreachable under some other event list.
 
-`checkFlowGraph` calls `getShortestPaths` and requires all 18 combinations of stage, motion, and mode. A non-final leaf with no transition, or a reached snapshot with no outgoing event, is a deadlock. Reset from `done` returns to asking, live, and simple. The mode region can still toggle at `done`. One stale Start must return `STATE_CONFLICT` and leave the log empty.
+`checkFlowGraph` calls `getShortestPaths` and requires all 18 combinations of stage, motion, and mode. A non-final leaf with no transition, or a reached snapshot with no outgoing event, is a deadlock. Reset from `done` returns to asking, live, and simple. The mode region can still toggle at `done`. One stale Start must return `STATE_CONFLICT` and leave the log empty. After 201 and 450 mode toggles, the next toggle changes the stored mode and Start moves to editing without changing that mode.
 
 This check is not a TLA+ model. If a later change adds a TLA+ model of the same promise, read that result with `/statechart`.
 

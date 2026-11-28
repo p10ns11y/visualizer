@@ -19,13 +19,14 @@
     ],
     "overrides": {
       "@ui-sdk/core": "0.1.0-beta.19",
-      "@ui-sdk/react": "0.1.0-beta.19"
+      "@ui-sdk/react": "0.1.0-beta.19",
+      "tinypool": "2.2.0"
     }
   },
   "devDependencies": {
     "jsdom": "31.0.1",
     "mermaid": "12.4.0",
-    "puppeteer-core": "^24.15.0",
+    "puppeteer-core": "25.19.0",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"
   }

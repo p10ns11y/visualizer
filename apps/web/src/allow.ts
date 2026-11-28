@@ -31,8 +31,9 @@ const componentActions = new Set<string>([
 ]);
 
 export const stageMarkName = "stage-mark";
+export const askMarkName = "ask-mark";
 
 export function allowComponentAction(step: Pick<AgentAction, "action" | "component">): boolean {
-  if (step.component === stageMarkName) return false;
+  if (step.component === stageMarkName || step.component === askMarkName) return false;
   return componentActions.has(step.action);
 }

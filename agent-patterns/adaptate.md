@@ -21,7 +21,7 @@ if (!checked.ok) {
 
 `map` and `flatMap` skip the error track. `recover` and `match` see both tracks (`result.test.ts`). If `schema["~standard"].validate` returns a promise, `parse` returns an error whose message says to use `parseAsync`. Use `parseAsync` for an async schema.
 
-Zod objects in this repo are passed through a local cast to `StandardSchemaV1` before `parse` or `parseStream`. Keep that cast next to the call, as `asStandard` does in `adapt-call.ts`.
+Zod objects in this repo are passed through a local cast to `StandardSchemaV1` before `parse` or `parseStream`. Keep that cast next to the call, as `asStandard` does in `packages/core/src/shell.ts`.
 
 ## `parseStream`
 

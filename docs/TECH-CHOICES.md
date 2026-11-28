@@ -384,3 +384,34 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - [x] Update the three short docs, the verification skill, this entry, and the screen shots.
 - [x] Leave the formal sync commit where it is.
 
+## Asking preview and gap cards
+
+- **Chosen:** Stay on `@ui-sdk/react` and `@ui-sdk/core` `0.1.0-beta.19`. Questions use `RadioGroup` from `@ui-sdk/react/radio` with `Field` from `@ui-sdk/react/field`. Each what answer has one wireframe in `packages/core/src/ask/templates.ts`, drawn with `Toolbar`, `Tabs`, `Input`, `Button`, `Separator`, and `Meter` from the same package. Gap rules live in `packages/core/src/ask/gaps.ts`. `openGaps(answers, design)` is a pure function. An ask mark exposes the encoded answers and open gaps on the existing `snapshot` and `query` bridge. No rules package and no form package were added.
+- **Why:** The pinned component line already covers a single choice and the wireframe parts. The gap list is a closed table, so a second rules runtime would only reinterpret it. Design is an argument now so a later edit can settle a decision without changing the function. Answers are not flow-graph events, so they do not write log lines.
+- **Basis:** Lookup on 2026-11-28, before the files were added. `npm view @ui-sdk/react dist-tags` reported `latest` `0.1.0-beta.17` and `beta` `0.1.0-beta.19` (published `2026-11-27T21:24:54.863Z`). [Radio](https://ui-sdk.dev/docs/react/components/radio) documents `RadioGroup`, `value`, and `onValueChange`. [Toolbar](https://ui-sdk.dev/docs/react/components/toolbar), [Tabs](https://ui-sdk.dev/docs/react/components/tabs), [Input](https://ui-sdk.dev/docs/react/components/input), [Separator](https://ui-sdk.dev/docs/react/components/separator), and [Meter](https://ui-sdk.dev/docs/react/components/meter) document the parts the templates render. [Agent reference](https://ui-sdk.dev/docs/agents/connect-an-agent/reference) says `snapshot` exposes keys named in `controlled`.
+- **Latest trends checked before choosing:** Yes, on 2026-11-28, before the code. Compared staying on ui-sdk `0.1.0-beta.19` with npm `latest` `0.1.0-beta.17`. Beta.19 is the newer published line and the pin already in the app. Compared `json-rules-engine` `7.3.1` and `react-hook-form` `7.92.0` with the in-repo table and the radio group already in the pinned package. No new package was added. pnpm printed an upgrade notice to `12.23.0`. This step stays on the pinned `10.33.4`.
+
+### Head Plan
+
+- [x] Four preset questions, one wireframe for each what answer, and gap cards from `openGaps`.
+- [x] Answers stay off the event log. Snapshot and query read the answers and the open gaps.
+
+### Tail Plan
+
+- [x] Update the three short docs, the verification skill, this entry, and the screen shots.
+- [x] Leave the formal sync commit where it is. The stored-log cap later moved that commit, recorded below.
+
+## Review fixes on the asking screen
+
+- **Chosen:** `vitest` `3.2.7` in `apps/web` and `@visualizer/core`. A pnpm override pins `tinypool` to `2.2.0`. `puppeteer-core` is `25.19.0`. The stored log keeps 200 lines. Settings is a `React.lazy` module and, under 720px, a bottom sheet. The library-checkout check is `isLibraryCheckoutPath`.
+- **Why:** `vitest` `3.2.7` still declares `tinypool` `^1.1.1`, so the override is what moves that package. `puppeteer-core` `25.19.0` drops the unpatched archive helper the screen capture still needs. The dialog is absent until it opens, so it leaves the first chunk. The asking preview stays in that chunk because it is the first screen.
+- **Basis:** Lookup on 2026-11-28. `npm view vitest@3.2.7 dependencies.tinypool` returned `^1.1.1` (modified `2026-11-25T11:52:10.408Z`). `npm view puppeteer-core version` returned `25.19.0`. `npm view tinypool version` returned `2.2.0`. `npm view vitest version` returned `5.1.2`.
+- **Latest trends checked before choosing:** The pin lookup ran before install: `vitest@3.2.7` still depends on `tinypool` `^1.1.1`, `tinypool` current was `2.2.0`, and `puppeteer-core` current was `25.19.0`. `npm view vitest version` was read again on 2026-11-28 while writing this entry and returned `5.1.2`. That later read did not move the pin. The suite and the advisory floor are the 3.2 line. No new package was added. pnpm printed an upgrade notice to `12.23.0`. This step stays on the pinned `10.33.4`.
+
+## Stored snapshot
+
+- **Chosen:** Build the next snapshot with `flowMachine.resolveState`. The value is the stored stage, motion, and mode. The event log is not replayed.
+- **Why:** The stored log keeps 200 lines. Replaying that ring from the initial state drops the events that fell off, so the next transition disagrees with the stored mode.
+- **Basis:** Lookup on 2026-11-28, before the function was rewritten. `resolveState({ value })` is declared on `StateMachine` in the installed `xstate@6.0.0-beta.5` file `dist/declarations/src/StateMachine.d.ts`. `initialTransition` and `transition` stay the pure tuple API already used here.
+- **Latest trends checked before choosing:** No new package. The pin stays `xstate@6.0.0-beta.5`. A second state library was not compared for this fix.
+

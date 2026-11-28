@@ -63,6 +63,7 @@ console.log(
         "checkFlowGraph requires every stage, motion, and mode combination, and no non-final deadlock.",
         "A stale Start does not change the flow and does not append a log line.",
         "The event log starts empty. A line is written only when the machine takes the event.",
+        "After the stored log wraps, the next transition still follows the stored stage, motion, and mode.",
       ],
     },
     null,

@@ -1,6 +1,7 @@
 import { initialTransition, transition } from "xstate";
 import { flowMachine } from "./machine.js";
 import {
+  eventLogLimit,
   FlowStateSchema,
   type FlowEvent,
   type FlowLogEntry,
@@ -66,11 +67,27 @@ export function flowValueKey(value: unknown): string {
   return `${read.stage}|${read.motion}|${read.mode}`;
 }
 
+function storedValue(state: FlowState): { stage: string | Record<string, FlowMotion>; mode: FlowMode } {
+  switch (state.stage) {
+    case "done":
+      return { stage: "done", mode: state.mode };
+    case "asking":
+    case "editing":
+    case "choosingTools":
+    case "building":
+      return { stage: { [state.stage]: state.motion }, mode: state.mode };
+    default: {
+      const unreachable: never = state.stage;
+      return unreachable;
+    }
+  }
+}
+
 function snapshotOf(state: FlowState) {
-  let [snapshot] = initialTransition(flowMachine);
-  for (const entry of state.eventLog) {
-    const [next] = transition(flowMachine, snapshot, { type: entry.type });
-    snapshot = next;
+  const snapshot = flowMachine.resolveState({ value: storedValue(state) });
+  const stored = `${state.stage}|${state.motion}|${state.mode}`;
+  if (flowValueKey(snapshot.value) !== stored) {
+    throw new Error("Stored flow does not match the machine");
   }
   return snapshot;
 }
@@ -95,6 +112,11 @@ export function createFlow(): FlowState {
   });
 }
 
+function rememberLog(entries: readonly FlowLogEntry[], entry: FlowLogEntry): FlowLogEntry[] {
+  if (entries.length < eventLogLimit) return [...entries, entry];
+  return [...entries.slice(entries.length - eventLogLimit + 1), entry];
+}
+
 export function flowCan(state: FlowState, event: FlowEvent): boolean {
   const snapshot = snapshotOf(state);
   const [next] = transition(flowMachine, snapshot, event);
@@ -115,7 +137,7 @@ export function applyFlowEvent(
   const read = readFlowValue(next.value);
   const stateVersion = state.stateVersion + 1;
   const entry: FlowLogEntry = {
-    id: `log-${state.eventLog.length + 1}`,
+    id: `log-${stateVersion}`,
     stateVersion,
     type: event.type,
     fromStage: state.stage,
@@ -130,7 +152,7 @@ export function applyFlowEvent(
     state: FlowStateSchema.parse({
       stateVersion,
       ...read,
-      eventLog: [...state.eventLog, entry],
+      eventLog: rememberLog(state.eventLog, entry),
     }),
   };
 }

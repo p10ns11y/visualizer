@@ -2,6 +2,7 @@ import type { FlowMode, FlowStage } from "../flow/schema.js";
 
 export type ViewNode =
   | { kind: "stage-mark" }
+  | { kind: "ask" }
   | { kind: "button"; label: string }
   | { kind: "collapsible"; label: "later" };
 
@@ -11,19 +12,27 @@ export type ViewSpec = {
   nodes: readonly ViewNode[];
 };
 
-const placeLabel = {
-  asking: "Questions",
-  editing: "Preview",
-  choosingTools: "Tools",
-  building: "Build",
-  done: "Done",
-} satisfies Record<FlowStage, string>;
+function placeLabel(stage: Exclude<FlowStage, "asking">): string {
+  switch (stage) {
+    case "editing":
+      return "Preview";
+    case "choosingTools":
+      return "Tools";
+    case "building":
+      return "Build";
+    case "done":
+      return "Done";
+    default: {
+      const unreachable: never = stage;
+      return unreachable;
+    }
+  }
+}
 
 function spec(mode: FlowMode, stage: FlowStage): ViewSpec {
-  const nodes: ViewNode[] = [
-    { kind: "stage-mark" },
-    { kind: "button", label: placeLabel[stage] },
-  ];
+  const nodes: ViewNode[] = [{ kind: "stage-mark" }];
+  if (stage === "asking") nodes.push({ kind: "ask" });
+  else nodes.push({ kind: "button", label: placeLabel(stage) });
   if (mode === "advanced") nodes.push({ kind: "collapsible", label: "later" });
   return { mode, stage, nodes };
 }

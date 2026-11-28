@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { applyFlowEvent, createFlow, flowCan } from "./apply.js";
 import { flowStateIds } from "./machine.js";
-import { eventLogWindow, logLine, recentLog, stageLabel, type FlowLogEntry } from "./schema.js";
+import {
+  eventLogLimit,
+  eventLogWindow,
+  logLine,
+  recentLog,
+  stageLabel,
+  type FlowLogEntry,
+} from "./schema.js";
 import checks from "../formal/flow.reach.checks.json";
 
 function take(
@@ -111,5 +118,40 @@ describe("flow graph", () => {
     expect(visible).toHaveLength(eventLogWindow);
     expect(visible[0]?.id).toBe(`log-${entries.length - eventLogWindow + 1}`);
     expect(visible.at(-1)?.id).toBe(`log-${entries.length}`);
+  });
+
+  it("stores only the latest log lines", () => {
+    let state = createFlow();
+    for (let step = 0; step < eventLogLimit + 1; step += 1) {
+      state = take(state, "TOGGLE_MODE");
+    }
+    expect(state.stateVersion).toBe(eventLogLimit + 1);
+    expect(state.eventLog).toHaveLength(eventLogLimit);
+    expect(state.eventLog[0]?.stateVersion).toBe(2);
+    expect(state.eventLog[0]?.id).toBe("log-2");
+    expect(state.eventLog.at(-1)?.stateVersion).toBe(eventLogLimit + 1);
+    expect(state.eventLog.at(-1)?.id).toBe(`log-${eventLogLimit + 1}`);
+    const stale = applyFlowEvent(state, 0, { type: "STOP" });
+    expect(stale.ok).toBe(false);
+    expect(state.eventLog).toHaveLength(eventLogLimit);
+  });
+
+  it("applies the next event from the stored stage after the log wraps", () => {
+    for (const count of [eventLogLimit + 1, 450]) {
+      let state = createFlow();
+      for (let step = 0; step < count; step += 1) state = take(state, "TOGGLE_MODE");
+      const mode = count % 2 === 0 ? "simple" : "advanced";
+      expect(state).toMatchObject({ stage: "asking", motion: "live", mode });
+      expect(flowCan(state, { type: "TOGGLE_MODE" })).toBe(true);
+      expect(flowCan(state, { type: "START" })).toBe(true);
+      const toggled = take(state, "TOGGLE_MODE");
+      expect(toggled).toMatchObject({
+        stage: "asking",
+        motion: "live",
+        mode: mode === "simple" ? "advanced" : "simple",
+      });
+      const started = take(state, "START");
+      expect(started).toMatchObject({ stage: "editing", motion: "live", mode });
+    }
   });
 });

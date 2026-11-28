@@ -1,7 +1,7 @@
 import { adjacencyMapToArray, getAdjacencyMap, getSimplePaths } from "xstate/graph";
 import { applyFlowEvent, createFlow, flowValueKey } from "../flow/apply.js";
 import { flowMachine } from "../flow/machine.js";
-import { FlowStateSchema, type FlowEvent, type FlowState } from "../flow/schema.js";
+import { eventLogLimit, FlowStateSchema, type FlowEvent, type FlowState } from "../flow/schema.js";
 
 export type MbtReport =
   | {
@@ -65,8 +65,11 @@ function replay(pathSteps: ReadonlyArray<{ event: { type: string }; state: { val
     if (state.stateVersion !== version + 1) {
       return { state, covered, detail: `stateVersion ${version} moved to ${state.stateVersion}` };
     }
-    if (state.eventLog.length !== state.stateVersion) {
+    if (state.eventLog.length !== Math.min(state.stateVersion, eventLogLimit)) {
       return { state, covered, detail: "the log length diverged from stateVersion" };
+    }
+    if (state.eventLog.at(-1)?.stateVersion !== state.stateVersion) {
+      return { state, covered, detail: "the latest log line is not this stateVersion" };
     }
     const parsed = FlowStateSchema.safeParse(state);
     if (!parsed.success) return { state, covered, detail: "flow state failed schema validation" };
@@ -119,7 +122,10 @@ export async function runModelBasedPaths(): Promise<MbtReport> {
         detail: `${edge.event.type} from ${from} did not reach ${to}`,
       };
     }
-    if (committed.state.eventLog.length !== source.eventLog.length + 1) {
+    const logged =
+      committed.state.eventLog.at(-1)?.stateVersion === committed.state.stateVersion &&
+      committed.state.eventLog.length === Math.min(source.eventLog.length + 1, eventLogLimit);
+    if (!logged) {
       return { ok: false, path: paths.length, step: steps, detail: `${id} was not logged` };
     }
     covered.add(id);

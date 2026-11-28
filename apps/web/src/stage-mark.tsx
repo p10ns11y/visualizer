@@ -1,6 +1,6 @@
 import { definePrimitive } from "@ui-sdk/core";
 import { createParts } from "@ui-sdk/react/primitive";
-import { flowStages, stageLabel, type FlowStage } from "@visualizer/core";
+import { flowStages, type FlowStage } from "@visualizer/core";
 import { stageMarkName } from "./allow.js";
 
 type StageMarkOptions = { stage?: string };
@@ -24,8 +24,6 @@ const stageMark = definePrimitive({
     root: slot<{}, { stage: FlowStage }>({
       state: (state) => ({ stage: state.stage }),
       attrs: (state) => ({
-        role: "status",
-        "aria-label": stageLabel(state.stage),
         "data-stage-mark": state.stage,
       }),
     }),

@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { allowComponentAction, stageMarkName } from "./allow.js";
+import { allowComponentAction, askMarkName, stageMarkName } from "./allow.js";
 import { agent, connectModelContext } from "./agent.js";
 import { App } from "./App.js";
 
@@ -27,6 +27,21 @@ function liveStage(components: readonly { component: string; offPage?: boolean; 
   return components.find((item) => item.component === stageMarkName && item.offPage !== true);
 }
 
+function liveAsk(
+  components: readonly { component: string; offPage?: boolean; answers?: unknown; gaps?: unknown }[],
+) {
+  return components.find((item) => item.component === askMarkName && item.offPage !== true);
+}
+
+function choose(name: string) {
+  const label = [...document.querySelectorAll("[data-choice]")].find(
+    (item) => item.textContent?.trim() === name,
+  );
+  const target = label?.querySelector("[role='radio'], button");
+  if (!(target instanceof HTMLElement)) throw new Error(`Missing ${name}`);
+  target.click();
+}
+
 describe("component allow", () => {
   it("accepts component actions and refuses the stage mark", () => {
     expect(allowComponentAction({ component: "button", action: "press" })).toBe(true);
@@ -34,6 +49,7 @@ describe("component allow", () => {
     expect(allowComponentAction({ component: "button", action: "START" })).toBe(false);
     expect(allowComponentAction({ component: stageMarkName, action: "setStage" })).toBe(false);
     expect(allowComponentAction({ component: stageMarkName, action: "press" })).toBe(false);
+    expect(allowComponentAction({ component: askMarkName, action: "press" })).toBe(false);
   });
 });
 
@@ -69,15 +85,24 @@ describe("bridge", () => {
     render();
     const listed = agent.snapshot();
     expect(liveStage(listed)?.stage).toBe("asking");
-    const found = await agent.query({ kind: stageMarkName });
+    expect(liveAsk(listed)?.answers).toBe("");
+    expect(liveAsk(listed)?.gaps).toBe("");
+    const found = await agent.query({ kind: askMarkName });
     expect(Array.isArray(found)).toBe(true);
     if (!Array.isArray(found)) return;
-    expect(liveStage(found)?.stage).toBe("asking");
+    expect(liveAsk(found)?.answers).toBe("");
+    expect(liveAsk(found)?.gaps).toBe("");
+    act(() => {
+      choose("Website");
+    });
+    expect(liveAsk(agent.snapshot())?.answers).toBe("what=website");
+    expect(liveAsk(agent.snapshot())?.gaps).toBe("hosting");
     const pressed = await agent.act({
-      steps: [{ ref: "Questions", action: "press" }],
+      steps: [{ ref: "Read", action: "press" }],
     });
     expect(pressed.ok).toBe(true);
     expect(liveStage(agent.snapshot())?.stage).toBe("asking");
+    expect(liveAsk(agent.snapshot())?.gaps).toBe("hosting");
     const refused = await agent.act({
       steps: [{ ref: "asking", action: "setStage", args: ["done"] }],
     });
@@ -91,8 +116,17 @@ describe("bridge", () => {
     render();
     expect(registerTool).toHaveBeenCalledTimes(3);
     expect([...tools.keys()].sort()).toEqual(["act", "query", "snapshot"]);
+    act(() => {
+      choose("Users");
+    });
     const listed = await tools.get("snapshot")?.execute({});
     expect(liveStage(listed as { component: string; stage?: unknown }[])?.stage).toBe("asking");
+    expect(liveAsk(listed as { component: string; answers?: unknown; gaps?: unknown }[])?.answers).toBe(
+      "who=users",
+    );
+    expect(liveAsk(listed as { component: string; answers?: unknown; gaps?: unknown }[])?.gaps).toBe(
+      "auth",
+    );
     expect(listed).toEqual(agent.snapshot());
     const refused = await tools.get("act")?.execute({
       steps: [{ ref: "asking", action: "setStage", args: ["done"] }],
