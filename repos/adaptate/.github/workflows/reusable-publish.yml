@@ -1,0 +1,101 @@
+name: Reusable - Publish Packages (OIDC + Provenance)
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: "Monorepo version from package.json (npm dist-tag + annotated git tag)"
+      is_manual:
+        required: false
+        type: boolean
+        default: false
+        description: "Whether this was triggered manually (selects the protected release environment)"
+
+# Default for jobs that omit `permissions`: checkout + npm publish (no repo writes).
+# Tagging runs in a follow-up job with `contents: write` only (GitHub has no per-step permissions).
+# Callers must grant at least contents: write on the job that `uses:` this workflow, or nested jobs cannot request write.
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.is_manual && 'release' || '' }} # Requires approval for manual publishes
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@e8d4307400f9427dba7cb98e488d6ab85f1cec5f # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@363be39a57dfa5801e05c6e0c549d622a376cf15 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.1.1 --activate
+          pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build
+        run: npx turbo run build --filter=@adaptate/core --filter=@adaptate/utils
+
+      - name: Determine dist-tag for publishing
+        id: tag
+        run: |
+          VERSION="${{ inputs.version }}"
+
+          # Prerelease versions (rc, beta, alpha) cannot be published to the npm "latest" dist-tag.
+          if [[ "$VERSION" == *"-rc."* ]]; then
+            echo "tag=rc"
+          elif [[ "$VERSION" == *"-beta."* ]]; then
+            echo "tag=beta"
+          elif [[ "$VERSION" == *"-alpha."* ]]; then
+            echo "tag=alpha"
+          else
+            echo "tag=latest"
+          fi >> $GITHUB_OUTPUT
+
+      - name: Publish workspace packages
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          echo "=== Publishing workspace packages with tag: $TAG ==="
+
+          for dir in packages/core packages/utils; do
+            if [ -f "$dir/package.json" ]; then
+              echo ">>> Publishing: $dir"
+              (cd "$dir" && npx npm@latest publish --tag "$TAG" --provenance --access public)
+            fi
+          done
+
+      - name: Publish root package
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          echo "=== Publishing root package with tag: $TAG ==="
+          npx npm@latest publish --tag "$TAG" --provenance --access public
+
+  create-and-push-annotated-tag:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@e8d4307400f9427dba7cb98e488d6ab85f1cec5f # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Create and push annotated tag
+        run: |
+          VERSION="${{ inputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${VERSION}" -m "Release v${VERSION}"
+          git push origin "v${VERSION}"

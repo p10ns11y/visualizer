@@ -4,5 +4,6 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/critical-flows.test.ts"],
+    exclude: ["**/node_modules/**", "**/dist/**", "**/repos/**"],
   },
 });

@@ -1,0 +1,91 @@
+{
+  "name": "@adaptate/core",
+  "version": "3.0.0",
+  "author": {
+    "name": "Peramanathan Sathyamoorthy",
+    "url": "https://github.com/p10ns11y/adaptate.git"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/p10ns11y/adaptate.git"
+  },
+  "bugs": {
+    "url": "https://github.com/p10ns11y/adaptate/issues"
+  },
+  "homepage": "https://github.com/p10ns11y/adaptate#readme",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "source": "./src/index.ts",
+  "main": "./build/index.es.js",
+  "types": "./build/index.d.ts",
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "prepublishOnly": "node ../../scripts/verify-published-types.mjs packages/core",
+    "check-types": "tsc --noEmit",
+    "lint": "oxlint --type-aware -c ../../.oxlintrc.json ./src",
+    "test:pkg": "vitest run --config ../../vitest.config.ts src/__tests__",
+    "test:pkg:watch": "vitest --config ../../vitest.config.ts src/__tests__"
+  },
+  "devDependencies": {
+    "@adaptate/utils": "workspace:*",
+    "effect": "4.1.4",
+    "typescript": "7.0.2",
+    "vite": "^8.3.8",
+    "zod": "^4.6.7"
+  },
+  "peerDependencies": {
+    "effect": "^4.0.0",
+    "zod": "^3.25.0 || ^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "effect": {
+      "optional": true
+    }
+  },
+  "files": [
+    "build",
+    "package.json",
+    "README.md"
+  ],
+  "imports": {
+    "#utils/*": "../utils/src/*"
+  },
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "import": "./build/index.es.js",
+      "default": "./build/index.es.js"
+    },
+    "./stream-incremental": {
+      "types": "./build/stream-incremental.d.ts",
+      "import": "./build/stream-incremental.es.js",
+      "default": "./build/stream-incremental.es.js"
+    },
+    "./*": {
+      "types": "./build/*.d.ts",
+      "default": "./build/*.es.js"
+    }
+  },
+  "description": "Dynamic and Adaptable Model Validator Using Zod, Interoperable with OpenAPI",
+  "keywords": [
+    "Zod",
+    "OpenAPI",
+    "Schema Validation",
+    "JSON Schema",
+    "TypeScript",
+    "Dynamic Validation",
+    "Conditional Requirements",
+    "React Hooks",
+    "Data Validation",
+    "API Integration",
+    "Model Validator",
+    "Schema Transformation",
+    "Runtime Validation",
+    "Component Props Validation",
+    "Business Data Abstraction"
+  ],
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

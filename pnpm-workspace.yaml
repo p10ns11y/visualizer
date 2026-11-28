@@ -1,3 +1,5 @@
 packages:
   - "packages/*"
   - "apps/*"
+  # Read-only reference trees. Nested package.json files stay out of the workspace.
+  - "!repos/**"

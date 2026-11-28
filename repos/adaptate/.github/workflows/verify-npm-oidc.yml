@@ -1,0 +1,49 @@
+name: Verify npm OIDC Connection (Dry Run)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-oidc:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@e8d4307400f9427dba7cb98e488d6ab85f1cec5f
+
+      - name: Setup Node.js
+        uses: actions/setup-node@363be39a57dfa5801e05c6e0c549d622a376cf15
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.1.1 --activate
+          pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build
+        run: npx turbo run build
+
+      - name: Dry-run publish (OIDC + provenance)
+        run: |
+          echo "=== Testing OIDC + Provenance ==="
+
+          for dir in packages/core packages/utils; do
+            if [ -f "$dir/package.json" ]; then
+              echo ""
+              echo ">>> Testing package: $dir"
+              (cd "$dir" && npx npm@latest publish --dry-run --provenance --access public)
+            fi
+          done
+
+      - name: ✅ OIDC Connection Verified Successfully
+        if: success()
+        run: echo "✅ GitHub ↔ npmjs OIDC connection is working!"

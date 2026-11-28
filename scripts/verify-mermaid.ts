@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { JSDOM } from "jsdom";
+import { isVendoredPath, skipWalkEntry } from "./vendor-paths.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -19,7 +20,9 @@ const mermaid = (await import("mermaid")).default;
 function markdownFiles(dir: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(dir)) {
+    if (skipWalkEntry(entry)) continue;
     const full = path.join(dir, entry);
+    if (isVendoredPath(root, full)) continue;
     if (statSync(full).isDirectory()) {
       found.push(...markdownFiles(full));
     } else if (entry.endsWith(".md")) {
@@ -37,6 +40,9 @@ const failures: Failure[] = [];
 let diagrams = 0;
 
 for (const file of files) {
+  if (isVendoredPath(root, file)) {
+    throw new Error("Mermaid scan included a vendored path");
+  }
   const text = readFileSync(file, "utf8");
   for (const match of text.matchAll(fence)) {
     diagrams += 1;

@@ -77,14 +77,16 @@ pnpm test:local-model
 
 `VISUALIZER_LOCAL_MODEL_STRICT=1` exits non-zero unless Tier 2 answers. The critical-flow smoke runs the same command and accepts a Tier 1 fallback, so a missing local server does not fail CI. The cockpit Build stays on Tier 1.
 
+`repos/xstate` (tag `xstate@6.0.0-beta.5`) and `repos/adaptate` (`main`) are read-only source for coding agents. They are not packages. Imports stay on `xstate`, `@adaptate/core`, and `@adaptate/utils`. Short idioms are in `agent-patterns/`. The record is [`docs/decisions/006-vendor-library-source.md`](docs/decisions/006-vendor-library-source.md).
+
 Critical flows are listed in `docs/CRITICAL-FLOWS.md`. Test commands are listed in `docs/TEST-SUITE.md`. The target layering (thin native core, `adaptate` acceleration, a thin bridge, and the JS/WebView state layer) is in `docs/ARCHITECTURE-LAYERS.md`, including the [origin and `@ctatedev` fleet comparison](docs/ARCHITECTURE-LAYERS.md#origin-pain-points-and-fleet-topology-comparison-ctatedev-reference). `pnpm test:mbt` regenerates simple paths from the XState 6 railway and checks each step against the workspace and the connector calls. `pnpm verify:formal` checks `stateVersion` and the pilot railway. Why those tools were chosen, and whether the choice was recalled or looked up, is in `docs/TECH-CHOICES.md`. Browser steps for the cockpit live in `.cursor/skills/verify-visualizer/`.
 
 ## References
 
-- [`adaptate`](https://github.com/p10ns11y/adaptate) (`@adaptate/core`, `@adaptate/utils`) — typed contracts reused with Zod. The autopilot stream uses `transformSchema`, `makeConditionalSchemaTransformer`, `parse` / `parseStream` from `@adaptate/core/result`, and `fromAsyncIterableSteps` from `@adaptate/core/stream-incremental`. Connector calls use `createStreamValidator`, `isSettled`, and `verifyStream` from `@adaptate/core`, connector schemas use `zodToOpenAPISchema` from `@adaptate/utils`, and the fleet catalog uses `parse` from `@adaptate/core`.
+- [`adaptate`](https://github.com/p10ns11y/adaptate) (`@adaptate/core`, `@adaptate/utils`) — typed contracts reused with Zod. The same source is vendored at `repos/adaptate` for reading. The autopilot stream uses `transformSchema`, `makeConditionalSchemaTransformer`, `parse` / `parseStream` from `@adaptate/core/result`, and `fromAsyncIterableSteps` from `@adaptate/core/stream-incremental`. Connector calls use `createStreamValidator`, `isSettled`, and `verifyStream` from `@adaptate/core`, connector schemas use `zodToOpenAPISchema` from `@adaptate/utils`, and the fleet catalog uses `parse` from `@adaptate/core`.
 - `@ui-sdk/react` — one-app, two-modes primitives. `createAgent` reads control refs. Fleet writes go through `act` by action id.
 - [Uncle Bob, 27 Nov 2026](https://x.com/unclebobmartin/status/2123401950305660969) — a bot fleet grows from one task into intertwined routines that need a bot to retune the connections. The sample map is that picture, with generic names.
-- [XState](https://xstate.js.org) 6 — statecharts and the railway backbone
+- [XState](https://xstate.js.org) 6 — statecharts and the railway backbone. Tag `xstate@6.0.0-beta.5` is vendored at `repos/xstate` for reading. Upstream `main` is still v5.
 - [Chopin](https://githubnext.com/projects/chopin/) — GitHub Next's multiplayer MDX planning prototype
 - [Lopsi](https://github.com/frankievalentine/lopsi-bot-eve) — folder-per-agent layout inspiration
 - [Vercel Board](https://vercel.com/docs/board) — hosted experimental log compared in [`docs/decisions/001-ensembly-vs-vercel-board-sync.md`](docs/decisions/001-ensembly-vs-vercel-board-sync.md). Not the shared store.
