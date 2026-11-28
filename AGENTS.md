@@ -51,4 +51,4 @@ Read `agent-patterns/<lib>.md` first. Only if that note does not answer, run `sc
 
 ## House source pins
 
-`packages/sources/` holds the pinned house trees that melt reads. `packages/sources/PINS.tsv` lists each lib, URL, full commit, and subpath. `scripts/sync-sources.sh <lib>` copies that pin again. These trees are not workspace packages. Do not put them under `repos/`. `scripts/fetch-ref.sh` stays limited to `xstate` and `adaptate`.
+`packages/sources/` holds the pinned house trees that liturgy reads. `packages/sources/PINS.tsv` lists each lib, URL, full commit, and subpath. `scripts/sync-sources.sh <lib>` copies that pin again. These trees are not workspace packages. Do not put them under `repos/`. `scripts/fetch-ref.sh` stays limited to `xstate` and `adaptate`.
