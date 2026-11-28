@@ -1,0 +1,20 @@
+{
+  "name": "steer-log",
+  "version": "0.2.0",
+  "description": "Door for a builder brief and a steering doc. Refuses prose around a log quote, an edited older log row, and a pre-builder bundle that fails its checks. trust-stack and findings-first stay the engines.",
+  "author": {
+    "name": "p10ns11y"
+  },
+  "homepage": "https://github.com/p10ns11y/plugins",
+  "license": "MIT",
+  "keywords": [
+    "steer-log",
+    "invariant",
+    "steering",
+    "trust-stack",
+    "findings-first"
+  ],
+  "skills": "./skills/",
+  "agents": "./agents/",
+  "commands": "./commands/"
+}

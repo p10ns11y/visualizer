@@ -1,0 +1,434 @@
+{
+  "name": "p10ns11y-plugins",
+  "description": "Grok Build plugins: ai-flow-audit, aihero-map, arch-machine, concordance, context-ignite, control-plane, craft, dependency-harden, eva-emptiness, intelli-route, layout-content-view, live-engine, michelin-kitchen, mission-map, odysseus-navigator, premflow, pstack-map, pulse-memory, si, split-machine, steer-accel, steer-log, trust-stack, tstack, uncertainty-laws",
+  "owner": {
+    "name": "p10ns11y"
+  },
+  "plugins": [
+    {
+      "name": "ai-flow-audit",
+      "description": "Free public kit to audit AI tools and agent flows before waste lands: waste ledger, myth cards, irreversible-action checks, frontline interviews, and a fictional worked example.",
+      "category": "productivity",
+      "source": {
+        "type": "local",
+        "path": "./ai-flow-audit"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "ai-audit",
+        "agent-flow",
+        "waste-ledger",
+        "myth-card",
+        "hitl",
+        "small-business",
+        "interview",
+        "irreversible"
+      ]
+    },
+    {
+      "name": "aihero-map",
+      "description": "Alignment map from Matt Pocock's AI Hero skills onto house skills. Does not copy those bodies. On an overlap, the house claim wins.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./aihero-map"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "aihero",
+        "matt-pocock",
+        "alignment",
+        "map",
+        "intelli-route",
+        "pstack-map"
+      ]
+    },
+    {
+      "name": "arch-machine",
+      "description": "Agent-as-TUI for arch-machine: archy control plane, thin-first sentinel, threat-focused audit, consent-gated expand. Prefer over gum tinfoil TUI.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./arch-machine"
+      }
+    },
+    {
+      "name": "concordance",
+      "description": "Corroborate one closed decision. Proceed only when the decision-model label and the LLM label match and p_dm >= tau. Hold returns to the router.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./concordance"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "concordance",
+        "corroboration",
+        "intelli-route",
+        "split-machine"
+      ]
+    },
+    {
+      "name": "context-ignite",
+      "description": "Installable fission then fusion: prune with ai-optimization, then synthesize with architecture-synthesis. Skills-repo URLs stay canonical for intelli-route.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./context-ignite"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "context-ignite",
+        "ai-optimization",
+        "architecture-synthesis",
+        "context-sage"
+      ]
+    },
+    {
+      "name": "control-plane",
+      "description": "Installable control plane: rewrite a dump into a Feed, then run the control-graph. Skills-repo URLs stay canonical for intelli-route.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./control-plane"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "control-plane",
+        "control-feeder",
+        "control-graph",
+        "higher-order-decision-architect"
+      ]
+    },
+    {
+      "name": "craft",
+      "description": "Specifier, coder, cleaner, hardener, QA, after Robert C. Martin's ongoing multi-agent experiment (talk with Matt Pocock, 19 Aug 2026). CRAP on touched functions; mutation testing by the hardener.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./craft"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "craft",
+        "clean-code",
+        "crap",
+        "mutation-testing",
+        "acceptance-tests"
+      ]
+    },
+    {
+      "name": "dependency-harden",
+      "description": "Installable dependency hardening: fix security, upgrade packages, audit allowBuilds and IDE dependencies, and generate a hardened devcontainer. Skills-repo URLs stay canonical for intelli-route.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./dependency-harden"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "dependency-harden",
+        "fix-dependency-security",
+        "upgrade-packages",
+        "audit-allow-builds",
+        "audit-ide-dependencies",
+        "devcontainer-hardened"
+      ]
+    },
+    {
+      "name": "eva-emptiness",
+      "description": "Reasoning under epistemic emptiness: Prior → Probe → Simulate → Score → ActOrAsk. Prior-diverse agents, /eva starter, C+shell secure tether (consent compile), optional Rhai workflow (copy to .grok/workflows).",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./eva-emptiness"
+      }
+    },
+    {
+      "name": "intelli-route",
+      "description": "Route one goal onto at most four skills. pstack (Lauren Tan, MIT) when it is installed, otherwise the house row. Does not copy skill bodies or pstack.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./intelli-route"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "intelli-route",
+        "pstack",
+        "poteto",
+        "lauren-tan",
+        "control-graph",
+        "eva-emptiness",
+        "pstack-map",
+        "tstack"
+      ]
+    },
+    {
+      "name": "layout-content-view",
+      "description": "Layout-content-view stability plus lcv-implement companion for data-lcv marks. Not pixel snapshots. Web first.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./layout-content-view"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "layout",
+        "overflow",
+        "clip",
+        "ellipsis",
+        "sitemap",
+        "viewport",
+        "z-index",
+        "a11y",
+        "playwright"
+      ]
+    },
+    {
+      "name": "live-engine",
+      "description": "Action runner for coordinating work: one live working set, few specialists, verify before irreversible acts, then recover. Works with pulse memory and Ensembly.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./live-engine"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "live-engine",
+        "action-runner",
+        "coordination",
+        "process",
+        "workflow",
+        "focus",
+        "verify",
+        "recovery"
+      ]
+    },
+    {
+      "name": "michelin-kitchen",
+      "description": "Seven kitchen habits from Lauren Tan's talk (hosted by Matt Pocock): scripts, findings-first, events over timers, workflow skills, and more. Several include our adaptations.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./michelin-kitchen"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "michelin-kitchen",
+        "lauren-tan",
+        "matt-pocock",
+        "verification",
+        "pstack",
+        "trust-stack",
+        "intelli-route"
+      ]
+    },
+    {
+      "name": "mission-map",
+      "description": "Mission-Impossible-style ops map: steps, calculated risks, what/how/when, replan on outside shocks. C PERT/MC kernels + Rust critical path. Slash /mission-map.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./mission-map"
+      }
+    },
+    {
+      "name": "odysseus-navigator",
+      "description": "Faster intelli core-nailer: diagnose Odysseus mistakes, emit a Navigator, hook control-graph / EVA. No tether, no Rhai, no prior-fork circus.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./odysseus-navigator"
+      },
+      "keywords": [
+        "odysseus",
+        "ithaca",
+        "navigator",
+        "judgment",
+        "hubris",
+        "core",
+        "control-graph",
+        "eva"
+      ]
+    },
+    {
+      "name": "premflow",
+      "description": "Capture notes, wins, tasks; review; coach; external pomo; agent-safe journal. CLI via PATH or /premflow:init (consent install from github.com/thecuriousts/premflow).",
+      "category": "productivity",
+      "source": {
+        "type": "local",
+        "path": "./premflow"
+      }
+    },
+    {
+      "name": "pstack-map",
+      "description": "Playbook map from Cursor pstack (Lauren Tan / poteto, MIT) onto control-graph / EVA / house skills. Does not copy pstack bodies. House HITL wins on irreversible work.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./pstack-map"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "pstack",
+        "poteto",
+        "lauren-tan",
+        "map",
+        "control-graph",
+        "unslop",
+        "rigor"
+      ]
+    },
+    {
+      "name": "pulse-memory",
+      "description": "Pulse instead of dump: admit sparse, tagged memory (source, time, status, kind); resolve contradictions without averaging. SQLite archive + pulse workflow.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./pulse-memory"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "pulse",
+        "memory",
+        "admissions",
+        "archive",
+        "hint-tags",
+        "contradiction",
+        "sqlite"
+      ]
+    },
+    {
+      "name": "si",
+      "description": "SI workflows that own the write: data contracts, SI-native review flows, an SI service harness, and deterministic SaaS. Load one profile.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./si"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "si",
+        "data",
+        "workflow",
+        "harness",
+        "saas"
+      ]
+    },
+    {
+      "name": "split-machine",
+      "description": "Place a job on the machine that can do it: Earth QPU, entanglement link, LEO radio handover, conjunction screen, GPU factory, BQP slice, System One decision, or System Two prose. Name the act. Low confidence does not automate.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./split-machine"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "split-machine",
+        "placement",
+        "quantum",
+        "bqp",
+        "beam-switch",
+        "orbit-screen",
+        "gpu",
+        "system-one",
+        "intelli-route"
+      ]
+    },
+    {
+      "name": "steer-accel",
+      "description": "Steering and acceleration loop. Picks the SpaceX step the stage has earned. The watch is on when .steer/loop.on exists or the actor is coordinator, and a crash while it is on denies the call.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./steer-accel"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "steer-accel",
+        "spacex",
+        "acceleration",
+        "context",
+        "watcher",
+        "steer-log"
+      ]
+    },
+    {
+      "name": "steer-log",
+      "description": "Door for a builder brief and a steering doc. Refuses prose around a log quote, an edited older log row, and a pre-builder bundle that fails its checks. trust-stack and findings-first stay the engines.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./steer-log"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "steer-log",
+        "invariant",
+        "steering",
+        "trust-stack",
+        "findings-first"
+      ]
+    },
+    {
+      "name": "trust-stack",
+      "description": "Put each invariant on the earliest layer that can hold it: shape, check, watch, skill, then a human guide. The codebase is the agent's memory. This plugin does not merge.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./trust-stack"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "trust-stack",
+        "verification",
+        "pstack",
+        "lauren-tan",
+        "intelli-route"
+      ]
+    },
+    {
+      "name": "tstack",
+      "description": "Tomato stack: paces the person in focus blocks. Shared SQLite state for the loop. Loads house plugins; copies none. Premflow only when its CLI is on PATH.",
+      "category": "development",
+      "source": {
+        "type": "local",
+        "path": "./tstack"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "tstack",
+        "tomato",
+        "pomodoro",
+        "premflow",
+        "mission-map",
+        "focus",
+        "sqlite"
+      ]
+    },
+    {
+      "name": "uncertainty-laws",
+      "description": "Four napkin probability laws for decisions under uncertainty: expected value, base rates, variance/ruin, Kelly. Honest fog-breaking for finance, wealth, and life. Links to mission-map for path vs bet-size.",
+      "category": "productivity",
+      "source": {
+        "type": "local",
+        "path": "./uncertainty-laws"
+      },
+      "homepage": "https://github.com/p10ns11y/plugins",
+      "keywords": [
+        "uncertainty",
+        "probability",
+        "expected-value",
+        "base-rate",
+        "kelly",
+        "ruin",
+        "finance",
+        "wealth",
+        "decision",
+        "mission-map"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+---
+description: >-
+  Epistemic emptiness / blank-sheet harness (EVA). Load when unknowns dominate,
+  no design doc, auth is unclear, or user says eva / blank sheet / Prior Probe
+  Simulate Score.
+alwaysApply: false
+---
+
+# eva-emptiness
+
+When the task is a **blank sheet**, unknowns dominate knowns, requirements are rumor-thin, or authorization/irreversibility is unclear:
+
+1. Load `eva-emptiness` skill (formal SoT). Expand `references/english-procedure.md` only if ambiguous.
+2. Card: `emptiness_score`, `knowns`/`unknowns`, `idk`, `probe_budget`, `disprove_with`, `evidence_gain`, `bias_map`.
+3. Inner: Prior → Probe → Simulate → Score → ActOrAsk (`continue` \| `switch` \| `Ask`).
+4. Never `--always-approve` / yolo. Auth unknown → Ask.
+5. Suggest next by name only: multi-agent-delivery, context-ignite, or stay interactive.
+
+Skip for obvious ≤2-file fixes with clear verify cmds.
+
+Cursor note: Grok’s `/workflow …rhai` engine does **not** run here — use `/eva` or `/eva-workflow` slash commands + this skill. Compose with `control-graph` for Outer phases. Compose with `odysseus-navigator` when Act-too-soon / hubris / shiny rewrite: emit `eva_hook` (`continue` \| `switch` \| `Ask`) — do not inline the myth essay.

@@ -1,0 +1,20 @@
+{
+  "name": "live-engine",
+  "version": "0.1.0",
+  "description": "Action runner for coordinating work: one live working set, few specialists, verify before irreversible acts, then recover. Works with pulse memory and Ensembly.",
+  "author": {
+    "name": "p10ns11y"
+  },
+  "homepage": "https://github.com/p10ns11y/plugins",
+  "license": "MIT",
+  "keywords": [
+    "live-engine",
+    "action-runner",
+    "coordination",
+    "process",
+    "workflow",
+    "focus",
+    "verify",
+    "recovery"
+  ]
+}

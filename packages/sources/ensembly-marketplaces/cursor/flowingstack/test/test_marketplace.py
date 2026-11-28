@@ -1,0 +1,87 @@
+import json
+import os
+import tempfile
+import unittest
+
+from lib import ROOT, read, run, write
+
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(ROOT)))
+
+
+class Marketplace(unittest.TestCase):
+    def test_root_entry(self):
+        m = json.loads(read(os.path.join(REPO, ".cursor-plugin", "marketplace.json")))
+        self.assertTrue(m["name"])
+        self.assertEqual(m["owner"]["name"], "Peramanathan Sathyamoorthy")
+        self.assertNotIn("email", m["owner"])
+        self.assertNotIn("pluginRoot", m.get("metadata", {}))
+        e = [p for p in m["plugins"] if p["name"] == "flowingstack"]
+        self.assertEqual(len(e), 1)
+        self.assertEqual(os.path.join(REPO, e[0]["source"]), ROOT)
+
+    def test_plugin_manifest_name_matches_root_entry(self):
+        m = json.loads(read(os.path.join(REPO, ".cursor-plugin", "marketplace.json")))
+        e = [x for x in m["plugins"] if os.path.join(REPO, x["source"]) == ROOT]
+        p = json.loads(read(os.path.join(ROOT, ".cursor-plugin", "plugin.json")))
+        self.assertEqual(p["name"], e[0]["name"])
+        self.assertEqual(p["name"], "flowingstack")
+        self.assertTrue(os.path.isdir(os.path.join(ROOT, p["skills"])))
+
+    def test_plugin_manifest_description(self):
+        p = json.loads(read(os.path.join(ROOT, ".cursor-plugin", "plugin.json")))
+        d = p.get("description", "")
+        self.assertTrue(10 <= len(d) <= 200, d)
+        for w in ("thecuriousts", "p10ns11y", "author"):
+            self.assertNotIn(w, d.lower())
+        self.assertEqual(p["author"]["name"], "Peramanathan Sathyamoorthy")
+        self.assertNotIn("email", p["author"])
+        self.assertEqual(p.get("repository"), "https://github.com/thecuriousts/ensembly/")
+        self.assertEqual(p.get("publisher"), "Peramanathan Sathyamoorthy")
+        self.assertEqual(run("doc-lint", os.path.join(".cursor-plugin", "plugin.json"))[0], 0)
+
+    def test_plugin_manifest_fields(self):
+        p = json.loads(read(os.path.join(ROOT, ".cursor-plugin", "plugin.json")))
+        self.assertEqual(p.get("version"), "0.1.0")
+        self.assertRegex(p.get("version", ""), r"^\d+\.\d+\.\d+$")
+        self.assertEqual(p.get("license"), "MIT")
+        self.assertTrue(p.get("keywords") and all(isinstance(k, str) and k for k in p["keywords"]))
+        self.assertEqual(p.get("logo"), "assets/logo.svg")
+        self.assertTrue(os.path.isfile(os.path.join(ROOT, p["logo"])))
+
+    def test_license_files(self):
+        plugin_license = read(os.path.join(ROOT, "LICENSE"))
+        root_license = read(os.path.join(REPO, "LICENSE.md"))
+        for text in (plugin_license, root_license):
+            self.assertIn("MIT License", text)
+            self.assertIn("Copyright (c) 2026 Peramanathan Sathyamoorthy", text)
+            self.assertNotIn("Maximilian Stoiber", text)
+            self.assertNotIn("@", text)
+
+    def test_marketplace_entry_fields(self):
+        m = json.loads(read(os.path.join(REPO, ".cursor-plugin", "marketplace.json")))
+        e = [p for p in m["plugins"] if p["name"] == "flowingstack"][0]
+        self.assertTrue(10 <= len(e.get("description", "")) <= 200)
+        self.assertLessEqual(set(e), {"name", "source", "description", "minClientVersions"})
+
+
+class Scope(unittest.TestCase):
+    def test_doc_lint_never_reads_outside_root(self):
+        with tempfile.TemporaryDirectory() as t:
+            plug = os.path.join(t, "marketplaces", "cursor", "flowingstack")
+            os.makedirs(os.path.join(t, "crates", "core"))
+            os.makedirs(os.path.join(t, ".cursor-plugin"))
+            os.makedirs(plug)
+            write(os.path.join(plug, "banned-phrases.txt"), "leverage\n")
+            write(os.path.join(plug, "a.py"), "a = 1\n")
+            write(os.path.join(t, "crates", "core", "lib.rs"), "// c\n// c\nfn a() {}\n")
+            write(os.path.join(t, "outside.md"), "We leverage a demo\n")
+            write(os.path.join(t, ".cursor-plugin", "marketplace.json"), '{"name": "x"}\n')
+            code, out = run("doc-lint", "--root", plug, "--repo-root", t, "--all")
+            self.assertEqual(code, 0, out)
+            self.assertIn("files 3 ", out)
+            write(os.path.join(t, ".cursor-plugin", "marketplace.json"), '{"description": "x."}\n')
+            self.assertEqual(run("doc-lint", "--root", plug, "--repo-root", t, "--all")[0], 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

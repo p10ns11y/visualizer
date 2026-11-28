@@ -8,7 +8,12 @@ export function skipWalkEntry(name: string): boolean {
   return skippedEntries.has(name);
 }
 
+const houseSources = path.join("packages", "sources");
+
 export function isVendoredPath(root: string, file: string): boolean {
   const relative = path.relative(root, file);
-  return relative === vendoredRoot || relative.startsWith(`${vendoredRoot}${path.sep}`);
+  if (relative === vendoredRoot || relative.startsWith(`${vendoredRoot}${path.sep}`)) {
+    return true;
+  }
+  return relative === houseSources || relative.startsWith(`${houseSources}${path.sep}`);
 }

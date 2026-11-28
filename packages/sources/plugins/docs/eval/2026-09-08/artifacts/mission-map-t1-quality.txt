@@ -1,0 +1,10 @@
+   SkillEvaluator Validation Results    
+┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Validator ┃ Status ┃ Details         ┃
+┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ QUALITY   │  PASS  │ 1 checks passed │
+└───────────┴────────┴─────────────────┘
+
+
+[PASS] All validations passed
+

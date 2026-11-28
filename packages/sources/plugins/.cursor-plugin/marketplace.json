@@ -1,0 +1,136 @@
+{
+  "name": "p10ns11y-plugins",
+  "owner": {
+    "name": "p10ns11y"
+  },
+  "metadata": {
+    "description": "Grok Build plugins: ai-flow-audit, aihero-map, arch-machine, concordance, context-ignite, control-plane, craft, dependency-harden, eva-emptiness, intelli-route, layout-content-view, live-engine, michelin-kitchen, mission-map, odysseus-navigator, premflow, pstack-map, pulse-memory, si, split-machine, steer-accel, steer-log, trust-stack, tstack, uncertainty-laws"
+  },
+  "plugins": [
+    {
+      "name": "ai-flow-audit",
+      "source": "ai-flow-audit",
+      "description": "Free public kit to audit AI tools and agent flows before waste lands: waste ledger, myth cards, irreversible-action checks, frontline interviews, and a fictional worked example."
+    },
+    {
+      "name": "aihero-map",
+      "source": "aihero-map",
+      "description": "Alignment map from Matt Pocock's AI Hero skills onto house skills. Does not copy those bodies. On an overlap, the house claim wins."
+    },
+    {
+      "name": "arch-machine",
+      "source": "arch-machine",
+      "description": "Agent-as-TUI for arch-machine: archy control plane, thin-first sentinel, threat-focused audit, consent-gated expand. Prefer over gum tinfoil TUI."
+    },
+    {
+      "name": "concordance",
+      "source": "concordance",
+      "description": "Corroborate one closed decision. Proceed only when the decision-model label and the LLM label match and p_dm >= tau. Hold returns to the router."
+    },
+    {
+      "name": "context-ignite",
+      "source": "context-ignite",
+      "description": "Installable fission then fusion: prune with ai-optimization, then synthesize with architecture-synthesis. Skills-repo URLs stay canonical for intelli-route."
+    },
+    {
+      "name": "control-plane",
+      "source": "control-plane",
+      "description": "Installable control plane: rewrite a dump into a Feed, then run the control-graph. Skills-repo URLs stay canonical for intelli-route."
+    },
+    {
+      "name": "craft",
+      "source": "craft",
+      "description": "Specifier, coder, cleaner, hardener, QA, after Robert C. Martin's ongoing multi-agent experiment (talk with Matt Pocock, 19 Aug 2026). CRAP on touched functions; mutation testing by the hardener."
+    },
+    {
+      "name": "dependency-harden",
+      "source": "dependency-harden",
+      "description": "Installable dependency hardening: fix security, upgrade packages, audit allowBuilds and IDE dependencies, and generate a hardened devcontainer. Skills-repo URLs stay canonical for intelli-route."
+    },
+    {
+      "name": "eva-emptiness",
+      "source": "eva-emptiness",
+      "description": "Reasoning under epistemic emptiness: Prior → Probe → Simulate → Score → ActOrAsk. Prior-diverse agents, /eva starter, C+shell secure tether (consent compile), optional Rhai workflow (copy to .grok/workflows)."
+    },
+    {
+      "name": "intelli-route",
+      "source": "intelli-route",
+      "description": "Route one goal onto at most four skills. pstack (Lauren Tan, MIT) when it is installed, otherwise the house row. Does not copy skill bodies or pstack."
+    },
+    {
+      "name": "layout-content-view",
+      "source": "layout-content-view",
+      "description": "Layout-content-view stability plus lcv-implement companion for data-lcv marks. Not pixel snapshots. Web first."
+    },
+    {
+      "name": "live-engine",
+      "source": "live-engine",
+      "description": "Action runner for coordinating work: one live working set, few specialists, verify before irreversible acts, then recover. Works with pulse memory and Ensembly."
+    },
+    {
+      "name": "michelin-kitchen",
+      "source": "michelin-kitchen",
+      "description": "Seven kitchen habits from Lauren Tan's talk (hosted by Matt Pocock): scripts, findings-first, events over timers, workflow skills, and more. Several include our adaptations."
+    },
+    {
+      "name": "mission-map",
+      "source": "mission-map",
+      "description": "Mission-Impossible-style ops map: steps, calculated risks, what/how/when, replan on outside shocks. C PERT/MC kernels + Rust critical path. Slash /mission-map."
+    },
+    {
+      "name": "odysseus-navigator",
+      "source": "odysseus-navigator",
+      "description": "Faster intelli core-nailer: diagnose Odysseus mistakes, emit a Navigator, hook control-graph / EVA. No tether, no Rhai, no prior-fork circus."
+    },
+    {
+      "name": "premflow",
+      "source": "premflow",
+      "description": "Capture notes, wins, tasks; review; coach; external pomo; agent-safe journal. CLI via PATH or /premflow:init (consent install from github.com/thecuriousts/premflow)."
+    },
+    {
+      "name": "pstack-map",
+      "source": "pstack-map",
+      "description": "Playbook map from Cursor pstack (Lauren Tan / poteto, MIT) onto control-graph / EVA / house skills. Does not copy pstack bodies. House HITL wins on irreversible work."
+    },
+    {
+      "name": "pulse-memory",
+      "source": "pulse-memory",
+      "description": "Pulse instead of dump: admit sparse, tagged memory (source, time, status, kind); resolve contradictions without averaging. SQLite archive + pulse workflow."
+    },
+    {
+      "name": "si",
+      "source": "si",
+      "description": "SI workflows that own the write: data contracts, SI-native review flows, an SI service harness, and deterministic SaaS. Load one profile."
+    },
+    {
+      "name": "split-machine",
+      "source": "split-machine",
+      "description": "Place a job on the machine that can do it: Earth QPU, entanglement link, LEO radio handover, conjunction screen, GPU factory, BQP slice, System One decision, or System Two prose. Name the act. Low confidence does not automate."
+    },
+    {
+      "name": "steer-accel",
+      "source": "steer-accel",
+      "description": "Steering and acceleration loop. Picks the SpaceX step the stage has earned. The watch is on when .steer/loop.on exists or the actor is coordinator, and a crash while it is on denies the call."
+    },
+    {
+      "name": "steer-log",
+      "source": "steer-log",
+      "description": "Door for a builder brief and a steering doc. Refuses prose around a log quote, an edited older log row, and a pre-builder bundle that fails its checks. trust-stack and findings-first stay the engines."
+    },
+    {
+      "name": "trust-stack",
+      "source": "trust-stack",
+      "description": "Put each invariant on the earliest layer that can hold it: shape, check, watch, skill, then a human guide. The codebase is the agent's memory. This plugin does not merge."
+    },
+    {
+      "name": "tstack",
+      "source": "tstack",
+      "description": "Tomato stack: paces the person in focus blocks. Shared SQLite state for the loop. Loads house plugins; copies none. Premflow only when its CLI is on PATH."
+    },
+    {
+      "name": "uncertainty-laws",
+      "source": "uncertainty-laws",
+      "description": "Four napkin probability laws for decisions under uncertainty: expected value, base rates, variance/ruin, Kelly. Honest fog-breaking for finance, wealth, and life. Links to mission-map for path vs bet-size."
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "version": 2,
+  "name": "arch-machine",
+  "description": "Thin-first core vs expandable tiers; archy is the main control plane (not gum TUI)",
+  "remote": {
+    "repo": "https://github.com/p10ns11y/arch-machine.git",
+    "default_branch": "sentinel",
+    "cache_dir_env": "ARCH_MACHINE_SRC_DIR",
+    "default_cache_dir": "~/.cache/arch-machine/src"
+  },
+  "surfaces": {
+    "primary": "archy",
+    "primary_path": "crates/archy",
+    "docs": ["docs/archy.md", "crates/archy/README.md"],
+    "skill_in_repo": ".agents/skills/eagle-satellite-elomaxz",
+    "legacy_fallback": "tinfoil tui (gum)",
+    "notes": "Prefer archy (Ratatui Eagle+Satellites TEA). Agent slash commands for init/expand/audit. Avoid gum tinfoil TUI as default."
+  },
+  "core": {
+    "tier": "thin",
+    "summary": "Essential sentinel: thin install + control plane source; read-only ops + optional archy binary",
+    "install_flags": ["--thin"],
+    "binaries": ["archy", "tinfoil"],
+    "paths": {
+      "installed_runtime": "/usr/share/tinfoil",
+      "installed_bin_tinfoil": "/usr/local/bin/tinfoil",
+      "archy_dev": "crates/archy/target/release/archy"
+    },
+    "commands": [
+      "archy --print-root",
+      "tinfoil version",
+      "tinfoil help",
+      "bash maintenance/security-audit.sh --global",
+      "bash maintenance/security-audit.sh --global --dry-run",
+      "bash maintenance/inventory.sh --text"
+    ],
+    "repo_paths": [
+      "install.sh",
+      "crates/archy/",
+      "maintenance/security-audit.sh",
+      "maintenance/inventory.sh",
+      "bin/tinfoil.go",
+      "lib/",
+      "config/profiles/minimal.yaml",
+      "docs/archy.md",
+      "AGENTS.md",
+      "README.md",
+      ".agents/skills/eagle-satellite-elomaxz/"
+    ],
+    "notes": "Default install.sh is thin (runtime tree). Operator UI is archy; tinfoil is thin CLI shim. Audit = maintenance/security-audit.sh (threat-focused quiet format)."
+  },
+  "expandable": {
+    "profiles": {
+      "minimal": {
+        "file": "config/profiles/minimal.yaml",
+        "risk": "medium",
+        "requires_consent": true,
+        "summary": "Base tools beyond sentinel"
+      },
+      "ml-dev": {
+        "file": "config/profiles/ml-dev.yaml",
+        "risk": "high",
+        "requires_consent": true,
+        "summary": "ML/AI/ROCm stack — not default"
+      },
+      "security-dev": {
+        "file": "config/profiles/security-dev.yaml",
+        "risk": "high",
+        "requires_consent": true,
+        "summary": "K8s security + encrypted storage — not default"
+      }
+    },
+    "modules": {
+      "security": {
+        "path": "modules/security",
+        "risk": "high",
+        "requires_consent": true,
+        "summary": "Security tools + keeper threshold secrets"
+      },
+      "ml_ai": {
+        "path": "modules/ml_ai",
+        "risk": "high",
+        "requires_consent": true
+      },
+      "development": {
+        "path": "modules/development",
+        "risk": "medium",
+        "requires_consent": true
+      },
+      "productivity": {
+        "path": "modules/productivity",
+        "risk": "low",
+        "requires_consent": true,
+        "summary": "Includes eye-comfort themes / waybar wrappers"
+      },
+      "system": {
+        "path": "modules/system",
+        "risk": "medium",
+        "requires_consent": true
+      }
+    }
+  },
+  "modes": {
+    "supervised": {
+      "description": "Preview/status always; any install/expand/mutate requires --yes after operator consent",
+      "default": true
+    },
+    "fsd": {
+      "description": "Unsupervised driver: only allowlisted read-only / non-mutating steps auto-run",
+      "allowlist": [
+        "status",
+        "version",
+        "audit",
+        "map",
+        "path-probe",
+        "archy-print-root"
+      ],
+      "deny_without_yes": [
+        "init",
+        "expand",
+        "install",
+        "profile",
+        "pull"
+      ]
+    }
+  },
+  "policy": {
+    "never_auto_full_profile": true,
+    "default_install": "thin",
+    "public_isp_ip_not_trust": true,
+    "fail_closed_without_consent": true,
+    "prefer_archy_over_gum_tui": true,
+    "audit_script": "maintenance/security-audit.sh"
+  }
+}
