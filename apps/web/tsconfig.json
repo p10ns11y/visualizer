@@ -7,5 +7,5 @@
     "noEmit": true
   },
   "include": ["src"],
-  "exclude": ["src/**/*.dom.test.tsx"]
+  "exclude": ["src/**/*.dom.test.tsx", "../../repos"]
 }

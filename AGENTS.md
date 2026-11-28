@@ -34,3 +34,14 @@ A pull request that adds or changes a user-facing flow must update all of the fo
 Run `pnpm test:critical-flows` and `pnpm verify:formal` before pushing that pull request. `verify` on CI runs both, and a red result blocks the merge.
 
 Use `/maintain-verification-skill` when the verification map drifts from the screens. Use `/maintain-formal-verification-skill` when covered transition code changes without a fresh formal run.
+
+## Vendored repositories
+
+`repos/xstate` and `repos/adaptate` are read-only reference. When work touches XState or adaptate, read the vendored tree and `agent-patterns/` and prefer those patterns over a guess or a web search. Never edit files under `repos/`. Never import from `repos/`. Application code keeps importing `xstate`, `@adaptate/core`, and `@adaptate/utils`.
+
+`repos/xstate` is tag `xstate@6.0.0-beta.5`. Upstream `main` is XState 5. A newer v6 tag replaces the ref in the pull command. Do not pull `main` into `repos/xstate`.
+
+```sh
+git subtree pull --prefix=repos/xstate https://github.com/statelyai/xstate.git xstate@6.0.0-beta.5 --squash
+git subtree pull --prefix=repos/adaptate https://github.com/p10ns11y/adaptate.git main --squash
+```

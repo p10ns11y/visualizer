@@ -4,6 +4,8 @@ Target layering for Visualizer. This foundation step does not add a native crate
 
 The diagram is the dependency direction: the UI talks to a thin bridge, the bridge talks to a thin core, and heavy payload work stays in [`adaptate`](https://github.com/p10ns11y/adaptate).
 
+`repos/xstate` and `repos/adaptate` are not layers and not edges. They are read-only copies of library source. The cockpit still imports `xstate`, `@adaptate/core`, and `@adaptate/utils`. The diagram is unchanged.
+
 ```mermaid
 flowchart TB
   ui["Cockpit and Code Mode. XState 6 owns state"]

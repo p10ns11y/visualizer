@@ -11,7 +11,7 @@ Commands, in the order CI `verify` runs the test steps:
 | `pnpm docs:mermaid` | `scripts/verify-mermaid.ts`. Parses every Mermaid fence in `README.md` and `docs/**` with `mermaid.parse`. CI `verify` runs it. |
 | `pnpm test:local-model` | `scripts/local-model-smoke.ts`. CF-04 runs this. CI does not require a listening model. |
 
-`pnpm typecheck` and `pnpm build` bookend those commands. They are not part of the test count.
+`pnpm typecheck` and `pnpm build` bookend those commands. They are not part of the test count. None of these commands enter `repos/`. `pnpm docs:mermaid` skips that directory through `scripts/vendor-paths.ts`. Workspace typecheck includes each package `src` tree only. Vitest include globs stay inside those packages, and the ESLint ignore list starts with `repos/**`.
 
 Why these runners were chosen, and whether that choice was looked up or recalled, is in `docs/TECH-CHOICES.md`.
 
