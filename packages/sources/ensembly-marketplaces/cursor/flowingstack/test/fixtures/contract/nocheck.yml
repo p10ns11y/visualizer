@@ -1,5 +1,0 @@
-id: c-none
-input: something
-output: something
-check:
-counter: p95 latency

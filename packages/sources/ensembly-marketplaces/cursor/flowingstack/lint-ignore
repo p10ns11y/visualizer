@@ -1,4 +1,0 @@
-test/fixtures/*
-.git/*
-*__pycache__/*
-.pytest_cache/*

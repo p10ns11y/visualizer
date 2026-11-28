@@ -1,5 +1,0 @@
-id: c-feat
-input: spec
-output: endpoint
-check: acceptance: new route returns 200
-counter: p95 latency

@@ -1,5 +1,0 @@
-id: c-eval
-input: router
-output: score
-check: heldout: cases/v1
-counter: p95 latency

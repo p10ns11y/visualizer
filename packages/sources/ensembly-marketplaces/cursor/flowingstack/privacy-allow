@@ -1,3 +1,0 @@
-# rule<TAB>literal - matching spans are scrubbed before that rule runs
-# Narrow allowlist: public GitHub full name of this repository.
-private-data	thecuriousts/ensembly
