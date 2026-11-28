@@ -348,3 +348,22 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 - [x] Point `AGENTS.md` at `packages/sources/` and leave `scripts/fetch-ref.sh` on `xstate` and `adaptate` only.
 - [x] Append this entry.
 - [x] Run `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build`. Each exited 0. `pnpm list -r --depth -1` listed `@visualizer/core`, `@visualizer/web`, `@visualizer/mcp`, and the root.
+
+## Melt index crate
+
+- **Chosen:** Rust `1.100.1` (`rustc 1.100.1 (20ddd0171 2026-11-25)`), edition `2024`, std only, one package at `packages/melt/Cargo.toml`. No root `Cargo.toml`. SHA-256 is the std implementation in the crate. `J_melt` uses `actions/checkout@v4` and `dtolnay/rust-toolchain@1.100.1` with `rustfmt` and `clippy`. `CARGO_NET_OFFLINE=true` and `cargo test --locked`. The committed `index.tsv` has 209 data rows. External rows are 85: 22 pstack playbooks, 62 pstack skills, and the ub-mode skill.
+- **Why:** The index has to be the same bytes on every machine, and the job must not fetch. A second crate would be the reason to add a workspace. The JS workspace already has a test job, and this crate is not a package in it.
+- **Basis:** Live lookup on 2026-11-28, before the crate. [Announcing Rust 1.100.1](https://blog.rust-lang.org/2026/11/27/Rust-1.100.1/) (27 Nov 2026) is the current stable point release. `rustc --version` on this machine printed `1.100.1 (20ddd0171 2026-11-25)`. The [Cargo workspaces](https://doc.rust-lang.org/cargo/reference/workspaces.html) page says a workspace exists to share a lock file and an output directory across members, and its example uses `edition = "2024"`. With one package, the package manifest is enough. [dtolnay/rust-toolchain](https://github.com/dtolnay/rust-toolchain) says the `@rev` selects the toolchain, and the README example `dtolnay/rust-toolchain@1.89.0` is the form used here as `@1.100.1`. The `components` input installs `clippy` and `rustfmt`. crates.io listed `sha2` `0.11.2` (updated 2026-11-25). It was not added. `.github/workflows/ci.yml` already pins `actions/checkout@v4`.
+- **Latest trends checked before choosing:** Yes, on 2026-11-28, before the crate. Compared std SHA-256 with `sha2` `0.11.2`. Std won because `J_melt` must not fetch a crate. Compared a root workspace with a single package manifest. The single manifest matches one crate. Compared `actions/checkout@v7` in the rust-toolchain README example with `actions/checkout@v4` already pinned by the JS job. `v4` stays so the two workflows match. pnpm stayed on `10.33.4`.
+
+### Head Plan
+
+- [x] Add `packages/melt` with `sources.tsv`, `external.tsv`, `index.tsv`, and `melt index`.
+- [x] Keep external trees as records. pstack is `b7b93c36be9bcc36a74db438e0fd385d660bc559`. ub-mode is `https://github.com/unclebob/ub-mode` at `3da62bf3fcfd2034de41f30d920d2739e566171f`. No ub-mode repository was found under p10ns11y or poteto.
+- [x] Add `J_melt` on `packages/melt/**` and `packages/sources/**`. Leave the JS `verify` job as it is.
+
+### Tail Plan
+
+- [x] Credit the external sources in `packages/melt/NOTICE`. Note the crate in `docs/ARCHITECTURE-LAYERS.md`, `docs/TEST-SUITE.md`, and `AGENTS.md`. Leave `README.md`, critical flows, and the formal sync commit in place.
+- [x] Append this entry.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, and `cargo test --locked` each exited 0 with `CARGO_NET_OFFLINE=true`. `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-flows`, `pnpm test:mbt`, `pnpm verify:formal`, and `pnpm build` each exited 0. `pnpm list -r --depth -1` still listed the same four workspace projects.

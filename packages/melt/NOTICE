@@ -1,0 +1,24 @@
+Melt reads committed house trees and a table of external records. It does not fetch those records.
+
+House trees live under packages/sources. Each tree keeps its LICENSE and NOTICE.
+
+Source rank r, highest first: plugins 3, skills 2, ensembly-marketplaces 1, external 0.
+
+External trees are not copied into this repository.
+
+pstack
+id: pstack
+path: pstack
+digest: b7b93c36be9bcc36a74db438e0fd385d660bc559
+first sentence: i'm [poteto](https://x.com/poteto).
+https://github.com/cursor/plugins/tree/b7b93c36be9bcc36a74db438e0fd385d660bc559/pstack
+Lauren Tan. MIT. The license allows a vendored copy when the copyright and permission notice stay with the copy. This package keeps the record only.
+
+ub-mode
+id: ub-mode
+path: ub-mode
+digest: 3da62bf3fcfd2034de41f30d920d2739e566171f
+first sentence: `ub-mode` is an agent skill that enforces disciplined software engineering principles when writing or changing code.
+https://github.com/unclebob/ub-mode
+Robert C. Martin. MIT. The license allows a vendored copy when the copyright and permission notice stay with the copy. This package keeps the record only.
+No ub-mode repository was found under p10ns11y or poteto.

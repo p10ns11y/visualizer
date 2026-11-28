@@ -7,5 +7,6 @@ coverage
 .DS_Store
 playwright-report
 test-results
+target/
 repos/*
 !repos/.gitkeep
