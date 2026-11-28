@@ -11,8 +11,7 @@
     "verify:formal": "tsx scripts/verify-formal.ts",
     "docs:mermaid": "tsx scripts/verify-mermaid.ts",
     "build": "pnpm --filter @visualizer/web build",
-    "dev": "pnpm --filter @visualizer/web dev",
-    "test:local-model": "tsx scripts/local-model-smoke.ts"
+    "dev": "pnpm --filter @visualizer/web dev"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
