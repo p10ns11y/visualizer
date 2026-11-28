@@ -48,7 +48,3 @@ Use `/maintain-verification-skill` when the verification map drifts from the scr
 Read `agent-patterns/<lib>.md` first. Only if that note does not answer, run `scripts/fetch-ref.sh <lib>`. Never edit files under `repos/`. Never import from `repos/`. Application code keeps importing `xstate`, `@adaptate/core`, and `@adaptate/utils`.
 
 `scripts/fetch-ref.sh` pins `xstate` to tag `xstate@6.0.0-beta.5` and `adaptate` to branch `main`. The clones live under `${XDG_CACHE_HOME:-$HOME/.cache}/visualizer-refs/` and are linked from `repos/<lib>`. Upstream XState `main` is XState 5. A newer v6 tag is a pin change in that script. CI does not run the script and does not need `repos/`.
-
-## House source pins
-
-`packages/sources/` holds the pinned house trees that liturgy reads. `packages/sources/PINS.tsv` lists each lib, URL, full commit, and subpath. `scripts/sync-sources.sh <lib>` copies that pin again. These trees are not workspace packages. Do not put them under `repos/`. `scripts/fetch-ref.sh` stays limited to `xstate` and `adaptate`.

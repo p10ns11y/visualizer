@@ -1,7 +1,7 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-const vendoredFiles = ["**/repos/**", "**/packages/sources/**"];
+const vendoredFiles = ["**/repos/**"];
 
 export default defineConfig({
   plugins: [react()],
