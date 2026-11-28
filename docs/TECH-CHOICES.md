@@ -399,5 +399,12 @@ Checked off after the rebase onto `9ffd45d` and the bridge alignment.
 ### Tail Plan
 
 - [x] Update the three short docs, the verification skill, this entry, and the screen shots.
-- [x] Leave the formal sync commit where it is.
+- [x] Leave the formal sync commit where it is. The stored-log cap later moved that commit, recorded below.
+
+## Review fixes on the asking screen
+
+- **Chosen:** `vitest` `3.2.7` in `apps/web` and `@visualizer/core`. A pnpm override pins `tinypool` to `2.2.0`. `puppeteer-core` is `25.19.0`. The stored log keeps 200 lines. Settings is a `React.lazy` module and, under 720px, a bottom sheet. The library-checkout check is `isLibraryCheckoutPath`.
+- **Why:** `vitest` `3.2.7` still declares `tinypool` `^1.1.1`, so the override is what moves that package. `puppeteer-core` `25.19.0` drops the unpatched archive helper the screen capture still needs. The dialog is absent until it opens, so it leaves the first chunk. The asking preview stays in that chunk because it is the first screen.
+- **Basis:** Lookup on 2026-11-28. `npm view vitest@3.2.7 dependencies.tinypool` returned `^1.1.1` (modified `2026-11-25T11:52:10.408Z`). `npm view puppeteer-core version` returned `25.19.0`. `npm view tinypool version` returned `2.2.0`. `npm view vitest version` returned `5.1.2`.
+- **Latest trends checked before choosing:** The pin lookup ran before install: `vitest@3.2.7` still depends on `tinypool` `^1.1.1`, `tinypool` current was `2.2.0`, and `puppeteer-core` current was `25.19.0`. `npm view vitest version` was read again on 2026-11-28 while writing this entry and returned `5.1.2`. That later read did not move the pin. The suite and the advisory floor are the 3.2 line. No new package was added. pnpm printed an upgrade notice to `12.23.0`. This step stays on the pinned `10.33.4`.
 

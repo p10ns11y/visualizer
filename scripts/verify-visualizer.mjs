@@ -126,6 +126,14 @@ async function choose(page, name) {
 }
 
 async function press(page, name) {
+  await page.waitForFunction(
+    (label) => {
+      const button = [...document.querySelectorAll("button")].find((item) => item.textContent === label);
+      return button instanceof HTMLButtonElement && !button.disabled;
+    },
+    { timeout: 5000 },
+    name,
+  );
   const clicked = await page.evaluate((label) => {
     const button = [...document.querySelectorAll("button")].find((item) => item.textContent === label);
     if (!(button instanceof HTMLButtonElement) || button.disabled) return false;

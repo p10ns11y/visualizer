@@ -17,7 +17,7 @@ Checks: `pnpm docs:mermaid`, `pnpm typecheck`, `pnpm test`, `pnpm test:critical-
 ## Tail plan
 
 - [x] Update `docs/CRITICAL-FLOWS.md`, `docs/ARCHITECTURE-LAYERS.md`, `docs/TEST-SUITE.md`, `README.md`, `.cursor/skills/verify-visualizer/`, and `docs/TECH-CHOICES.md`.
-- [x] Leave the formal sync commit where it is. This step does not change the covered transitions.
+- [x] Leave the formal sync commit where it is. This step does not change the covered transitions. The stored-log review then changed `apply.ts`, and the sync commit records that.
 - [x] Save `step-4-wide` (1280×800) and `step-4-narrow` (390×844).
 - [x] Keep the [`adaptate`](https://github.com/p10ns11y/adaptate) credit. The screen schema still uses it.
 - [x] Rollback is reverting this pull request. `main` at `4258424` stays as it is.
