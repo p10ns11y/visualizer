@@ -96,7 +96,8 @@ describe("flow screen", () => {
     click("Close");
     expect(document.querySelector("[data-mode]")?.getAttribute("data-mode")).toBe("advanced");
     expect(document.querySelector("[data-view]")?.getAttribute("data-panel")).toBe("later");
-    expect(document.querySelector("[data-view]")?.textContent).toContain("later");
+    expect(document.querySelectorAll(".later")).toHaveLength(1);
+    expect(document.querySelector("[data-view]")?.textContent?.match(/later/g)).toEqual(["later"]);
     expect(document.querySelector("[data-view]")?.getAttribute("data-view")).toBe("editing");
     click("Stop");
     expect(document.querySelector("[data-stage]")?.getAttribute("data-stage")).toBe("done");

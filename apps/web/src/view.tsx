@@ -36,8 +36,8 @@ function ViewNodeView({
       return <Button onClick={() => undefined}>{node.label}</Button>;
     case "collapsible":
       return (
-        <Collapsible className="later" defaultOpen aria-label={node.label}>
-          <CollapsibleTrigger>{node.label}</CollapsibleTrigger>
+        <Collapsible className="later" defaultOpen>
+          <CollapsibleTrigger aria-label={node.label} className="later-toggle" />
           <CollapsiblePanel>{node.label}</CollapsiblePanel>
         </Collapsible>
       );
